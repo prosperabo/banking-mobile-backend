@@ -1,0 +1,18 @@
+# Node dependencies (required)
+/node_modules
+
+# Build directory (required)
+/dist
+
+# To have own vscode config on project
+/.vscode
+
+# Enviorment variables (required)
+.env
+*.local
+
+# Log directory
+/logs
+
+# eslint cache
+.eslintcache

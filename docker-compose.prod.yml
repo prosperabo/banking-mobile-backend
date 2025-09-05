@@ -1,0 +1,15 @@
+services:
+  api:
+    container_name: banking-mobile-backend
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: production
+
+    ports:
+      - 3000:3000
+
+    env_file: .env  # ← Usa tu archivo .env desde la raíz
+
+    environment:
+      - NODE_ENV=production
