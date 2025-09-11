@@ -15,6 +15,7 @@ app.use(morgan('tiny'));
 const corsOptions = {
   origin: nodeEnv === 'development' ? '*' : clientUrls,
 };
+
 app.use(cors(corsOptions));
 
 app.use(`/api/v${version}`, router);
