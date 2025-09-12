@@ -6,3 +6,80 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
+model Users {
+  id                         Int               @id @default(autoincrement())
+  email                      String            @unique
+  password                   String
+  phone                      String?
+  completeName               String
+  gender                     Gender
+  birthDate                  DateTime
+  birthCountry               String
+  curp                       String
+  postalCode                 String
+  state                      String
+  country                    String
+  municipality               String
+  street                     String
+  colony                     String
+  externalNumber             String
+  internalNumber             String
+  contractLink               String?
+  pin                        String?
+  cardType                   String?
+  creditLinePreference       String?
+  cardUsage                  String?
+  occupation                 String?
+  sector                     String?
+  mainActivity               String?
+  monthlyIncome              Float?
+  monthlyOutcome             Float?
+  hasOtherCreditCards        Boolean?
+  documentScan               String?
+  universityRegistration     Int?
+  creditLimit                Float?
+  interestRate               Float?
+  paymentDates               String?
+  initialDeposit             Float?
+  depositReceipt             String?
+  universityProfilePhotoLink String?
+  rfc                        String?
+  createdAt                  DateTime          @default(now())
+  completedLessons           CompletedLesson[]
+}
+
+model VerifiedEmails {
+  id         Int      @id @default(autoincrement())
+  email      String   @unique
+  verifiedAt DateTime @default(now())
+}
+
+enum Gender {
+  MASCULINO
+  FEMENINO
+}
+
+model Module {
+  id      Int      @id @default(autoincrement())
+  index   Int
+  lessons Lesson[]
+}
+
+model Lesson {
+  id          Int               @id @default(autoincrement())
+  index       Int
+  moduleId    Int
+  module      Module            @relation(fields: [moduleId], references: [id])
+  completions CompletedLesson[]
+}
+
+model CompletedLesson {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  lessonId  Int
+  user      Users     @relation(fields: [userId], references: [id])
+  lesson    Lesson   @relation(fields: [lessonId], references: [id])
+  passed    Boolean
+  createdAt DateTime @default(now())
+}
