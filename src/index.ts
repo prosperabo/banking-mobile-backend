@@ -17,7 +17,7 @@ const logger = buildLogger('index');
 
 const { port, version, nodeEnv } = config;
 
-const PORT = port;
+const PORT = port || 3000;
 const API = `http://localhost:${PORT}/api/v${version}`;
 
 app.listen(PORT, async () => {
