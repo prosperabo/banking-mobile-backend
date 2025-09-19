@@ -1,0 +1,1110 @@
+{
+	"info": {
+		"_postman_id": "05cc3d9c-3617-4b77-bf1c-4e30e03fd95d",
+		"name": "prospera-ecommerce",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "23376476"
+	},
+	"item": [
+		{
+			"name": "bulk order card",
+			"item": [
+				{
+					"name": "Bulk Order Card",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization-ecommerce",
+								"value": "{{Authorization-ecommerce}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"delivery_location\": {\n    \"additional_notes\": \". Entre Altamiranoy Ignacio Ramirez\",\n    \"first_names\": \"Omar Pablo\",\n    \"last_names\": \"Hernández Gutiérrez\",\n    \"exterior_number\": \"10\",\n    \"city\": \"CDMX\",\n    \"street\": \"Tonala\",\n    \"mobile\": 5555555555,\n    \"interior_number\": \"2\",\n    \"state\": \"CDMX\",\n    \"neighborhood\": \"Roma Norte\",\n    \"postal_code\": \"06700\"\n  },\n  \"batch\": [\n    {\n        \"card_identifier\": \"1715279837001\",\n        \"front_name\": \"Omar Hernández\",\n        \"qr\": \"https://test.undostres.com.mx\",\n        \"pin\": \"1234\"\n    },\n     {\n        \"card_identifier\": \"1715279837002\",\n        \"front_name\": \"\",\n        \"qr\": \"https://test.undostres.com.mx\",\n        \"pin\": \"1111\"\n    }\n  ]\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{caas_url_origin}}{{debit_port}}{{debit_endpoint_base}}/bulkOrderCard",
+							"host": [
+								"{{caas_url_origin}}{{debit_port}}{{debit_endpoint_base}}"
+							],
+							"path": [
+								"bulkOrderCard"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "activateCardForCustomer",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let responseDataField = pm.response.json().payload;",
+									"if (responseDataField != null) {",
+									"    pm.collectionVariables.set(\"card_id\",responseDataField.card_id);",
+									"     pm.collectionVariables.set(\"private_key\",responseDataField.customer_private_key);",
+									"      pm.collectionVariables.set(\"refresh_token\",responseDataField.customer_refresh_token);",
+									"} else {",
+									"    console.log(\"The data field came back null\");",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization-ecommerce",
+								"value": "{{Authorization-ecommerce}}"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"pin\":\"1234\",\n  \"card_identifier\":\"1715279837002\",\n  \"reference_batch\":\"875bc832c43fa26c4c9d3b64d07a3866\",\n  \"customer_id\": \"5\",\n  \"balance\": {\n    \"id\": 2\n  }\n}"
+						},
+						"url": {
+							"raw": "{{caas_url_origin}}{{debit_port}}{{debit_endpoint_base}}/activateCardForCustomer",
+							"host": [
+								"{{caas_url_origin}}{{debit_port}}{{debit_endpoint_base}}"
+							],
+							"path": [
+								"activateCardForCustomer"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "infoForCustomer",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Authorization-ecommerce",
+								"value": "{{Authorization-ecommerce}}"
+							},
+							{
+								"key": "Authorization-customer",
+								"value": "{{Authorization-customer}}"
+							}
+						],
+						"url": {
+							"raw": "{{caas_url_origin}}{{debit_port}}{{debit_endpoint_base}}/infoForCustomer?customer_id={{customer_id}}",
+							"host": [
+								"{{caas_url_origin}}{{debit_port}}{{debit_endpoint_base}}"
+							],
+							"path": [
+								"infoForCustomer"
+							],
+							"query": [
+								{
+									"key": "customer_id",
+									"value": "{{customer_id}}"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "viewPinForCustomer",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization-ecommerce",
+								"value": "{{Authorization-ecommerce}}"
+							},
+							{
+								"key": "Authorization-customer",
+								"value": "{{Authorization-customer}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"card_id\": {{card_id}}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{caas_url_origin}}{{debit_port}}{{debit_endpoint_base}}/viewPinForCustomer",
+							"host": [
+								"{{caas_url_origin}}{{debit_port}}{{debit_endpoint_base}}"
+							],
+							"path": [
+								"viewPinForCustomer"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "CreateAccount",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let responseDataField = pm.response.json().rs;",
+									"if (responseDataField != null) {",
+									"    pm.collectionVariables.set(\"private_key\",responseDataField.private_key);",
+									"    pm.collectionVariables.set(\"refresh_token\",responseDataField.refresh_token);",
+									"    pm.collectionVariables.set(\"customer_id\",responseDataField.id);",
+									"    pm.collectionVariables.set(\"balance_id\",responseDataField.ewallet_id);",
+									"    pm.collectionVariables.set(\"Authorization-customer\",responseDataField.oauth_token);",
+									"} else {",
+									"    console.log(\"The data field came back null\");",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization-ecommerce",
+								"value": "{{Authorization-ecommerce}}"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "gender",
+									"value": "2",
+									"description": "required",
+									"type": "text"
+								},
+								{
+									"key": "device_id",
+									"value": "{{device_id}}",
+									"description": "required",
+									"type": "text"
+								},
+								{
+									"key": "mobile",
+									"value": "{{mobile}}",
+									"description": "required",
+									"type": "text"
+								},
+								{
+									"key": "last_name",
+									"value": "Hernandez",
+									"description": "required",
+									"type": "text"
+								},
+								{
+									"key": "rfc",
+									"value": "{{rfc}}",
+									"description": "required, Any value",
+									"type": "text"
+								},
+								{
+									"key": "zipcode",
+									"value": "32670",
+									"description": "required: 1, 2 or 3",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "password",
+									"value": "a1a669fca01d2f26123f0f6238e924cf72474e9d5cc05131c4abe2f3abc3f533",
+									"description": "required:\n1 -> Female, \n2 -> Male",
+									"type": "text"
+								},
+								{
+									"key": "extra_info",
+									"value": "{\"zipcode\":\"32670\", \"colony\":\"fds\", \"terms_accepted_at\":\"1969-12-31 16:00:00\", \"street\":\"alm delia rojsRodriguez\", \"valid_otp_at\":\"2023-02-12 19:53:10\", \"municipality\":\"Juarez A Madero\", \"ext_number\":\"7736\", \"state\":\"CHIH\", \"authorized_at\":\"1969-12-31 16:00:00\"}",
+									"description": "required",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "kyc_level",
+									"value": "1",
+									"description": "required",
+									"type": "text"
+								},
+								{
+									"key": "otp_key",
+									"value": "783783",
+									"description": "required( Must touch 2 endpoints to get this value )",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "linked_in_url",
+									"value": "",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "first_name",
+									"value": "Omar",
+									"type": "text"
+								},
+								{
+									"key": "email",
+									"value": "{{email}}",
+									"description": "required, must match CURP",
+									"type": "text"
+								},
+								{
+									"key": "second_last_name",
+									"value": "Gutierrez",
+									"description": "required, Check map state <-> state_id",
+									"type": "text"
+								},
+								{
+									"key": "identification_document_back",
+									"type": "file",
+									"src": "/run/media/johnny/Data/Imagenes/fondo-debian_1.jpg",
+									"disabled": true
+								},
+								{
+									"key": "identification_document_front",
+									"type": "file",
+									"src": "/run/media/johnny/Data/Imagenes/buho.jpg",
+									"disabled": true
+								}
+							]
+						},
+						"url": {
+							"raw": "{{caas_url_origin}}{{user_port}}{{user_endpoint_base}}/account/create",
+							"host": [
+								"{{caas_url_origin}}{{user_port}}{{user_endpoint_base}}"
+							],
+							"path": [
+								"account",
+								"create"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "virtual card",
+			"item": [
+				{
+					"name": "createLinkedCard",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization-customer",
+								"value": "{{Authorization-customer}}"
+							},
+							{
+								"key": "Authorization-ecommerce",
+								"value": "{{Authorization-ecommerce}}"
+							}
+						],
+						"url": {
+							"raw": "{{caas_url_origin}}{{debit_port}}{{debit_endpoint_base}}/create-linked-card?campaign_id=&balance_id=",
+							"host": [
+								"{{caas_url_origin}}{{debit_port}}{{debit_endpoint_base}}"
+							],
+							"path": [
+								"create-linked-card"
+							],
+							"query": [
+								{
+									"key": "campaign_id",
+									"value": ""
+								},
+								{
+									"key": "balance_id",
+									"value": ""
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "re-order-linked-card",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization-ecommerce",
+								"value": "{{Authorization-ecommerce}}"
+							},
+							{
+								"key": "Authorization-customer",
+								"value": "{{Authorization-customer}}"
+							}
+						],
+						"url": {
+							"raw": "{{caas_url_origin}}{{debit_port}}{{debit_endpoint_base}}/re-order-linked-card",
+							"host": [
+								"{{caas_url_origin}}{{debit_port}}{{debit_endpoint_base}}"
+							],
+							"path": [
+								"re-order-linked-card"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update-cvv-linked-card",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization-ecommerce",
+								"value": "{{Authorization-ecommerce}}"
+							},
+							{
+								"key": "Authorization-customer",
+								"value": "{{Authorization-customer}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"card_id\": {{card_id}}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{caas_url_origin}}{{debit_port}}{{debit_endpoint_base}}/update-cvv-linked-card",
+							"host": [
+								"{{caas_url_origin}}{{debit_port}}{{debit_endpoint_base}}"
+							],
+							"path": [
+								"update-cvv-linked-card"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "card-management",
+			"item": [
+				{
+					"name": "topUp",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const transactionIdVariableName = 'topup_external_transaction_id';",
+									"let justUsedId = pm.collectionVariables.get(transactionIdVariableName);",
+									"if (typeof justUsedId === 'undefined') {",
+									"    console.error(`Unable to read collection variable ${transactionIdVariableName}`);",
+									"    throw 1;",
+									"}",
+									"const re = /^(.+)-(\\d+)$/;",
+									"let matches = justUsedId.match(re)",
+									"if (!matches || matches.length != 3) {",
+									"    console.error(`Unable to match id \"${justUsedId}\" with regex ${re}`);",
+									"    throw 1;",
+									"}",
+									"let nextNumber = Number(matches[2]) + 1;",
+									"pm.collectionVariables.set(transactionIdVariableName, `${matches[1]}-${nextNumber}`);"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization-ecommerce",
+								"value": "{{Authorization-ecommerce}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"sourceCustomerID\":{{customer_id}},\n\t\"externalTransactionId\":\"{{topup_external_transaction_id}}\",\n\t\"amount\": 500,\n\t\"transactionType\": 1,\n\t\"balanceId\":{{balance_id}}\n}\n",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{caas_url_origin}}{{wallet_port}}{{wallet_http_endpoint_base}}/topUp",
+							"host": [
+								"{{caas_url_origin}}{{wallet_port}}{{wallet_http_endpoint_base}}"
+							],
+							"path": [
+								"topUp"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Stop",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization-ecommerce",
+								"value": "{{Authorization-ecommerce}}",
+								"type": "text"
+							},
+							{
+								"key": "Authorization-customer",
+								"value": "{{Authorization-customer}}",
+								"type": "text"
+							},
+							{
+								"key": "Client",
+								"value": "admin",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"card_id\": {{card_id}},\n    \"customer_id\": {{customer_id}},\n    \"new_card_status\": 3,\n    \"note\": \"stop\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{caas_url_origin}}{{debit_port}}{{debit_endpoint_base}}/stop",
+							"host": [
+								"{{caas_url_origin}}{{debit_port}}{{debit_endpoint_base}}"
+							],
+							"path": [
+								"stop"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Unstop",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization-ecommerce",
+								"value": "{{Authorization-ecommerce}}",
+								"type": "text"
+							},
+							{
+								"key": "Authorization-customer",
+								"value": "{{Authorization-customer}}",
+								"type": "text"
+							},
+							{
+								"key": "Client",
+								"value": "admin",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"customer_id\": {{customer_id}},\n    \"card_id\": {{card_id}},\n    \"note\": \"Unstop\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{caas_url_origin}}{{debit_port}}{{debit_endpoint_base}}/unstop",
+							"host": [
+								"{{caas_url_origin}}{{debit_port}}{{debit_endpoint_base}}"
+							],
+							"path": [
+								"unstop"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "ChangePin",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization-ecommerce",
+								"value": "{{Authorization-ecommerce}}",
+								"type": "text"
+							},
+							{
+								"key": "Authorization-customer",
+								"value": "{{Authorization-customer}}",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"customer_id\":{{customer_id}},\n    \"card_id\":{{card_id}},\n    \"new_pin\":\"6060\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{caas_url_origin}}{{debit_port}}{{debit_endpoint_base}}/change-pin",
+							"host": [
+								"{{caas_url_origin}}{{debit_port}}{{debit_endpoint_base}}"
+							],
+							"path": [
+								"change-pin"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "debit XMLRPC",
+			"item": [
+				{
+					"name": "Deduct",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<methodCall>\n  <methodName>Deduct</methodName>\n  <params>\n    <param>\n      <value>\n        <string>0022436681</string>\n      </value>\n    </param>\n    <param>\n      <value>\n        <string>{{xml_rpc_reference}}</string>\n      </value>\n    </param>\n    <param>\n      <value>\n        <int>60000</int>\n      </value>\n    </param>\n    <param>\n      <value>\n        <string>ST*UBER EATS           CIUDAD DE MEX MEX</string>\n      </value>\n    </param>\n    <param>\n      <value>\n        <string>00</string>\n      </value>\n    </param>\n    <param>\n      <value>\n        <string>25110MasterCard</string>\n      </value>\n    </param>\n    <param>\n      <value>\n        <string>deduct-001</string>\n      </value>\n    </param>\n    <param>\n      <value>\n        <dateTime.iso8601>20220120T09:15:21</dateTime.iso8601>\n      </value>\n    </param>\n    <param>\n      <value>\n        <string>AC98BEE8C137C04F3C32DB71EC4F1A3741462A9C280C7501FC724B2115F87DB3</string>\n      </value>\n    </param>\n  </params>\n</methodCall>"
+						},
+						"url": {
+							"raw": "{{caas_url_origin}}{{xml_rpc_port}}{{xml_rpc_endpoint_base}}",
+							"host": [
+								"{{caas_url_origin}}{{xml_rpc_port}}{{xml_rpc_endpoint_base}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "LoadAdjustment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<methodCall>\n    <methodName>LoadAdjustment</methodName><!-- xml_endpoint_id 9 -->\n    <params>\n        <param>\n            <value>\n                <string>0022436681</string><!-- terminalID -->\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>{{xml_rpc_reference}}</string><!-- reference -->\n            </value>\n        </param>\n        <param>\n            <value>\n                <int>2030</int><!-- requestAmount -->\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>loadAdjustment (loadauth: load $500)</string><!-- narrative  -->\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>2560406</string><!-- transactionData (in KLV format; 04 refund, 05 chargeback) -->\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>refId</string><!-- referenceID -->\n            </value>\n        </param>\n        <param>\n            <value>\n                <dateTime.iso8601>20230325T12:46:09</dateTime.iso8601><!-- referenceDate -->\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>loadAdjustment-001</string><!-- transactionID -->\n            </value>\n        </param>\n        <param>\n            <value>\n                <dateTime.iso8601>20230326T15:46:07</dateTime.iso8601><!-- transactionDate -->\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>3139CDCE0C0457ADFA560295376C150D55C934E7</string><!-- checksum -->\n            </value>\n        </param>\n    </params>\n</methodCall>"
+						},
+						"url": {
+							"raw": "{{caas_url_origin}}{{xml_rpc_port}}{{xml_rpc_endpoint_base}}",
+							"host": [
+								"{{caas_url_origin}}{{xml_rpc_port}}{{xml_rpc_endpoint_base}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "LoadReversal",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<methodCall>\n  <methodName>LoadReversal</methodName>\n  <params>\n    <param>\n      <value>\n        <string>0022436681</string>\n      </value>\n    </param>\n    <param>\n      <value>\n        <string>{{xml_rpc_reference}}</string>\n      </value>\n    </param>\n    <param>\n      <value>\n        <int>100</int>\n      </value>\n    </param>\n    <param>\n      <value>\n        <string>hello</string>\n      </value>\n    </param>\n    <param>\n      <value>\n        <string>\n        </string>\n      </value>\n    </param>\n    <param>\n      <value>\n        <string>refId</string>\n      </value>\n    </param>\n    <param>\n      <value>\n        <dateTime.iso8601>20210818T18:15:21</dateTime.iso8601>\n      </value>\n    </param>\n    <param>\n      <value>\n        <string>loadReversal-001</string>\n      </value>\n    </param>\n    <param>\n      <value>\n        <dateTime.iso8601>20210818T19:15:21</dateTime.iso8601>\n      </value>\n    </param>\n    <param>\n      <value>\n        <string>3DE7651C7D255249C7D9AEDF53B1AB801DC26C3F4126964D528D1A90A7133A03</string>\n      </value>\n    </param>\n  </params>\n</methodCall>"
+						},
+						"url": {
+							"raw": "{{caas_url_origin}}{{xml_rpc_port}}{{xml_rpc_endpoint_base}}",
+							"host": [
+								"{{caas_url_origin}}{{xml_rpc_port}}{{xml_rpc_endpoint_base}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Stop",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<methodCall>\n   <methodName>Stop</methodName>\n   <params>\n       <param>\n           <value>\n               <string>0022436681</string><!-- terminalID -->\n           </value>\n       </param>\n       <param>\n           <value>\n               <string>{{xml_rpc_reference}}</string><!-- reference -->\n           </value>\n       </param>\n       <param>\n           <value>\n               <string>5581XXXXXXXX1924</string><!-- voucherNumber -->\n           </value>\n       </param>\n       <param>\n           <value>\n               <int>3</int><!-- stopReason -->\n           </value>\n       </param>\n       <param>\n           <value>\n               <string>00215617074800000005</string><!-- transactionData -->\n           </value>\n       </param>\n       <param>\n           <value>\n               <string>stop-001</string><!-- transactionId -->\n           </value>\n       </param>\n       <param>\n           <value>\n               <dateTime.iso8601>20210812T11:54:57</dateTime.iso8601><!-- transactionDate -->\n           </value>\n       </param>\n       <param>\n           <value>\n               <string>C36994CCF74053D626EA75AA1936DFEBEA9943D65BE2716819FF15E9D03329F4</string><!-- checksum -->\n           </value>\n       </param>\n   </params>\n</methodCall>"
+						},
+						"url": {
+							"raw": "{{caas_url_origin}}{{xml_rpc_port}}{{xml_rpc_endpoint_base}}",
+							"host": [
+								"{{caas_url_origin}}{{xml_rpc_port}}{{xml_rpc_endpoint_base}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "DeductAdjustment",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<methodCall>\n  <methodName>DeductAdjustment</methodName>\n  <params>\n    <param>\n      <value>\n        <string>0022436681</string>\n      </value>\n    </param>\n    <param>\n      <value>\n        <string>{{xml_rpc_reference}}</string>\n      </value>\n    </param>\n    <param>\n      <value>\n        <int>20</int>\n      </value>\n    </param>\n    <param>\n      <value>\n        <string>This is a narrative</string>\n      </value>\n    </param>\n    <param>\n      <value>\n        <string>25104VISA2560202</string>\n      </value>\n    </param>\n    <param>\n      <value>\n        <string>refId</string>\n      </value>\n    </param>\n    <param>\n      <value>\n        <dateTime.iso8601>20211124T09:15:21</dateTime.iso8601>\n      </value>\n    </param>\n    <param>\n      <value>\n        <string>deductAdjustment-001</string>\n      </value>\n    </param>\n    <param>\n      <value>\n        <dateTime.iso8601>20211125T16:15:21</dateTime.iso8601>\n      </value>\n    </param>\n    <param>\n      <value>\n        <string>5FA1265D09F7079F30BE0089BF47A9AE274DDC4AF53ABC5C94FCBB58DD71D473</string>\n      </value>\n    </param>\n  </params>\n</methodCall>"
+						},
+						"url": {
+							"raw": "{{caas_url_origin}}{{xml_rpc_port}}{{xml_rpc_endpoint_base}}",
+							"host": [
+								"{{caas_url_origin}}{{xml_rpc_port}}{{xml_rpc_endpoint_base}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "LoadAuth",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<methodCall>\n    <methodName>LoadAuth</methodName>\n    <params>\n        <param>\n            <value>\n                <string>0022436681</string>\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>{{xml_rpc_reference}}</string>\n            </value>\n        </param>\n        <param>\n            <value>\n                <int>1000</int>\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>1884</string>\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>28</string>\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>00215780601600000219</string>\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>loadAuth-001</string>\n            </value>\n        </param>\n        <param>\n            <value>\n                <dateTime.iso8601>20211206T14:20:40</dateTime.iso8601>\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>7EF547020B0AFC516A5154A266DA2E190EC7DF903B1DE628AC13C7C0EE699E57</string>\n            </value>\n        </param>\n    </params>\n</methodCall>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{caas_url_origin}}{{xml_rpc_port}}{{xml_rpc_endpoint_base}}",
+							"host": [
+								"{{caas_url_origin}}{{xml_rpc_port}}{{xml_rpc_endpoint_base}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Balance",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<methodCall>\n    <methodName>Balance</methodName>\n    <params>\n        <param>\n            <value>\n                <string>0022436681</string>\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>{{xml_rpc_reference}}</string>\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>This is a reference</string>\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>002157613861000015920041200000000000002604601103712127399089060041081234567804205123450490370405002300850025003MAG25110MasterCard252010253044562258010</string>\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>balance-001</string>\n            </value>\n        </param>\n        <param>\n            <value>\n                <dateTime.iso8601>20200824T14:17:06</dateTime.iso8601>\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>46719079E3BACE48D631E0A4361196BEB89C22B8</string>\n            </value>\n        </param>\n    </params>\n</methodCall>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{caas_url_origin}}{{xml_rpc_port}}{{xml_rpc_endpoint_base}}",
+							"host": [
+								"{{caas_url_origin}}{{xml_rpc_port}}{{xml_rpc_endpoint_base}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "DeductReversal",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<methodCall>\n    <methodName>DeductReversal</methodName>\n    <params>\n        <param>\n            <value>\n                <string>0095558802</string><!-- terminalID -->\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>{{xml_rpc_reference}}</string><!-- reference -->\n            </value>\n        </param>\n        <param>\n            <value>\n                <int>50000</int><!-- requestAmount --> \n            </value>\n        </param>\n        <param>\n            <value>\n                <string>PAYPAL *PEACOCKTVLL    2126640138    NY </string><!-- narrative -->\n            </value>\n        </param>\n        <param>\n            <value>\n                <string></string><!-- transactionData (in KLV format; won't be sent) -->\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>deduct-001</string><!-- referenceID -->\n            </value>\n        </param>\n        <param>\n            <value>\n                <dateTime.iso8601>20230130T03:22:30</dateTime.iso8601><!-- referenceDate -->\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>deductReversal-001</string><!-- transactionID -->\n            </value>\n        </param>\n        <param>\n            <value>\n                <dateTime.iso8601>20230130T05:22:54</dateTime.iso8601><!-- transactionDate -->\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>3139CDCE0C0457ADFA560295376C150D55C934E7</string><!-- checksum -->\n            </value>\n        </param>\n    </params>\n</methodCall>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{caas_url_origin}}{{xml_rpc_port}}{{xml_rpc_endpoint_base}}",
+							"host": [
+								"{{caas_url_origin}}{{xml_rpc_port}}{{xml_rpc_endpoint_base}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "3DS OTP (Administrative message)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<methodCall>\n  <methodName>AdministrativeMessage</methodName>\n  <params>\n    <param>\n      <value>\n        <string>0022436681</string> <!-- terminal_id -->\n      </value>\n    </param>\n    <param>\n      <value>\n        <string>{{xml_rpc_reference}}</string> <!-- reference -->\n      </value>\n    </param>\n    <param>\n      <value>\n        <string>3DSecureOTP</string> <!-- message_name -->\n      </value>\n    </param>\n    <param>\n      <value>\n        <string>00215100575000004366004055160004312APP TELMEX 20490348490006135917</string> <!-- message_data (KLV format) -->\n      </value>\n    </param>\n    <param>\n        <value>\n            <string>adminMsg-001</string><!-- transactionID -->\n        </value>\n    </param>\n    <param>\n        <value>\n            <dateTime.iso8601>20211206T10:42:10</dateTime.iso8601><!-- transactionDate -->\n        </value>\n    </param>\n    <param>\n      <value>\n        <string>AC98BEE8C137C04F3C32DB71EC4F1A3741462A9C280C7501FC724B2115F87DB3</string> <!-- checksum -->\n      </value>\n    </param>\n  </params>\n</methodCall>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{caas_url_origin}}{{xml_rpc_port}}{{xml_rpc_endpoint_base}}",
+							"host": [
+								"{{caas_url_origin}}{{xml_rpc_port}}{{xml_rpc_endpoint_base}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "LoadAuthReversal",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "text/xml"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "<methodCall>\n    <methodName>LoadAuthReversal</methodName>\n    <params>\n        <param>\n            <value>\n                <string>22436695</string> <!-- terminalID -->\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>{{xml_rpc_reference}}</string><!-- reference -->\n            </value>\n        </param>\n        <param>\n            <value>\n                <int>2350</int><!-- amount -->\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>cualquier cosa</string><!-- narrative -->\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>25104VISA026045812</string><!-- transactiondata -->\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>refId</string>\n            </value><!-- referenceId -->\n        </param>\n        <param>\n            <value>\n                <dateTime.iso8601>20211206T10:00:57</dateTime.iso8601><!-- referenceDate -->\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>loadAuthReversal-001</string>\n            </value><!-- transactionId -->\n        </param>\n        <param>\n            <value>\n                <dateTime.iso8601>20211206T10:00:57</dateTime.iso8601><!-- transactionDate -->\n            </value>\n        </param>\n        <param>\n            <value>\n                <string>3139CDCE0C0457ADFA560295376C150D55C934E7</string><!-- checksum -->\n            </value>\n        </param>\n    </params>\n</methodCall>",
+							"options": {
+								"raw": {
+									"language": "xml"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{caas_url_origin}}{{xml_rpc_port}}{{xml_rpc_endpoint_base}}",
+							"host": [
+								"{{caas_url_origin}}{{xml_rpc_port}}{{xml_rpc_endpoint_base}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "auth",
+			"item": [
+				{
+					"name": "refresh_customer_connection_token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let responseDataField = pm.response.json().response;",
+									"if (responseDataField != null) {",
+									"    pm.collectionVariables.set(\"Authorization-customer\",responseDataField.oauth_token);",
+									"} else {",
+									"    console.log(\"The data field came back null\");",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Authorization-ecommerce",
+								"value": "{{Authorization-ecommerce}}",
+								"type": "text",
+								"disabled": true
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"customer_refresh_token\":\"{{refresh_token}}\",\n  \"device_id\": \"{{device_id}}\",\n  \"ecommerce_token\": \"{{Authorization-ecommerce}}\",\n  \"extra_login_data\": \"{'idAuth':1,'detail':'detail of login'}\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{caas_url_origin}}{{oauth_port}}{{oauth_endpoint_base}}/refresh-customer-token",
+							"host": [
+								"{{caas_url_origin}}{{oauth_port}}{{oauth_endpoint_base}}"
+							],
+							"path": [
+								"refresh-customer-token"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "get_customer_connection_token",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"let responseDataField = pm.response.json().response;",
+									"if (responseDataField != null) {",
+									"    pm.collectionVariables.set(\"Authorization-customer\",responseDataField.customer_oauth_token);",
+									"} else {",
+									"    console.log(\"The data field came back null\");",
+									"}"
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						},
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									""
+								],
+								"type": "text/javascript",
+								"packages": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "Authorization-ecommerce",
+								"value": "{{Authorization-ecommerce}}"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"client_state\": 9,\n    \"customer_id\": {{customer_id}},\n    \"customer_private_key\": \"{{private_key}}\",\n    \"customer_refresh_token\": \"{{refresh_token}}\",\n    \"device_id\": \"{{device_id}}\",\n    \"ecommerce_token\": \"{{Authorization-ecommerce}}\",\n    \"extra_login_data\": \"{'idAuth':1,'detail':'detail of login'}\"\n}"
+						},
+						"url": {
+							"raw": "{{caas_url_origin}}{{oauth_port}}{{oauth_endpoint_base}}/get-customer-connection-token",
+							"host": [
+								"{{caas_url_origin}}{{oauth_port}}{{oauth_endpoint_base}}"
+							],
+							"path": [
+								"get-customer-connection-token"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "caas_url_origin",
+			"value": "https://sandcaas.undostres.com.mx"
+		},
+		{
+			"key": "xml_rpc_endpoint_base",
+			"value": "/debit/remoteAPI"
+		},
+		{
+			"key": "user_endpoint_base",
+			"value": "/user/v1"
+		},
+		{
+			"key": "debit_endpoint_base",
+			"value": "/debit/v1"
+		},
+		{
+			"key": "oauth_endpoint_base",
+			"value": "/oauth/v1"
+		},
+		{
+			"key": "wallet_http_endpoint_base",
+			"value": "/wallet/v1"
+		},
+		{
+			"key": "debit_port",
+			"value": ""
+		},
+		{
+			"key": "oauth_port",
+			"value": ""
+		},
+		{
+			"key": "wallet_port",
+			"value": ""
+		},
+		{
+			"key": "user_port",
+			"value": ""
+		},
+		{
+			"key": "xml_rpc_port",
+			"value": ""
+		},
+		{
+			"key": "private_key",
+			"value": ""
+		},
+		{
+			"key": "refresh_token",
+			"value": ""
+		},
+		{
+			"key": "customer_id",
+			"value": ""
+		},
+		{
+			"key": "balance_id",
+			"value": ""
+		},
+		{
+			"key": "card_id",
+			"value": ""
+		},
+		{
+			"key": "Authorization-customer",
+			"value": ""
+		},
+		{
+			"key": "Authorization-ecommerce",
+			"value": "M0wBP4SQCyNuAEn7YOq7xhdLsQ0AoSFAD2dhau0QlpXg6y922dUDycOuWX0PWXWP"
+		},
+		{
+			"key": "device_id",
+			"value": "36489660967"
+		},
+		{
+			"key": "email",
+			"value": ""
+		},
+		{
+			"key": "mobile",
+			"value": ""
+		},
+		{
+			"key": "rfc",
+			"value": ""
+		},
+		{
+			"key": "topup_external_transaction_id",
+			"value": ""
+		},
+		{
+			"key": "xml_rpc_reference",
+			"value": ""
+		}
+	]
+}
