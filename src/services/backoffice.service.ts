@@ -1,4 +1,5 @@
 import { buildLogger } from '@/shared/utils';
+import { config } from '@/config';
 import {
   BackofficeLoginRequest,
   BackofficeLoginResponse,
@@ -9,7 +10,7 @@ import {
 const logger = buildLogger('backoffice-service');
 
 export class BackofficeService {
-  private static readonly BASE_URL = 'https://sandcaas.undostres.com.mx';
+  private static readonly BASE_URL = config.backofficeBaseUrl;
   private static readonly OAUTH_ENDPOINT = '/oauth/v1';
 
   static async getCustomerConnectionToken(

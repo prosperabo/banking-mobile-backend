@@ -5,11 +5,11 @@ import {
   BackofficeLoginResponse,
   BackofficeRefreshRequest,
   BackofficeRefreshResponse,
-  BackofficeUser,
 } from '@/types';
 import { buildLogger } from '@/shared/utils';
-import { mockUserData } from '@/data/mock-user.data';
 import { BackofficeService } from '@/services/backoffice.service';
+import { db, config } from '@/config';
+// import bcrypt from 'bcrypt';
 
 const logger = buildLogger('auth-service');
 
@@ -18,31 +18,45 @@ export class AuthService {
     try {
       const { email, password } = loginData;
 
-      const user: BackofficeUser = mockUserData.rs;
-      // const user: BackofficeUser = async getUserByEmail(email); // From DB with updated schema
-
-      if (user.email !== email) {
+      const user = await db.users.findUnique({ where: { email } });
+      if (!user) {
         logger.warn('User not found', { email });
         throw new Error('Credenciales inválidas');
       }
 
-      const mockPassword =
-        '3f0daf3c8b48c259e4c3f8e69edfe8c34f255b7cb95bf66e85e8c596bffdf0a7';
-
-      if (password !== mockPassword) {
+      // Validación en texto plano (la DB tiene contraseñas en texto plano)
+      if (password !== user.password) {
         logger.warn('Invalid password', { userId: user.id });
         throw new Error('Credenciales inválidas');
       }
-      const ecommerceToken = process.env.SANDBOX_TOKEN as string;
-      const deviceId = '36489660967'; // TODO: Get this from device
+
+      // Validación con bcrypt (si las contraseñas estuvieran hasheadas)
+      // const isValidPassword = await bcrypt.compare(password, user.password);
+      // if (!isValidPassword) {
+      //   logger.warn('Invalid password', { userId: user.id });
+      //   throw new Error('Credenciales inválidas');
+      // }
+
+      const authState = await db.backofficeAuthState.findUnique({
+        where: { userId: user.id },
+      });
+      if (!authState) {
+        logger.error('BackofficeAuthState not found for user', {
+          userId: user.id,
+        });
+        throw new Error('Configuración de autenticación no encontrada');
+      }
+
+      const ecommerceToken = config.ecommerceToken;
+      const deviceId = authState.deviceId;
 
       let connectionResp: BackofficeLoginResponse | undefined;
       try {
         const req: BackofficeLoginRequest = {
           client_state: 9,
-          customer_id: user.id,
-          customer_private_key: user.private_key,
-          customer_refresh_token: user.refresh_token,
+          customer_id: authState.externalCustomerId ?? user.id,
+          customer_private_key: authState.privateKey,
+          customer_refresh_token: authState.refreshToken,
           device_id: deviceId,
           ecommerce_token: ecommerceToken,
           extra_login_data: '{"idAuth":1,"detail":"detail of login"}',
@@ -55,7 +69,7 @@ export class AuthService {
 
       if (!connectionResp || !connectionResp.response?.customer_oauth_token) {
         const refreshReq: BackofficeRefreshRequest = {
-          customer_refresh_token: user.refresh_token,
+          customer_refresh_token: authState.refreshToken,
           device_id: deviceId,
           ecommerce_token: ecommerceToken,
           extra_login_data: '{"idAuth":1,"detail":"detail of login"}',
@@ -66,7 +80,7 @@ export class AuthService {
         const normalized = {
           customer_oauth_token: refreshResp.response.oauth_token,
           expiration_timestamp: refreshResp.response.expiration_timestamp,
-          customer_refresh_token: user.refresh_token,
+          customer_refresh_token: authState.refreshToken,
           refresh_expiration_timestamp: '',
           client_state_ret: 9,
         };

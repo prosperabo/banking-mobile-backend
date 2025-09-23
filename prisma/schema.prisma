@@ -8,8 +8,8 @@ datasource db {
 }
 
 model Users {
-  id                         Int               @id @default(autoincrement())
-  email                      String            @unique
+  id                         Int                        @id @default(autoincrement())
+  email                      String                     @unique
   password                   String
   phone                      String?
   completeName               String
@@ -45,19 +45,18 @@ model Users {
   depositReceipt             String?
   universityProfilePhotoLink String?
   rfc                        String?
-  createdAt                  DateTime          @default(now())
+  createdAt                  DateTime                   @default(now())
+  BackofficeAuthState        BackofficeAuthState?
+  BackofficeCustomerProfile  BackofficeCustomerProfile?
+  Cards                      Cards[]
   completedLessons           CompletedLesson[]
+  Transactions               Transactions[]
 }
 
 model VerifiedEmails {
   id         Int      @id @default(autoincrement())
   email      String   @unique
   verifiedAt DateTime @default(now())
-}
-
-enum Gender {
-  MASCULINO
-  FEMENINO
 }
 
 model Module {
@@ -70,16 +69,173 @@ model Lesson {
   id          Int               @id @default(autoincrement())
   index       Int
   moduleId    Int
-  module      Module            @relation(fields: [moduleId], references: [id])
   completions CompletedLesson[]
+  module      Module            @relation(fields: [moduleId], references: [id])
+
+  @@index([moduleId], map: "Lesson_moduleId_fkey")
 }
 
 model CompletedLesson {
   id        Int      @id @default(autoincrement())
   userId    Int
   lessonId  Int
-  user      Users     @relation(fields: [userId], references: [id])
-  lesson    Lesson   @relation(fields: [lessonId], references: [id])
   passed    Boolean
   createdAt DateTime @default(now())
+  lesson    Lesson   @relation(fields: [lessonId], references: [id])
+  user      Users    @relation(fields: [userId], references: [id])
+
+  @@index([lessonId], map: "CompletedLesson_lessonId_fkey")
+  @@index([userId], map: "CompletedLesson_userId_fkey")
+}
+
+model BackofficeAuthState {
+  id                         Int      @id @default(autoincrement())
+  userId                     Int      @unique
+  clientState                Int      @default(9)
+  deviceId                   String
+  privateKey                 String
+  refreshToken               String
+  extraLoginData             String?
+  lastCustomerOauthToken     String?
+  oauthExpirationTimestamp   String?
+  refreshExpirationTimestamp String?
+  externalCustomerId         Int?
+  ewalletId                  Int?
+  defaultBalanceId           Int?
+  lastCardId                 Int?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @default(now())
+  Users                      Users    @relation(fields: [userId], references: [id])
+}
+
+model BackofficeCustomerProfile {
+  id                                Int      @id @default(autoincrement())
+  userId                            Int      @unique
+  account_level                     Int?
+  account_status                    Int?
+  account_status_string             String?
+  address                           String?
+  address_document_back             String?
+  address_document_back_url         String?
+  address_document_front            String?
+  address_document_front_url        String?
+  address_document_type             Int?
+  are_account_resources_of_user     Boolean?
+  business_name                     String?
+  business_purpose                  String?
+  ciabe                             String?
+  city                              String?
+  colony                            String?
+  constitution_date                 String?
+  correspondence_address            String?
+  country_of_birth                  String?
+  date_of_birth                     String?
+  ecommerce_id                      Int?
+  email                             String?
+  exterior                          String?
+  first_name                        String?
+  gender                            Int?
+  gender_string                     String?
+  external_customer_id              Int?
+  identification_document_back      String?
+  identification_document_back_url  String?
+  identification_document_front     String?
+  identification_document_front_url String?
+  identification_document_type      Int?
+  interior                          String?
+  is_business                       Boolean?
+  last_name                         String?
+  mobile                            String?
+  mobile_country_code               String?
+  nationality_id                    Int?
+  oauth_token                       String?
+  occupation_id                     Int?
+  person_type                       Int?
+  private_key                       String?
+  rfc                               String?
+  refresh_token                     String?
+  risk_level                        Int?
+  second_last_name                  String?
+  society_type                      Int?
+  selfie                            String?
+  selfie_url                        String?
+  state_id                          Int?
+  street                            String?
+  telephone                         String?
+  zipcode                           String?
+  ewallet_id                        Int?
+  ewallet_status                    Int?
+  createdAt                         DateTime @default(now())
+  updatedAt                         DateTime @default(now())
+  Users                             Users    @relation(fields: [userId], references: [id])
+}
+
+model Cards {
+  id             Int            @id @default(autoincrement())
+  userId         Int
+  prosperaCardId String?
+  cardType       Cards_cardType
+  cardIdentifier String?
+  status         Cards_status   @default(ACTIVE)
+  encryptedPin   String?
+  maskedNumber   String?
+  expiryDate     String?
+  cvv            String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime
+  Users          Users          @relation(fields: [userId], references: [id])
+  Transactions   Transactions[]
+
+  @@index([userId], map: "Cards_userId_fkey")
+}
+
+model Transactions {
+  id                    Int                 @id @default(autoincrement())
+  userId                Int
+  cardId                Int?
+  type                  Transactions_type
+  amount                Decimal             @db.Decimal(10, 2)
+  externalTransactionId String?
+  status                Transactions_status
+  description           String?
+  prosperaReference     String?
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime
+  Cards                 Cards?              @relation(fields: [cardId], references: [id])
+  Users                 Users               @relation(fields: [userId], references: [id])
+
+  @@index([cardId], map: "Transactions_cardId_fkey")
+  @@index([userId], map: "Transactions_userId_fkey")
+}
+
+enum Gender {
+  MASCULINO
+  FEMENINO
+}
+
+enum Cards_cardType {
+  VIRTUAL
+  PHYSICAL
+}
+
+enum Transactions_type {
+  TOPUP
+  DEDUCT
+  REVERSAL
+  ADJUSTMENT
+  BALANCE_INQUIRY
+}
+
+enum Cards_status {
+  ACTIVE
+  BLOCKED
+  INACTIVE
+  EXPIRED
+}
+
+enum Transactions_status {
+  PENDING
+  COMPLETED
+  FAILED
+  CANCELLED
 }
