@@ -5,7 +5,7 @@ import {
   BackofficeLoginResponse,
   BackofficeRefreshRequest,
   BackofficeRefreshResponse,
-} from '@/types';
+} from '@/schemas';
 
 const logger = buildLogger('backoffice-service');
 

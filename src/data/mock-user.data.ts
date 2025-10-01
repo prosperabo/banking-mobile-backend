@@ -1,4 +1,4 @@
-import { BackofficeCreateUserResponse } from '@/types';
+import { BackofficeCreateUserResponse } from '@/schemas';
 
 export const mockUserData: BackofficeCreateUserResponse = {
   rs: {

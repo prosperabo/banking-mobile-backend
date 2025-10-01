@@ -15,4 +15,6 @@ export const config = {
   backofficeBaseUrl: process.env.BACKOFFICE_BASE_URL,
   ecommerceToken: process.env.ECOMMERCE_TOKEN,
   oauthEndpoint: process.env.OAUTH_ENDPOINT,
+  webhookSecret: process.env.WEBHOOK_SECRET || '',
+  webhookToleranceSeconds: Number(process.env.WEBHOOK_TOLERANCE_SECONDS) || 300,
 };

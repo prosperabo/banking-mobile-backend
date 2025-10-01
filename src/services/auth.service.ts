@@ -5,7 +5,7 @@ import {
   BackofficeLoginResponse,
   BackofficeRefreshRequest,
   BackofficeRefreshResponse,
-} from '@/types';
+} from '@/schemas';
 import { buildLogger } from '@/shared/utils';
 import { BackofficeService } from '@/services/backoffice.service';
 import { db, config } from '@/config';
