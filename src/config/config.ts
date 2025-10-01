@@ -17,4 +17,8 @@ export const config = {
   oauthEndpoint: process.env.OAUTH_ENDPOINT,
   webhookSecret: process.env.WEBHOOK_SECRET || '',
   webhookToleranceSeconds: Number(process.env.WEBHOOK_TOLERANCE_SECONDS) || 300,
+  jwt: {
+    secret: process.env.JWT_SECRET,
+    expiresIn: (process.env.JWT_EXPIRES_IN || '24h') as string,
+  },
 };

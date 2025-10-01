@@ -4,6 +4,10 @@ export interface LoginRequest {
 }
 
 export interface LoginResponse {
+  userId: number;
+  email: string;
+  jwt: string;
+
   response: {
     customer_oauth_token: string;
     expiration_timestamp: string;

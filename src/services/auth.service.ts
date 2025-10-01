@@ -8,7 +8,9 @@ import {
 } from '@/schemas';
 import { buildLogger } from '@/shared/utils';
 import { BackofficeService } from '@/services/backoffice.service';
-import { db, config } from '@/config';
+import { UserRepository } from '@/repositories/user.repository';
+import { JwtService } from '@/services/jwt.service';
+import { config } from '@/config';
 // import bcrypt from 'bcrypt';
 
 const logger = buildLogger('auth-service');
@@ -18,7 +20,7 @@ export class AuthService {
     try {
       const { email, password } = loginData;
 
-      const user = await db.users.findUnique({ where: { email } });
+      const user = await UserRepository.findByEmail(email);
       if (!user) {
         logger.warn('User not found', { email });
         throw new Error('Credenciales inválidas');
@@ -37,9 +39,14 @@ export class AuthService {
       //   throw new Error('Credenciales inválidas');
       // }
 
-      const authState = await db.backofficeAuthState.findUnique({
-        where: { userId: user.id },
+      const jwt = JwtService.generateToken({
+        userId: user.id,
+        email: user.email,
       });
+
+      const userWithAuthState =
+        await UserRepository.findByEmailWithAuthState(email);
+      const authState = userWithAuthState?.BackofficeAuthState;
       if (!authState) {
         logger.error('BackofficeAuthState not found for user', {
           userId: user.id,
@@ -90,7 +97,13 @@ export class AuthService {
           email: user.email,
         });
 
-        return { response: normalized, err: null };
+        return {
+          userId: user.id,
+          email: user.email,
+          jwt,
+          response: normalized,
+          err: null,
+        };
       }
 
       logger.info('User logged in successfully (new connection)', {
@@ -98,7 +111,13 @@ export class AuthService {
         email: user.email,
       });
 
-      return { response: connectionResp.response, err: null };
+      return {
+        userId: user.id,
+        email: user.email,
+        jwt,
+        response: connectionResp.response,
+        err: null,
+      };
     } catch (error) {
       logger.error('Login failed', {
         error: error instanceof Error ? error.message : 'Unknown error',

@@ -14,6 +14,6 @@ export class AuthController {
     const result = await AuthService.login(loginData);
 
     logger.info('Login successful');
-    successHandler(res, 'Inicio de sesión exitoso', JSON.stringify(result));
+    successHandler(res, result, 'Inicio de sesión exitoso');
   });
 }
