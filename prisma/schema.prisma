@@ -173,9 +173,10 @@ model BackofficeCustomerProfile {
 model Cards {
   id             Int            @id @default(autoincrement())
   userId         Int
-  prosperaCardId String?
+  bulkBatchId    Int?
+  prosperaCardId String?        @unique
   cardType       Cards_cardType
-  cardIdentifier String?
+  cardIdentifier String         @unique
   status         Cards_status   @default(ACTIVE)
   encryptedPin   String?
   maskedNumber   String?
@@ -183,10 +184,12 @@ model Cards {
   cvv            String?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime
+  BulkBatch      BulkBatch?     @relation(fields: [bulkBatchId], references: [id])
   Users          Users          @relation(fields: [userId], references: [id])
   Transactions   Transactions[]
 
   @@index([userId], map: "Cards_userId_fkey")
+  @@index([bulkBatchId])
 }
 
 model Transactions {
@@ -206,18 +209,17 @@ model Transactions {
 
   @@index([cardId], map: "Transactions_cardId_fkey")
   @@index([userId], map: "Transactions_userId_fkey")
-  @@unique([externalTransactionId], map: "Transactions_externalTransactionId_key")
 }
 
-model IncomingEvent {
-  id          Int      @id @default(autoincrement())
-  eventId     String   @unique
-  type        String
-  payload     Json
-  receivedAt  DateTime @default(now())
-  processedAt DateTime?
-  status      String   @default("RECEIVED")
-  error       String?
+model BulkBatch {
+  id             Int       @id @default(autoincrement())
+  referenceBatch String    @unique
+  status         Int?
+  numCreated     Int?
+  numFailed      Int?
+  requestedAt    DateTime  @default(now())
+  receivedAt     DateTime?
+  Cards          Cards[]
 }
 
 enum Gender {

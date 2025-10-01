@@ -1,11 +1,17 @@
 import { body } from 'express-validator';
 
-export const cardEventValidator = [
-  body('event_id').isString().notEmpty().withMessage('event_id es requerido'),
-  body('type').isString().notEmpty().withMessage('type es requerido'),
-  body('occurred_at')
+export const bulkOrderCardNotificationValidator = [
+  body('numCreated')
+    .isInt({ min: 0 })
+    .withMessage('numCreated must be an integer greater than or equal to 0'),
+  body('numFailed')
+    .isInt({ min: 0 })
+    .withMessage('numFailed must be an integer greater than or equal to 0'),
+  body('referenceBatch')
     .isString()
     .notEmpty()
-    .withMessage('occurred_at es requerido'),
-  body('data').not().isEmpty().withMessage('data es requerido'),
+    .withMessage('referenceBatch is required and must be a string'),
+  body('status')
+    .isInt({ min: 0 })
+    .withMessage('status must be an integer greater than or equal to 0'),
 ];
