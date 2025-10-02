@@ -1,4 +1,4 @@
-import { buildLogger } from '@/shared/utils';
+import { buildLogger } from '@/utils';
 import { config } from '@/config';
 import {
   BackofficeLoginRequest,

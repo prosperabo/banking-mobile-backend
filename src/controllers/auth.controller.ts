@@ -1,8 +1,9 @@
 import { Request, Response } from 'express';
+
 import { AuthService } from '@/services/auth.service';
 import { LoginRequest } from '@/schemas/auth.schemas';
-import { successHandler, catchErrors } from '@/shared/handlers';
-import { buildLogger } from '@/shared/utils';
+import { catchErrors, successHandler } from '@/shared/handlers';
+import { buildLogger } from '@/utils';
 
 const logger = buildLogger('auth-controller');
 
@@ -14,6 +15,6 @@ export class AuthController {
     const result = await AuthService.login(loginData);
 
     logger.info('Login successful');
-    successHandler(res, result, 'Inicio de sesión exitoso');
+    successHandler(res, result, 'Login successful');
   });
 }

@@ -1,7 +1,7 @@
 import { Response, Request, NextFunction } from 'express';
 import { StatusCodes } from 'http-status-codes';
 
-import { buildLogger } from '@/shared/utils/logger';
+import { buildLogger } from '@/utils';
 
 const logger = buildLogger('ErrorHandler');
 
