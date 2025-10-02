@@ -9,7 +9,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 import { config } from './config';
-import { buildLogger } from './shared/utils';
+import { buildLogger } from './utils';
 import { NodeEnv } from './shared/consts';
 import app from './app';
 

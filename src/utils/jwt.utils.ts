@@ -1,48 +1,40 @@
 import jwt from 'jsonwebtoken';
 import { config } from '@/config';
-import { buildLogger } from '@/shared/utils';
+import { buildLogger } from '@/utils';
 
 const logger = buildLogger('jwt-service');
 
 export interface JwtPayload {
-  status: string;
-  message: string;
-  data: {
+  user: {
     userId: number;
     email: string;
   };
-  backoffice: {
-    customer_oauth_token: string;
-    expiration_timestamp: string;
-    customer_refresh_token: string;
-    refresh_expiration_timestamp: string;
-    client_state_ret: number;
-  };
+  backoffice: BackofficePayload;
   iat?: number;
   exp?: number;
 }
 
-export class JwtService {
+export interface BackofficePayload {
+  customer_oauth_token: string;
+  expiration_timestamp: string;
+  customer_refresh_token: string;
+  refresh_expiration_timestamp: string;
+  client_state_ret: number;
+}
+
+export class JwtUtil {
   private static readonly SECRET = config.jwt.secret;
   private static readonly EXPIRES_IN = config.jwt.expiresIn;
 
   static generateToken(payload: {
     userId: number;
     email: string;
-    backoffice: {
-      customer_oauth_token: string;
-      expiration_timestamp: string;
-      customer_refresh_token: string;
-      refresh_expiration_timestamp: string;
-      client_state_ret: number;
-    };
+    backoffice: BackofficePayload;
   }): string {
     try {
       const token = jwt.sign(
         {
-          status: 'success',
-          message: 'Inicio de sesión exitoso',
-          data: {
+          user: {
             userId: payload.userId,
             email: payload.email,
           },
@@ -72,8 +64,8 @@ export class JwtService {
       const decoded = jwt.verify(token, this.SECRET) as JwtPayload;
 
       logger.info('JWT token verified successfully', {
-        userId: decoded.data.userId,
-        email: decoded.data.email,
+        userId: decoded.user.userId,
+        email: decoded.user.email,
       });
 
       return decoded;
