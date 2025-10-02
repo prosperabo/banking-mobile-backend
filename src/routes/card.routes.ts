@@ -1,14 +1,13 @@
 import { Router } from 'express';
 import { authenticateToken } from '@/middlewares/authenticateToken';
+import { CardController } from '@/controllers/card.controller';
 
 const router = Router();
 
 router.use(authenticateToken);
+
 // Route to get all cards
-router.get('/', (req, res) => {
-  // Logic to fetch and return all cards for the authenticated user
-  res.json({ message: 'Fetch all cards' });
-});
+router.get('/', CardController.getUserCards);
 
 // Route to activate a card
 router.post('/:cardId/activate', (req, res) => {
