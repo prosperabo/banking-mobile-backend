@@ -5,8 +5,19 @@ import { buildLogger } from '@/shared/utils';
 const logger = buildLogger('jwt-service');
 
 export interface JwtPayload {
-  userId: number;
-  email: string;
+  status: string;
+  message: string;
+  data: {
+    userId: number;
+    email: string;
+  };
+  backoffice: {
+    customer_oauth_token: string;
+    expiration_timestamp: string;
+    customer_refresh_token: string;
+    refresh_expiration_timestamp: string;
+    client_state_ret: number;
+  };
   iat?: number;
   exp?: number;
 }
@@ -15,12 +26,27 @@ export class JwtService {
   private static readonly SECRET = config.jwt.secret;
   private static readonly EXPIRES_IN = config.jwt.expiresIn;
 
-  static generateToken(payload: { userId: number; email: string }): string {
+  static generateToken(payload: {
+    userId: number;
+    email: string;
+    backoffice: {
+      customer_oauth_token: string;
+      expiration_timestamp: string;
+      customer_refresh_token: string;
+      refresh_expiration_timestamp: string;
+      client_state_ret: number;
+    };
+  }): string {
     try {
       const token = jwt.sign(
         {
-          userId: payload.userId,
-          email: payload.email,
+          status: 'success',
+          message: 'Inicio de sesión exitoso',
+          data: {
+            userId: payload.userId,
+            email: payload.email,
+          },
+          backoffice: payload.backoffice,
         },
         this.SECRET,
         { expiresIn: '24h' }
@@ -46,8 +72,8 @@ export class JwtService {
       const decoded = jwt.verify(token, this.SECRET) as JwtPayload;
 
       logger.info('JWT token verified successfully', {
-        userId: decoded.userId,
-        email: decoded.email,
+        userId: decoded.data.userId,
+        email: decoded.data.email,
       });
 
       return decoded;

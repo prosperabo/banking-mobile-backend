@@ -39,11 +39,6 @@ export class AuthService {
       //   throw new Error('Credenciales inválidas');
       // }
 
-      const jwt = JwtService.generateToken({
-        userId: user.id,
-        email: user.email,
-      });
-
       const userWithAuthState =
         await UserRepository.findByEmailWithAuthState(email);
       const authState = userWithAuthState?.BackofficeAuthState;
@@ -84,7 +79,7 @@ export class AuthService {
         const refreshResp: BackofficeRefreshResponse =
           await BackofficeService.refreshCustomerToken(refreshReq);
 
-        const normalized = {
+        const backofficeData = {
           customer_oauth_token: refreshResp.response.oauth_token,
           expiration_timestamp: refreshResp.response.expiration_timestamp,
           customer_refresh_token: authState.refreshToken,
@@ -92,19 +87,27 @@ export class AuthService {
           client_state_ret: 9,
         };
 
+        const jwt = JwtService.generateToken({
+          userId: user.id,
+          email: user.email,
+          backoffice: backofficeData,
+        });
+
         logger.info('User logged in via refresh successfully', {
           userId: user.id,
           email: user.email,
         });
 
         return {
-          userId: user.id,
-          email: user.email,
-          jwt,
-          response: normalized,
-          err: null,
+          token: jwt,
         };
       }
+
+      const jwt = JwtService.generateToken({
+        userId: user.id,
+        email: user.email,
+        backoffice: connectionResp.response,
+      });
 
       logger.info('User logged in successfully (new connection)', {
         userId: user.id,
@@ -112,11 +115,7 @@ export class AuthService {
       });
 
       return {
-        userId: user.id,
-        email: user.email,
-        jwt,
-        response: connectionResp.response,
-        err: null,
+        token: jwt,
       };
     } catch (error) {
       logger.error('Login failed', {
