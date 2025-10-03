@@ -2,7 +2,11 @@ import { Request, Response } from 'express';
 
 import { CardService } from '@/services/card.service';
 import { catchErrors, successHandler } from '@/shared/handlers';
-import { ActivateCardRequest } from '@/schemas/card.schemas';
+import {
+  ActivateCardRequest,
+  StopCardRequest,
+  UnstopCardRequest,
+} from '@/schemas/card.schemas';
 import { buildLogger } from '@/utils';
 
 const logger = buildLogger('CardController');
@@ -60,4 +64,42 @@ export class CardController {
       );
     }
   );
+
+  static stopCard = catchErrors(async (req: Request, res: Response) => {
+    const { cardId } = req.params;
+    const { note }: StopCardRequest = req.body;
+    const { customer_oauth_token: customerToken, customerId } = req.backoffice!;
+
+    logger.info('Stopping card', { cardId, note, customerId });
+
+    const result = await CardService.stopCard(
+      Number(cardId),
+      customerToken,
+      customerId,
+      note || 'Card stopped by user request'
+    );
+
+    logger.info('Card stopped successfully', { result });
+
+    return successHandler(res, result, 'Card stopped successfully');
+  });
+
+  static unstopCard = catchErrors(async (req: Request, res: Response) => {
+    const { cardId } = req.params;
+    const { note }: UnstopCardRequest = req.body;
+    const { customer_oauth_token: customerToken, customerId } = req.backoffice!;
+
+    logger.info('Unstopping card', { cardId, note, customerId });
+
+    const result = await CardService.unstopCard(
+      Number(cardId),
+      customerToken,
+      customerId,
+      note || 'Card unblocked by user request'
+    );
+
+    logger.info('Card unstopped successfully', { result });
+
+    return successHandler(res, result, 'Card unstopped successfully');
+  });
 }

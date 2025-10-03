@@ -18,9 +18,6 @@ export const CardRepository = {
   async getCardById(cardId: number) {
     return db.cards.findUnique({
       where: { id: cardId },
-      include: {
-        BulkBatch: true,
-      },
     });
   },
 
