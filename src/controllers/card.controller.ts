@@ -36,4 +36,28 @@ export class CardController {
 
     return successHandler(res, result, 'Card activated successfully');
   });
+
+  static getCardDetailsById = catchErrors(
+    async (req: Request, res: Response) => {
+      const { cardId } = req.params;
+      const { customer_oauth_token: customerToken, customerId } =
+        req.backoffice!;
+
+      logger.info('Fetching card details by ID', { cardId, customerId });
+
+      const cardDetails = await CardService.getCardDetailsById(
+        Number(cardId),
+        customerToken,
+        customerId
+      );
+
+      logger.info('Card details fetched successfully', { cardDetails });
+
+      return successHandler(
+        res,
+        cardDetails,
+        'Card details fetched successfully'
+      );
+    }
+  );
 }
