@@ -20,6 +20,7 @@ export interface BackofficePayload {
   customer_refresh_token: string;
   refresh_expiration_timestamp: string;
   client_state_ret: number;
+  customerId: number;
 }
 
 export class JwtUtil {

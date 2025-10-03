@@ -2,7 +2,14 @@ import winston from 'winston';
 import DailyRotateFile from 'winston-daily-rotate-file';
 
 interface LogMetadata {
-  [key: string]: string | number | boolean | Date | object;
+  [key: string]:
+    | string
+    | number
+    | boolean
+    | Date
+    | object
+    | undefined
+    | unknown;
 }
 
 const logsDirectory = './logs';
