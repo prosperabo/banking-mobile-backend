@@ -45,6 +45,7 @@ export class CardService {
 
     const cardResponse = await CardBackofficeService.getCardInfo(
       customerId,
+      customerToken,
       activatedResponse.payload.card_id
     );
 
@@ -72,5 +73,34 @@ export class CardService {
     }
 
     return card;
+  }
+
+  static async getCardDetailsById(
+    cardId: number,
+    customerToken: string,
+    customerId: number
+  ) {
+    logger.info(`Fetching card details for cardId: ${cardId}`);
+
+    const card = await CardRepository.getCardById(cardId);
+
+    if (!card || !card.prosperaCardId) {
+      logger.error(
+        `Card with ID ${cardId} not found or missing prosperaCardId`
+      );
+      throw new Error('Card not found or invalid prosperaCardId');
+    }
+
+    logger.info(`Found card with prosperaCardId: ${card.prosperaCardId}`);
+
+    const cardInfo = await CardBackofficeService.getCardInfo(
+      customerId,
+      customerToken,
+      Number(card.prosperaCardId)
+    );
+
+    logger.info('Card info fetched successfully from backoffice', { cardInfo });
+
+    return cardInfo.payload.cards[0];
   }
 }

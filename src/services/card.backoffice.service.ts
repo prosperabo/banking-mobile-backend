@@ -33,6 +33,7 @@ export class CardBackofficeService {
 
   static async getCardInfo(
     customerId: number,
+    customerToken: string,
     cardId?: number
   ): Promise<GetCardInfoResponse> {
     logger.info('Fetching card info for customerId and cardId:', {
@@ -46,6 +47,9 @@ export class CardBackofficeService {
         params: {
           customer_id: customerId,
           card_id: cardId,
+        },
+        headers: {
+          'Authorization-customer': customerToken,
         },
       }
     );
