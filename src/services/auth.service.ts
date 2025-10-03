@@ -83,6 +83,7 @@ export class AuthService {
         customer_refresh_token: authState.refreshToken,
         refresh_expiration_timestamp: '',
         client_state_ret: 9,
+        customerId: authState.externalCustomerId,
       };
 
       const jwt = JwtUtil.generateToken({
@@ -104,7 +105,10 @@ export class AuthService {
     const jwt = JwtUtil.generateToken({
       userId: user.id,
       email: user.email,
-      backoffice: connectionResp.response,
+      backoffice: {
+        ...connectionResp.response,
+        customerId: authState.externalCustomerId,
+      },
     });
 
     logger.info('User logged in successfully (new connection)', {

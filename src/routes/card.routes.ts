@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import { authenticateToken } from '@/middlewares/authenticateToken';
 import { CardController } from '@/controllers/card.controller';
+import { validateActivateCard } from '@/validators/card.validator';
+import { validateRequest } from '@/middlewares';
 
 const router = Router();
 
@@ -10,11 +12,11 @@ router.use(authenticateToken);
 router.get('/', CardController.getUserCards);
 
 // Route to activate a card
-router.post('/:cardId/activate', (req, res) => {
-  const { cardId } = req.params;
-  // Logic to activate the card with the given cardId
-  res.json({ message: `Card ${cardId} activated` });
-});
+router.post(
+  '/:cardId/activate',
+  validateRequest(...validateActivateCard),
+  CardController.activateCard
+);
 
 // Route to block a card
 router.post('/:cardId/block', (req, res) => {
