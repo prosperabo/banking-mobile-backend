@@ -3,6 +3,8 @@ import { authenticateToken } from '@/middlewares/authenticateToken';
 import { CardController } from '@/controllers/card.controller';
 import {
   activateCardValidator,
+  stopCardValidator,
+  unstopCardValidator,
   cardIdParamValidator,
 } from '@/validators/card.validator';
 import { validateRequest } from '@/middlewares';
@@ -27,19 +29,19 @@ router.get(
   CardController.getCardDetailsById
 );
 
-// Route to block a card
-router.post('/:cardId/block', (req, res) => {
-  const { cardId } = req.params;
-  // Logic to block the card with the given cardId
-  res.json({ message: `Card ${cardId} blocked` });
-});
+// Route to stop (block) a card
+router.post(
+  '/:cardId/stop',
+  validateRequest(...cardIdParamValidator, ...stopCardValidator),
+  CardController.stopCard
+);
 
-// Route to unblock a card
-router.post('/:cardId/unblock', (req, res) => {
-  const { cardId } = req.params;
-  // Logic to unblock the card with the given cardId
-  res.json({ message: `Card ${cardId} unblocked` });
-});
+// Route to unstop (unblock) a card
+router.post(
+  '/:cardId/unstop',
+  validateRequest(...cardIdParamValidator, ...unstopCardValidator),
+  CardController.unstopCard
+);
 
 // Route to get card details by ID
 

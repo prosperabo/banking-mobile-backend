@@ -8,10 +8,33 @@ const activateCardValidator = [
     .withMessage('PIN must be between 4 and 6 characters long'),
 ];
 
+const stopCardValidator = [
+  body('note')
+    .optional()
+    .isString()
+    .withMessage('Note must be a string')
+    .isLength({ max: 255 })
+    .withMessage('Note must not exceed 255 characters'),
+];
+
+const unstopCardValidator = [
+  body('note')
+    .optional()
+    .isString()
+    .withMessage('Note must be a string')
+    .isLength({ max: 255 })
+    .withMessage('Note must not exceed 255 characters'),
+];
+
 const cardIdParamValidator = [
   param('cardId')
     .isInt({ gt: 0 })
     .withMessage('Card ID must be a positive integer'),
 ];
 
-export { activateCardValidator, cardIdParamValidator };
+export {
+  activateCardValidator,
+  stopCardValidator,
+  unstopCardValidator,
+  cardIdParamValidator,
+};

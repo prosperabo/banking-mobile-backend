@@ -32,3 +32,40 @@ export type GetCardInfoResponse = ApiResponse<GetCardInfoResponsePayload>;
 export interface ActivateCardRequest {
   pin: string;
 }
+
+export interface StopCardParams {
+  card_id: number;
+  customer_id: number;
+  new_card_status: number;
+  note: string;
+}
+
+export interface StopCardResponsePayload {
+  message: string;
+  card_id: number;
+  status: number;
+}
+
+export type StopCardResponse = ApiResponse<StopCardResponsePayload>;
+
+export interface StopCardRequest {
+  note?: string;
+}
+
+export interface UnstopCardParams {
+  customer_id: number;
+  card_id: number;
+  note: string;
+}
+
+export interface UnstopCardResponsePayload {
+  message: string;
+  card_id: number;
+  status: number;
+}
+
+export type UnstopCardResponse = ApiResponse<UnstopCardResponsePayload>;
+
+export interface UnstopCardRequest {
+  note?: string;
+}

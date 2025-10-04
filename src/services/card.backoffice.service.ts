@@ -3,6 +3,10 @@ import {
   ActivateCardParams,
   ActivateCardResponse,
   GetCardInfoResponse,
+  StopCardParams,
+  StopCardResponse,
+  UnstopCardParams,
+  UnstopCardResponse,
 } from '@/schemas/card.schemas';
 import { buildLogger } from '@/utils';
 
@@ -55,6 +59,50 @@ export class CardBackofficeService {
     );
 
     logger.info('Card info fetched successfully. Response:', {
+      response: response.data,
+    });
+    return response.data;
+  }
+
+  static async stopCard(
+    params: StopCardParams,
+    customerToken: string
+  ): Promise<StopCardResponse> {
+    logger.info('Stopping card with params:', { params });
+
+    const response = await backOfficeInstance.post<StopCardResponse>(
+      '/debit/v1/stop',
+      params,
+      {
+        headers: {
+          'Authorization-customer': customerToken,
+        },
+      }
+    );
+
+    logger.info('Card stopped successfully. Response:', {
+      response: response.data,
+    });
+    return response.data;
+  }
+
+  static async unstopCard(
+    params: UnstopCardParams,
+    customerToken: string
+  ): Promise<UnstopCardResponse> {
+    logger.info('Unstopping card with params:', { params });
+
+    const response = await backOfficeInstance.post<UnstopCardResponse>(
+      '/debit/v1/unstop',
+      params,
+      {
+        headers: {
+          'Authorization-customer': customerToken,
+        },
+      }
+    );
+
+    logger.info('Card unstopped successfully. Response:', {
       response: response.data,
     });
     return response.data;

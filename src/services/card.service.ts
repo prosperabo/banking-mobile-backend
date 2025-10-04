@@ -3,6 +3,10 @@ import { formatMaskedNumber } from '@/utils/card.utils';
 import { ActivateCardResponse } from '@/schemas/card.schemas';
 import { buildLogger } from '@/utils';
 import { CardBackofficeService } from '@/services/card.backoffice.service';
+import {
+  StopCardResponsePayload,
+  UnstopCardResponsePayload,
+} from '@/schemas/card.schemas';
 
 const logger = buildLogger('CardService');
 
@@ -99,8 +103,109 @@ export class CardService {
       Number(card.prosperaCardId)
     );
 
-    logger.info('Card info fetched successfully from backoffice', { cardInfo });
+    logger.info('Card info fetched successfully from backoffice', {
+      cardInfo,
+      hasPayload: !!cardInfo?.payload,
+      hasCards: !!cardInfo?.payload?.cards,
+      cardsLength: cardInfo?.payload?.cards?.length,
+    });
+
+    if (!cardInfo || !cardInfo.payload) {
+      logger.error('Invalid card info response: missing payload', { cardInfo });
+      throw new Error('Invalid response from card service: missing payload');
+    }
+
+    if (
+      !cardInfo.payload.cards ||
+      !Array.isArray(cardInfo.payload.cards) ||
+      cardInfo.payload.cards.length === 0
+    ) {
+      logger.error('Invalid card info response: no cards found in payload', {
+        payload: cardInfo.payload,
+        cardsType: typeof cardInfo.payload.cards,
+        cardsIsArray: Array.isArray(cardInfo.payload.cards),
+      });
+      throw new Error('No card information found in response');
+    }
 
     return cardInfo.payload.cards[0];
+  }
+
+  static async stopCard(
+    cardId: number,
+    customerToken: string,
+    customerId: number,
+    note = 'Card stopped'
+  ): Promise<StopCardResponsePayload> {
+    logger.info(`Stopping card ${cardId} for customer ${customerId}`);
+
+    const card = await CardRepository.getCardById(cardId);
+    if (!card?.prosperaCardId) {
+      throw new Error('Card not found or missing prosperaCardId');
+    }
+
+    logger.info(
+      `Proceeding directly to stop for card ${cardId} with prosperaCardId: ${card.prosperaCardId}`
+    );
+
+    const stopResponse = await CardBackofficeService.stopCard(
+      {
+        card_id: Number(card.prosperaCardId),
+        customer_id: customerId,
+        new_card_status: 3,
+        note,
+      },
+      customerToken
+    );
+
+    logger.info(`Card ${cardId} stopped successfully`);
+    return {
+      ...stopResponse.payload,
+    };
+  }
+
+  static async unstopCard(
+    cardId: number,
+    customerToken: string,
+    customerId: number,
+    note = 'Card unblocked'
+  ): Promise<Omit<UnstopCardResponsePayload, 'message'>> {
+    logger.info(`Unstopping card ${cardId} for customer ${customerId}`);
+
+    try {
+      const card = await CardRepository.getCardById(cardId);
+      if (!card?.prosperaCardId) {
+        logger.error(
+          `Card ${cardId} not found in database or missing prosperaCardId`
+        );
+        throw new Error('Card not found or missing prosperaCardId');
+      }
+
+      logger.info(
+        `Found card in database with prosperaCardId: ${card.prosperaCardId}`
+      );
+
+      logger.info(
+        `Skipping validation and proceeding directly to unstop for card ${cardId}`
+      );
+
+      const unstopResponse = await CardBackofficeService.unstopCard(
+        {
+          customer_id: customerId,
+          card_id: Number(card.prosperaCardId),
+          note,
+        },
+        customerToken
+      );
+
+      logger.info(`Card ${cardId} unstopped successfully`);
+      return {
+        card_id: unstopResponse.payload.card_id,
+        status: unstopResponse.payload.status,
+      };
+    } catch (error) {
+      logger.error(`Error unstopping card ${cardId}:`, { error });
+      throw error;
+    }
   }
 }
