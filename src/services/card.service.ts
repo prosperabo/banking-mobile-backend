@@ -38,7 +38,7 @@ export class CardService {
     const activatedResponse = await CardBackofficeService.activateCard(
       {
         card_identifier: card.cardIdentifier,
-        reference_batch: 'TEMP_BATCH',
+        reference_batch: card.BulkBatch!.referenceBatch,
         pin,
         customer_id: customerId.toString(),
       },
