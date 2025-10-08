@@ -7,6 +7,7 @@ import {
   StopCardResponse,
   UnstopCardParams,
   UnstopCardResponse,
+  ViewPinForCustomerResponse,
 } from '@/schemas/card.schemas';
 import { buildLogger } from '@/utils';
 
@@ -61,6 +62,31 @@ export class CardBackofficeService {
     logger.info('Card info fetched successfully. Response:', {
       response: response.data,
     });
+    return response.data;
+  }
+
+  static async viewPinForCustomer(
+    card_backoffice_id: number,
+    customerToken: string
+  ): Promise<ViewPinForCustomerResponse> {
+    logger.info('Viewing pin for customer with params:', {
+      card_backoffice_id,
+    });
+
+    const response = await backOfficeInstance.post<ViewPinForCustomerResponse>(
+      '/debit/v1/viewPinForCustomer',
+      { card_id: card_backoffice_id },
+      {
+        headers: {
+          'Authorization-customer': customerToken,
+        },
+      }
+    );
+
+    logger.info('Pin fetched successfully. Response:', {
+      response: response.data,
+    });
+
     return response.data;
   }
 

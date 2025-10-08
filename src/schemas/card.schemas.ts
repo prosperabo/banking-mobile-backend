@@ -33,6 +33,12 @@ export interface ActivateCardRequest {
   pin: string;
 }
 
+export interface viewPinForCustomerPayload {
+  pin: string;
+}
+
+export type ViewPinForCustomerResponse = ApiResponse<viewPinForCustomerPayload>;
+
 export interface StopCardParams {
   card_id: number;
   customer_id: number;

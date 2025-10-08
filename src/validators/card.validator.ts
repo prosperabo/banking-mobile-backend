@@ -1,4 +1,4 @@
-import { param, body } from 'express-validator';
+import { param, body, query } from 'express-validator';
 
 const activateCardValidator = [
   body('pin')
@@ -32,9 +32,22 @@ const cardIdParamValidator = [
     .withMessage('Card ID must be a positive integer'),
 ];
 
+const cardPinQueryValidator = [
+  query('pin')
+    .exists()
+    .withMessage('PIN is required')
+    .bail()
+    .isLength({ min: 4, max: 6 })
+    .withMessage('PIN must be between 4 and 6 characters long')
+    .bail()
+    .matches(/^\d+$/)
+    .withMessage('PIN must contain only digits'),
+];
+
 export {
   activateCardValidator,
   stopCardValidator,
   unstopCardValidator,
   cardIdParamValidator,
+  cardPinQueryValidator,
 };

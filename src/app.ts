@@ -1,6 +1,7 @@
 import express, { Application, Request as ExpressRequest } from 'express';
 import morgan from 'morgan';
 import cors from 'cors';
+import { expressErrorHandler } from './shared/handlers';
 import router from './routes';
 import { config } from './config';
 
@@ -26,5 +27,9 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 app.use(`/api/v${version}`, router);
+
+// Global error handler (must be registered after routes)
+
+app.use(expressErrorHandler);
 
 export default app;
