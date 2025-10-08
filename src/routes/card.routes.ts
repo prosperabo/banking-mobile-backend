@@ -6,8 +6,9 @@ import {
   stopCardValidator,
   unstopCardValidator,
   cardIdParamValidator,
+  cardPinQueryValidator,
 } from '@/validators/card.validator';
-import { validateRequest } from '@/middlewares';
+import { validateRequest, validateCardPin } from '@/middlewares';
 
 const router = Router();
 
@@ -25,21 +26,32 @@ router.post(
 
 router.get(
   '/:cardId/details',
-  validateRequest(...cardIdParamValidator),
+  validateRequest(...cardIdParamValidator, ...cardPinQueryValidator),
+  validateCardPin(),
   CardController.getCardDetailsById
 );
 
 // Route to stop (block) a card
 router.post(
   '/:cardId/stop',
-  validateRequest(...cardIdParamValidator, ...stopCardValidator),
+  validateRequest(
+    ...cardIdParamValidator,
+    ...cardPinQueryValidator,
+    ...stopCardValidator
+  ),
+  validateCardPin(),
   CardController.stopCard
 );
 
 // Route to unstop (unblock) a card
 router.post(
   '/:cardId/unstop',
-  validateRequest(...cardIdParamValidator, ...unstopCardValidator),
+  validateRequest(
+    ...cardIdParamValidator,
+    ...cardPinQueryValidator,
+    ...unstopCardValidator
+  ),
+  validateCardPin(),
   CardController.unstopCard
 );
 
