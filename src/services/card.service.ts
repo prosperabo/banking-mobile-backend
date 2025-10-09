@@ -158,6 +158,8 @@ export class CardService {
       customerToken
     );
 
+    await CardRepository.updateCard(cardId, { status: 'BLOCKED' });
+
     logger.info(`Card ${cardId} stopped successfully`);
     return {
       ...stopResponse.payload,
@@ -172,40 +174,37 @@ export class CardService {
   ): Promise<Omit<UnstopCardResponsePayload, 'message'>> {
     logger.info(`Unstopping card ${cardId} for customer ${customerId}`);
 
-    try {
-      const card = await CardRepository.getCardById(cardId);
-      if (!card?.prosperaCardId) {
-        logger.error(
-          `Card ${cardId} not found in database or missing prosperaCardId`
-        );
-        throw new Error('Card not found or missing prosperaCardId');
-      }
-
-      logger.info(
-        `Found card in database with prosperaCardId: ${card.prosperaCardId}`
+    const card = await CardRepository.getCardById(cardId);
+    if (!card?.prosperaCardId) {
+      logger.error(
+        `Card ${cardId} not found in database or missing prosperaCardId`
       );
-
-      logger.info(
-        `Skipping validation and proceeding directly to unstop for card ${cardId}`
-      );
-
-      const unstopResponse = await CardBackofficeService.unstopCard(
-        {
-          customer_id: customerId,
-          card_id: Number(card.prosperaCardId),
-          note,
-        },
-        customerToken
-      );
-
-      logger.info(`Card ${cardId} unstopped successfully`);
-      return {
-        card_id: unstopResponse.payload.card_id,
-        status: unstopResponse.payload.status,
-      };
-    } catch (error) {
-      logger.error(`Error unstopping card ${cardId}:`, { error });
-      throw error;
+      throw new Error('Card not found or missing prosperaCardId');
     }
+
+    logger.info(
+      `Found card in database with prosperaCardId: ${card.prosperaCardId}`
+    );
+
+    logger.info(
+      `Skipping validation and proceeding directly to unstop for card ${cardId}`
+    );
+
+    const unstopResponse = await CardBackofficeService.unstopCard(
+      {
+        customer_id: customerId,
+        card_id: Number(card.prosperaCardId),
+        note,
+      },
+      customerToken
+    );
+
+    await CardRepository.updateCard(cardId, { status: 'ACTIVE' });
+
+    logger.info(`Card ${cardId} unstopped successfully`);
+    return {
+      card_id: unstopResponse.payload.card_id,
+      status: unstopResponse.payload.status,
+    };
   }
 }
