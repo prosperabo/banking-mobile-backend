@@ -7,6 +7,7 @@ import {
   StopCardResponsePayload,
   UnstopCardResponsePayload,
 } from '@/schemas/card.schemas';
+import { db } from '@/config/prisma';
 
 const logger = buildLogger('CardService');
 
@@ -35,12 +36,25 @@ export class CardService {
       throw new Error('Card not found');
     }
 
+    const backofficeProfile = await db.backofficeCustomerProfile.findUnique({
+      where: { userId: card.userId },
+      select: { ewallet_id: true },
+    });
+
+    if (!backofficeProfile || !backofficeProfile.ewallet_id) {
+      logger.error(`No ewallet_id found for user ${card.userId}`);
+      throw new Error('User ewallet not found');
+    }
+
     const activatedResponse = await CardBackofficeService.activateCard(
       {
         card_identifier: card.cardIdentifier,
         reference_batch: card.BulkBatch!.referenceBatch,
         pin,
         customer_id: customerId.toString(),
+        balance: {
+          id: backofficeProfile.ewallet_id,
+        },
       },
       customerToken
     );
