@@ -5,6 +5,9 @@ export interface ActivateCardParams {
   reference_batch: string;
   pin: string;
   customer_id: string;
+  balance: {
+    id: number;
+  };
 }
 
 export interface ActivateCardResponsePayload {
