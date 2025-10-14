@@ -4,95 +4,93 @@ export const updateUserValidator = [
   body('completeName')
     .optional()
     .isLength({ min: 1, max: 255 })
-    .withMessage('El nombre debe tener entre 1 y 255 caracteres'),
+    .withMessage('Complete name must be between 1 and 255 characters'),
   body('phone')
     .optional()
     .isLength({ min: 10, max: 20 })
-    .withMessage('El teléfono debe tener entre 10 y 20 caracteres'),
+    .withMessage('Phone must be between 10 and 20 characters'),
   body('birthCountry')
     .optional()
     .isLength({ min: 1, max: 100 })
-    .withMessage('El país de nacimiento debe tener entre 1 y 100 caracteres'),
+    .withMessage('Birth country must be between 1 and 100 characters'),
   body('postalCode')
     .optional()
     .isLength({ min: 1, max: 10 })
-    .withMessage('El código postal debe tener entre 1 y 10 caracteres'),
+    .withMessage('Postal code must be between 1 and 10 characters'),
   body('state')
     .optional()
     .isLength({ min: 1, max: 100 })
-    .withMessage('El estado debe tener entre 1 y 100 caracteres'),
+    .withMessage('State must be between 1 and 100 characters'),
   body('country')
     .optional()
     .isLength({ min: 1, max: 100 })
-    .withMessage('El país debe tener entre 1 y 100 caracteres'),
+    .withMessage('Country must be between 1 and 100 characters'),
   body('municipality')
     .optional()
     .isLength({ min: 1, max: 100 })
-    .withMessage('El municipio debe tener entre 1 y 100 caracteres'),
+    .withMessage('Municipality must be between 1 and 100 characters'),
   body('street')
     .optional()
     .isLength({ min: 1, max: 255 })
-    .withMessage('La calle debe tener entre 1 y 255 caracteres'),
+    .withMessage('Street must be between 1 and 255 characters'),
   body('colony')
     .optional()
     .isLength({ min: 1, max: 100 })
-    .withMessage('La colonia debe tener entre 1 y 100 caracteres'),
+    .withMessage('Colony must be between 1 and 100 characters'),
   body('externalNumber')
     .optional()
     .isLength({ min: 1, max: 20 })
-    .withMessage('El número exterior debe tener entre 1 y 20 caracteres'),
+    .withMessage('External number must be between 1 and 20 characters'),
   body('internalNumber')
     .optional()
     .isLength({ min: 1, max: 20 })
-    .withMessage('El número interior debe tener entre 1 y 20 caracteres'),
+    .withMessage('Internal number must be between 1 and 20 characters'),
   body('occupation')
     .optional()
     .isLength({ min: 1, max: 100 })
-    .withMessage('La ocupación debe tener entre 1 y 100 caracteres'),
+    .withMessage('Occupation must be between 1 and 100 characters'),
   body('sector')
     .optional()
     .isLength({ min: 1, max: 100 })
-    .withMessage('El sector debe tener entre 1 y 100 caracteres'),
+    .withMessage('Sector must be between 1 and 100 characters'),
   body('mainActivity')
     .optional()
     .isLength({ min: 1, max: 255 })
-    .withMessage('La actividad principal debe tener entre 1 y 255 caracteres'),
+    .withMessage('Main activity must be between 1 and 255 characters'),
   body('monthlyIncome')
     .optional()
     .isNumeric()
-    .withMessage('El ingreso mensual debe ser un número'),
+    .withMessage('Monthly income must be a number'),
   body('monthlyOutcome')
     .optional()
     .isNumeric()
-    .withMessage('El egreso mensual debe ser un número'),
+    .withMessage('Monthly outcome must be a number'),
   body('hasOtherCreditCards')
     .optional()
     .isBoolean()
-    .withMessage('¿Tiene otras tarjetas? debe ser un valor booleano'),
+    .withMessage('Has other credit cards must be a boolean value'),
   body('universityRegistration')
     .optional()
     .isInt({ min: 0 })
-    .withMessage(
-      'El registro universitario debe ser un número entero positivo'
-    ),
+    .withMessage('University registration must be a positive integer'),
   body('creditLimit')
     .optional()
     .isNumeric()
-    .withMessage('El límite de crédito debe ser un número'),
+    .withMessage('Credit limit must be a number'),
   body('interestRate')
     .optional()
     .isFloat({ min: 0, max: 100 })
-    .withMessage('La tasa de interés debe estar entre 0 y 100'),
+    .withMessage('Interest rate must be between 0 and 100'),
   body('paymentDates')
     .optional()
     .isLength({ min: 1, max: 255 })
-    .withMessage('Las fechas de pago deben tener entre 1 y 255 caracteres'),
+    .withMessage('Payment dates must be between 1 and 255 characters'),
   body('initialDeposit')
     .optional()
     .isNumeric()
-    .withMessage('El depósito inicial debe ser un número'),
+    .withMessage('Initial deposit must be a number'),
   body('rfc')
     .optional()
     .isLength({ min: 13, max: 13 })
-    .withMessage('El RFC debe tener exactamente 13 caracteres'),
+    .withMessage('RFC must be exactly 13 characters'),
 ];

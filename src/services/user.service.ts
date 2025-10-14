@@ -15,7 +15,7 @@ export class UserService {
     const user = await UserRepository.findById(userId);
     if (!user) {
       logger.error(`User ${userId} not found`);
-      throw new Error('Usuario no encontrado');
+      throw new Error('User not found');
     }
 
     const {
@@ -95,7 +95,7 @@ export class UserService {
 
     return {
       id: userId,
-      message: 'Usuario actualizado correctamente',
+      message: 'User updated successfully',
     };
   }
 }

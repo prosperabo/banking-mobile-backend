@@ -16,7 +16,7 @@ export class UserController {
     const result = await UserService.getUserById(userId);
 
     logger.info('User data retrieved successfully', { userId });
-    successHandler(res, result, 'Datos de usuario obtenidos correctamente');
+    successHandler(res, result, 'User data retrieved successfully');
   });
 
   static updateUser = catchErrors(async (req: Request, res: Response) => {
@@ -28,6 +28,6 @@ export class UserController {
     const result = await UserService.updateUser(userId, updateData);
 
     logger.info('User updated successfully', { userId });
-    successHandler(res, result, 'Usuario actualizado correctamente');
+    successHandler(res, result, 'User updated successfully');
   });
 }
