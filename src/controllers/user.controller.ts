@@ -1,7 +1,10 @@
 import { Request, Response } from 'express';
 
 import { UserService } from '@/services/user.service';
-import { UpdateUserRequest } from '@/schemas/user.schemas';
+import {
+  UpdateUserRequest,
+  ChangePasswordRequest,
+} from '@/schemas/user.schemas';
 import { catchErrors, successHandler } from '@/shared/handlers';
 import { buildLogger } from '@/utils';
 
@@ -29,5 +32,17 @@ export class UserController {
 
     logger.info('User updated successfully', { userId });
     successHandler(res, result, 'User updated successfully');
+  });
+
+  static changePassword = catchErrors(async (req: Request, res: Response) => {
+    const userId = req.user!.userId;
+
+    logger.info('Changing password for user', { userId });
+
+    const passwordData: ChangePasswordRequest = req.body;
+    const result = await UserService.changePassword(userId, passwordData);
+
+    logger.info('Password changed successfully', { userId });
+    successHandler(res, result, 'Password changed successfully');
   });
 }
