@@ -27,4 +27,11 @@ export class UserRepository {
       },
     });
   }
+
+  static async updateUser(id: number, data: Partial<Users>): Promise<Users> {
+    return await db.users.update({
+      where: { id },
+      data,
+    });
+  }
 }

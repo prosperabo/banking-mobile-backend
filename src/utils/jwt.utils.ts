@@ -8,6 +8,7 @@ export interface JwtPayload {
   user: {
     userId: number;
     email: string;
+    username: string;
   };
   backoffice: BackofficePayload;
   iat?: number;
@@ -30,6 +31,7 @@ export class JwtUtil {
   static generateToken(payload: {
     userId: number;
     email: string;
+    username: string;
     backoffice: BackofficePayload;
   }): string {
     try {
@@ -38,6 +40,7 @@ export class JwtUtil {
           user: {
             userId: payload.userId,
             email: payload.email,
+            username: payload.username,
           },
           backoffice: payload.backoffice,
         },

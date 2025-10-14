@@ -89,6 +89,7 @@ export class AuthService {
       const jwt = JwtUtil.generateToken({
         userId: user.id,
         email: user.email,
+        username: user.completeName,
         backoffice: backofficeData,
       });
 
@@ -105,6 +106,7 @@ export class AuthService {
     const jwt = JwtUtil.generateToken({
       userId: user.id,
       email: user.email,
+      username: user.completeName,
       backoffice: {
         ...connectionResp.response,
         customerId: authState.externalCustomerId,
