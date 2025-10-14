@@ -9,12 +9,7 @@ const logger = buildLogger('user-controller');
 
 export class UserController {
   static getUser = catchErrors(async (req: Request, res: Response) => {
-    const userId = req.user?.userId;
-
-    if (!userId) {
-      logger.error('User ID not found in token');
-      throw new Error('Usuario no autenticado');
-    }
+    const userId = req.user!.userId;
 
     logger.info('Getting user data', { userId });
 
@@ -25,12 +20,7 @@ export class UserController {
   });
 
   static updateUser = catchErrors(async (req: Request, res: Response) => {
-    const userId = req.user?.userId;
-
-    if (!userId) {
-      logger.error('User ID not found in token');
-      throw new Error('Usuario no autenticado');
-    }
+    const userId = req.user!.userId;
 
     logger.info('Updating user', { userId, body: req.body });
 

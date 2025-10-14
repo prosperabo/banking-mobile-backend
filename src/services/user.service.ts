@@ -18,36 +18,68 @@ export class UserService {
       throw new Error('Usuario no encontrado');
     }
 
+    const {
+      id,
+      email,
+      completeName,
+      phone,
+      gender,
+      birthDate,
+      birthCountry,
+      curp,
+      postalCode,
+      state,
+      country,
+      municipality,
+      street,
+      colony,
+      externalNumber,
+      internalNumber,
+      occupation,
+      sector,
+      mainActivity,
+      monthlyIncome,
+      monthlyOutcome,
+      hasOtherCreditCards,
+      universityRegistration,
+      creditLimit,
+      interestRate,
+      paymentDates,
+      initialDeposit,
+      rfc,
+      createdAt,
+    } = user;
+
     return {
-      id: user.id,
-      email: user.email,
-      completeName: user.completeName,
-      phone: user.phone || undefined,
-      gender: user.gender,
-      birthDate: user.birthDate.toISOString(),
-      birthCountry: user.birthCountry,
-      curp: user.curp,
-      postalCode: user.postalCode,
-      state: user.state,
-      country: user.country,
-      municipality: user.municipality,
-      street: user.street,
-      colony: user.colony,
-      externalNumber: user.externalNumber,
-      internalNumber: user.internalNumber,
-      occupation: user.occupation || undefined,
-      sector: user.sector || undefined,
-      mainActivity: user.mainActivity || undefined,
-      monthlyIncome: user.monthlyIncome || undefined,
-      monthlyOutcome: user.monthlyOutcome || undefined,
-      hasOtherCreditCards: user.hasOtherCreditCards || undefined,
-      universityRegistration: user.universityRegistration || undefined,
-      creditLimit: user.creditLimit || undefined,
-      interestRate: user.interestRate || undefined,
-      paymentDates: user.paymentDates || undefined,
-      initialDeposit: user.initialDeposit || undefined,
-      rfc: user.rfc || undefined,
-      createdAt: user.createdAt.toISOString(),
+      id,
+      email,
+      completeName,
+      phone,
+      gender,
+      birthDate: birthDate.toISOString(),
+      birthCountry,
+      curp,
+      postalCode,
+      state,
+      country,
+      municipality,
+      street,
+      colony,
+      externalNumber,
+      internalNumber,
+      occupation,
+      sector,
+      mainActivity,
+      monthlyIncome,
+      monthlyOutcome,
+      hasOtherCreditCards,
+      universityRegistration,
+      creditLimit,
+      interestRate,
+      paymentDates,
+      initialDeposit,
+      rfc,
+      createdAt: createdAt.toISOString(),
     };
   }
 
@@ -56,12 +88,6 @@ export class UserService {
     updateData: UpdateUserRequest
   ): Promise<UpdateUserResponse> {
     logger.info(`Updating user ${userId}`, { updateData });
-
-    const user = await UserRepository.findById(userId);
-    if (!user) {
-      logger.error(`User ${userId} not found`);
-      throw new Error('Usuario no encontrado');
-    }
 
     await UserRepository.updateUser(userId, updateData);
 
