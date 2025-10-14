@@ -1,7 +1,10 @@
 import { Router } from 'express';
 
 import { UserController } from '@/controllers/user.controller';
-import { updateUserValidator } from '@/validators/user.validator';
+import {
+  updateUserValidator,
+  changePasswordValidator,
+} from '@/validators/user.validator';
 import { validateRequest } from '@/middlewares/validateRequest';
 import { authenticateToken } from '@/middlewares/authenticateToken';
 
@@ -13,6 +16,11 @@ router.put(
   '/',
   validateRequest(...updateUserValidator),
   UserController.updateUser
+);
+router.put(
+  '/password',
+  validateRequest(...changePasswordValidator),
+  UserController.changePassword
 );
 
 export default router;

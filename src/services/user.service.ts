@@ -3,6 +3,8 @@ import {
   GetUserResponse,
   UpdateUserRequest,
   UpdateUserResponse,
+  ChangePasswordRequest,
+  ChangePasswordResponse,
 } from '@/schemas/user.schemas';
 import { buildLogger } from '@/utils';
 
@@ -96,6 +98,40 @@ export class UserService {
     return {
       id: userId,
       message: 'User updated successfully',
+    };
+  }
+
+  static async changePassword(
+    userId: number,
+    passwordData: ChangePasswordRequest
+  ): Promise<ChangePasswordResponse> {
+    logger.info(`Changing password for user ${userId}`);
+
+    const user = await UserRepository.findById(userId);
+    if (!user) {
+      logger.error(`User ${userId} not found`);
+      throw new Error('User not found');
+    }
+
+    if (passwordData.currentPassword !== user.password) {
+      logger.warn(`Invalid current password for user ${userId}`);
+      throw new Error('Current password is incorrect');
+    }
+
+    if (passwordData.currentPassword === passwordData.newPassword) {
+      logger.warn(`New password is same as current for user ${userId}`);
+      throw new Error('New password must be different from current password');
+    }
+
+    await UserRepository.updateUser(userId, {
+      password: passwordData.newPassword,
+    });
+
+    logger.info(`Password changed successfully for user ${userId}`);
+
+    return {
+      id: userId,
+      message: 'Password changed successfully',
     };
   }
 }

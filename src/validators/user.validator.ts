@@ -94,3 +94,20 @@ export const updateUserValidator = [
     .isLength({ min: 13, max: 13 })
     .withMessage('RFC must be exactly 13 characters'),
 ];
+
+export const changePasswordValidator = [
+  body('currentPassword')
+    .notEmpty()
+    .withMessage('Current password is required')
+    .isLength({ min: 1 })
+    .withMessage('Current password cannot be empty'),
+  body('newPassword')
+    .notEmpty()
+    .withMessage('New password is required')
+    .isLength({ min: 6 })
+    .withMessage('New password must be at least 6 characters long')
+    .matches(/^(?=.*[a-zA-Z])(?=.*\d)/)
+    .withMessage(
+      'New password must contain at least one letter and one number'
+    ),
+];

@@ -60,3 +60,13 @@ export interface UpdateUserResponse {
   id: number;
   message: string;
 }
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export interface ChangePasswordResponse {
+  id: number;
+  message: string;
+}
