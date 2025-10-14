@@ -1,4 +1,5 @@
 import { Router } from 'express';
+
 import { authenticateToken } from '@/middlewares/authenticateToken';
 import { CardController } from '@/controllers/card.controller';
 import {
@@ -8,7 +9,11 @@ import {
   cardIdParamValidator,
   cardPinQueryValidator,
 } from '@/validators/card.validator';
-import { validateRequest, validateCardPin } from '@/middlewares';
+import {
+  validateRequest,
+  validateCardPin,
+  validateCardOwnership,
+} from '@/middlewares';
 
 const router = Router();
 
@@ -21,12 +26,15 @@ router.get('/', CardController.getUserCards);
 router.post(
   '/:cardId/activate',
   validateRequest(...cardIdParamValidator, ...activateCardValidator),
+  validateCardOwnership(),
   CardController.activateCard
 );
 
+// Route to get card details by ID
 router.get(
   '/:cardId/details',
   validateRequest(...cardIdParamValidator, ...cardPinQueryValidator),
+  validateCardOwnership(),
   validateCardPin(),
   CardController.getCardDetailsById
 );
@@ -39,6 +47,7 @@ router.post(
     ...cardPinQueryValidator,
     ...stopCardValidator
   ),
+  validateCardOwnership(),
   validateCardPin(),
   CardController.stopCard
 );
@@ -51,10 +60,9 @@ router.post(
     ...cardPinQueryValidator,
     ...unstopCardValidator
   ),
+  validateCardOwnership(),
   validateCardPin(),
   CardController.unstopCard
 );
-
-// Route to get card details by ID
 
 export default router;
