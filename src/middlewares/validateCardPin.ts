@@ -15,7 +15,12 @@ export const validateCardPin = () => {
     const pinQuery = req.query.pin as string;
     const cardId = Number(req.params.cardId);
 
+    logger.info('Validating card PIN', { cardId });
+
     const card = await CardRepository.getCardById(cardId);
+
+    logger.info('Fetched card from DB', { cardId, cardExists: !!card });
+
     if (!card || !card.prosperaCardId) {
       logger.error('Card not found or missing prosperaCardId in DB', {
         cardId,
