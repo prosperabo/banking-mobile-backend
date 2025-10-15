@@ -22,6 +22,9 @@ router.use(authenticateToken);
 // Route to get all cards
 router.get('/', CardController.getUserCards);
 
+// Route to get complete card info
+router.get('/info', CardController.getCardInfo);
+
 // Route to activate a card
 router.post(
   '/:cardId/activate',

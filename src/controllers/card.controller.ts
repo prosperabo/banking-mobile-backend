@@ -102,4 +102,19 @@ export class CardController {
 
     return successHandler(res, result, 'Card unstopped successfully');
   });
+
+  static getCardInfo = catchErrors(async (req: Request, res: Response) => {
+    const userId = req.user!.userId;
+
+    logger.info('Getting card info for user', { userId });
+
+    const result = await CardService.getUserCardInfo(userId);
+
+    logger.info('Card info retrieved successfully', { userId });
+    return successHandler(
+      res,
+      result,
+      'Card information retrieved successfully'
+    );
+  });
 }

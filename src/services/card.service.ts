@@ -6,6 +6,7 @@ import { CardBackofficeService } from '@/services/card.backoffice.service';
 import {
   StopCardResponsePayload,
   UnstopCardResponsePayload,
+  UserCardInfoResponse,
 } from '@/schemas/card.schemas';
 import { db } from '@/config/prisma';
 
@@ -220,5 +221,90 @@ export class CardService {
       card_id: unstopResponse.payload.card_id,
       status: unstopResponse.payload.status,
     };
+  }
+
+  static async getUserCardInfo(userId: number): Promise<UserCardInfoResponse> {
+    logger.info(`Fetching card info for user ${userId}`);
+
+    const userCards = await CardRepository.getUserCards(userId);
+    const activeCard = userCards.find(card => card.status === 'ACTIVE');
+
+    if (!activeCard || !activeCard.prosperaCardId) {
+      logger.error(`No active card found for user ${userId}`);
+      throw new Error('No active card found');
+    }
+
+    const backofficeProfile = await db.backofficeCustomerProfile.findUnique({
+      where: { userId },
+      select: { external_customer_id: true },
+    });
+
+    if (!backofficeProfile || !backofficeProfile.external_customer_id) {
+      logger.error(`No backoffice profile found for user ${userId}`);
+      throw new Error('User backoffice profile not found');
+    }
+
+    const authState = await db.backofficeAuthState.findUnique({
+      where: { userId },
+      select: { privateKey: true, refreshToken: true },
+    });
+
+    if (!authState) {
+      logger.error(`No auth state found for user ${userId}`);
+      throw new Error('User authentication not found');
+    }
+
+    const customerToken = `${authState.privateKey}:${authState.refreshToken}`;
+
+    const cardInfoResponse = await CardBackofficeService.getCardFullInfo(
+      backofficeProfile.external_customer_id,
+      customerToken,
+      Number(activeCard.prosperaCardId)
+    );
+
+    if (
+      !cardInfoResponse.payload.cards ||
+      cardInfoResponse.payload.cards.length === 0
+    ) {
+      logger.error(`No card info returned for user ${userId}`);
+      throw new Error('Card information not found');
+    }
+
+    const cardInfo = cardInfoResponse.payload.cards[0];
+
+    const totalLimit = parseFloat(cardInfo.credit_limit);
+    const currentBalance = parseFloat(cardInfo.current_balance);
+    const usedLimit = totalLimit - currentBalance;
+
+    const now = new Date();
+    const cutoffDate = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      cardInfo.original_billing_day
+    );
+
+    return {
+      cardNumber: cardInfo.cardNumber,
+      expiryDate: cardInfo.validDate || '',
+      totalLimit: totalLimit,
+      usedLimit: usedLimit,
+      availableBalance: currentBalance,
+      cutoffDate: cutoffDate.toISOString().split('T')[0],
+      paymentDueDate: cardInfo.duedate,
+      minimumPayment: parseFloat(cardInfo.minimumPayment || '0'),
+      totalDebt: parseFloat(cardInfo.total_debt),
+      cardStatus: this.mapCardStatus(cardInfo.status),
+      cardType: cardInfo.card_type === 1 ? 'PHYSICAL' : 'VIRTUAL',
+    };
+  }
+
+  private static mapCardStatus(status: number): string {
+    const statusMap: { [key: number]: string } = {
+      1: 'ACTIVE',
+      2: 'BLOCKED',
+      3: 'INACTIVE',
+      4: 'EXPIRED',
+    };
+    return statusMap[status] || 'UNKNOWN';
   }
 }
