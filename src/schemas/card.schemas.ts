@@ -126,15 +126,10 @@ export interface ReorderCardInfo {
 export type CardInfoResponse = ApiResponse<CardInfoResponsePayload>;
 
 export interface UserCardInfoResponse {
-  cardNumber: string;
-  expiryDate: string;
   totalLimit: number;
   usedLimit: number;
   availableBalance: number;
+  expiryDate: string;
   cutoffDate: string;
   paymentDueDate: string;
-  minimumPayment: number;
-  totalDebt: number;
-  cardStatus: string;
-  cardType: string;
 }

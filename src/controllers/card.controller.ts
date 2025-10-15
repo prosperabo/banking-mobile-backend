@@ -110,11 +110,11 @@ export class CardController {
 
     const result = await CardService.getUserCardInfo(userId);
 
-    logger.info('Card info retrieved successfully', { userId });
+    logger.info('Card debt info retrieved successfully', { userId });
     return successHandler(
       res,
       result,
-      'Card information retrieved successfully'
+      'Card debt information retrieved successfully'
     );
   });
 }

@@ -284,27 +284,12 @@ export class CardService {
     );
 
     return {
-      cardNumber: cardInfo.cardNumber,
-      expiryDate: cardInfo.validDate || '',
       totalLimit: totalLimit,
       usedLimit: usedLimit,
       availableBalance: currentBalance,
+      expiryDate: cardInfo.validDate || '',
       cutoffDate: cutoffDate.toISOString().split('T')[0],
       paymentDueDate: cardInfo.duedate,
-      minimumPayment: parseFloat(cardInfo.minimumPayment || '0'),
-      totalDebt: parseFloat(cardInfo.total_debt),
-      cardStatus: this.mapCardStatus(cardInfo.status),
-      cardType: cardInfo.card_type === 1 ? 'PHYSICAL' : 'VIRTUAL',
     };
-  }
-
-  private static mapCardStatus(status: number): string {
-    const statusMap: { [key: number]: string } = {
-      1: 'ACTIVE',
-      2: 'BLOCKED',
-      3: 'INACTIVE',
-      4: 'EXPIRED',
-    };
-    return statusMap[status] || 'UNKNOWN';
   }
 }
