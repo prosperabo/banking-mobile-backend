@@ -105,10 +105,15 @@ export class CardController {
 
   static getCardInfo = catchErrors(async (req: Request, res: Response) => {
     const userId = req.user!.userId;
+    const { customer_oauth_token: customerToken, customerId } = req.backoffice!;
 
-    logger.info('Getting card info for user', { userId });
+    logger.info('Getting card info for user', { userId, customerId });
 
-    const result = await CardService.getUserCardInfo(userId);
+    const result = await CardService.getUserCardInfo(
+      userId,
+      customerToken,
+      customerId
+    );
 
     logger.info('Card debt info retrieved successfully', { userId });
     return successHandler(

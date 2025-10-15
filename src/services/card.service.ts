@@ -223,7 +223,11 @@ export class CardService {
     };
   }
 
-  static async getUserCardInfo(userId: number): Promise<UserCardInfoResponse> {
+  static async getUserCardInfo(
+    userId: number,
+    customerToken: string,
+    customerId: number
+  ): Promise<UserCardInfoResponse> {
     logger.info(`Fetching card info for user ${userId}`);
 
     const userCards = await CardRepository.getUserCards(userId);
@@ -234,30 +238,8 @@ export class CardService {
       throw new Error('No active card found');
     }
 
-    const backofficeProfile = await db.backofficeCustomerProfile.findUnique({
-      where: { userId },
-      select: { external_customer_id: true },
-    });
-
-    if (!backofficeProfile || !backofficeProfile.external_customer_id) {
-      logger.error(`No backoffice profile found for user ${userId}`);
-      throw new Error('User backoffice profile not found');
-    }
-
-    const authState = await db.backofficeAuthState.findUnique({
-      where: { userId },
-      select: { privateKey: true, refreshToken: true },
-    });
-
-    if (!authState) {
-      logger.error(`No auth state found for user ${userId}`);
-      throw new Error('User authentication not found');
-    }
-
-    const customerToken = `${authState.privateKey}:${authState.refreshToken}`;
-
     const cardInfoResponse = await CardBackofficeService.getCardFullInfo(
-      backofficeProfile.external_customer_id,
+      customerId,
       customerToken,
       Number(activeCard.prosperaCardId)
     );
