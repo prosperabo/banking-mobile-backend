@@ -6,6 +6,7 @@ import { CardBackofficeService } from '@/services/card.backoffice.service';
 import {
   StopCardResponsePayload,
   UnstopCardResponsePayload,
+  UserCardInfoResponse,
 } from '@/schemas/card.schemas';
 import { db } from '@/config/prisma';
 
@@ -219,6 +220,58 @@ export class CardService {
     return {
       card_id: unstopResponse.payload.card_id,
       status: unstopResponse.payload.status,
+    };
+  }
+
+  static async getUserCardInfo(
+    userId: number,
+    customerToken: string,
+    customerId: number
+  ): Promise<UserCardInfoResponse> {
+    logger.info(`Fetching card info for user ${userId}`);
+
+    const userCards = await CardRepository.getUserCards(userId);
+    const activeCard = userCards.find(card => card.status === 'ACTIVE');
+
+    if (!activeCard || !activeCard.prosperaCardId) {
+      logger.error(`No active card found for user ${userId}`);
+      throw new Error('No active card found');
+    }
+
+    const cardInfoResponse = await CardBackofficeService.getCardFullInfo(
+      customerId,
+      customerToken,
+      Number(activeCard.prosperaCardId)
+    );
+
+    if (
+      !cardInfoResponse.payload.cards ||
+      cardInfoResponse.payload.cards.length === 0
+    ) {
+      logger.error(`No card info returned for user ${userId}`);
+      throw new Error('Card information not found');
+    }
+
+    const cardInfo = cardInfoResponse.payload.cards[0];
+
+    const totalLimit = parseFloat(cardInfo.credit_limit);
+    const currentBalance = parseFloat(cardInfo.current_balance);
+    const usedLimit = totalLimit - currentBalance;
+
+    const now = new Date();
+    const cutoffDate = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      cardInfo.original_billing_day
+    );
+
+    return {
+      totalLimit: totalLimit,
+      usedLimit: usedLimit,
+      availableBalance: currentBalance,
+      expiryDate: cardInfo.validDate || '',
+      cutoffDate: cutoffDate.toISOString().split('T')[0],
+      paymentDueDate: cardInfo.duedate,
     };
   }
 }

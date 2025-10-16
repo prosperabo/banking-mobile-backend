@@ -11,6 +11,7 @@ export const CardRepository = {
         status: true,
         maskedNumber: true,
         cardType: true,
+        prosperaCardId: true,
       },
     });
   },

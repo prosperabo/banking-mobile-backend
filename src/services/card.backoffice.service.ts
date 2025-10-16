@@ -8,6 +8,7 @@ import {
   UnstopCardParams,
   UnstopCardResponse,
   ViewPinForCustomerResponse,
+  CardInfoResponse,
 } from '@/schemas/card.schemas';
 import { buildLogger } from '@/utils';
 
@@ -129,6 +130,35 @@ export class CardBackofficeService {
     );
 
     logger.info('Card unstopped successfully. Response:', {
+      response: response.data,
+    });
+    return response.data;
+  }
+
+  static async getCardFullInfo(
+    customerId: number,
+    customerToken: string,
+    cardId?: number
+  ): Promise<CardInfoResponse> {
+    logger.info('Fetching complete card info for customerId:', {
+      customerId,
+      cardId,
+    });
+
+    const response = await backOfficeInstance.get<CardInfoResponse>(
+      '/debit/v1/info',
+      {
+        params: {
+          customer_id: customerId,
+          ...(cardId && { card_id: cardId }),
+        },
+        headers: {
+          'Authorization-customer': customerToken,
+        },
+      }
+    );
+
+    logger.info('Complete card info fetched successfully. Response:', {
       response: response.data,
     });
     return response.data;
