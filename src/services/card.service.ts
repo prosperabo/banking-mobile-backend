@@ -1,9 +1,13 @@
 import { CardRepository } from '@/repositories/card.repository';
-import { formatMaskedNumber } from '@/utils/card.utils';
+import {
+  formatMaskedNumber,
+  generateVirtualCardIdentifier,
+} from '@/utils/card.utils';
 import { ActivateCardResponse } from '@/schemas/card.schemas';
 import { buildLogger } from '@/utils';
 import { CardBackofficeService } from '@/services/card.backoffice.service';
 import {
+  CreateLinkedCardResponsePayload,
   StopCardResponsePayload,
   UnstopCardResponsePayload,
   UserCardInfoResponse,
@@ -273,5 +277,47 @@ export class CardService {
       cutoffDate: cutoffDate.toISOString().split('T')[0],
       paymentDueDate: cardInfo.duedate,
     };
+  }
+
+  static async createVirtualCard(
+    userId: number,
+    customerToken: string,
+    customerId: number,
+    campaignId?: string
+  ): Promise<CreateLinkedCardResponsePayload> {
+    logger.info(`Creating virtual card for user ${userId}`);
+
+    const backofficeProfile = await db.backofficeCustomerProfile.findUnique({
+      where: { userId },
+      select: { ewallet_id: true },
+    });
+
+    if (!backofficeProfile || !backofficeProfile.ewallet_id) {
+      logger.error(`No ewallet_id found for user ${userId}`);
+      throw new Error('User ewallet not found');
+    }
+
+    const virtualCardResponse = await CardBackofficeService.createLinkedCard(
+      {
+        campaign_id: campaignId,
+        balance_id: backofficeProfile.ewallet_id,
+      },
+      customerToken
+    );
+
+    const cardIdentifier = generateVirtualCardIdentifier(userId);
+
+    await CardRepository.createCard({
+      userId,
+      cardIdentifier,
+      cardType: 'VIRTUAL',
+      prosperaCardId: virtualCardResponse.payload.card_id.toString(),
+      status: 'ACTIVE',
+      maskedNumber: formatMaskedNumber(virtualCardResponse.payload.card_number),
+      expiryDate: virtualCardResponse.payload.valid_date,
+    });
+
+    logger.info(`Virtual card created successfully for user ${userId}`);
+    return virtualCardResponse.payload;
   }
 }

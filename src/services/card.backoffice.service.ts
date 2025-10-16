@@ -2,6 +2,8 @@ import backOfficeInstance from '@/api/backoffice.instance';
 import {
   ActivateCardParams,
   ActivateCardResponse,
+  CreateLinkedCardParams,
+  CreateLinkedCardResponse,
   GetCardInfoResponse,
   StopCardParams,
   StopCardResponse,
@@ -159,6 +161,32 @@ export class CardBackofficeService {
     );
 
     logger.info('Complete card info fetched successfully. Response:', {
+      response: response.data,
+    });
+    return response.data;
+  }
+
+  static async createLinkedCard(
+    params: CreateLinkedCardParams,
+    customerToken: string
+  ): Promise<CreateLinkedCardResponse> {
+    logger.info('Creating linked card with params:', { params });
+
+    const response = await backOfficeInstance.post<CreateLinkedCardResponse>(
+      '/debit/v1/create-linked-card',
+      {},
+      {
+        params: {
+          campaign_id: params.campaign_id || '',
+          balance_id: params.balance_id,
+        },
+        headers: {
+          'Authorization-customer': customerToken,
+        },
+      }
+    );
+
+    logger.info('Linked card created successfully. Response:', {
       response: response.data,
     });
     return response.data;

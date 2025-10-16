@@ -44,8 +44,18 @@ const cardPinQueryValidator = [
     .withMessage('PIN must contain only digits'),
 ];
 
+const createVirtualCardValidator = [
+  body('campaign_id')
+    .optional()
+    .isString()
+    .withMessage('Campaign ID must be a string')
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Campaign ID must not exceed 100 characters'),
+];
+
 export {
   activateCardValidator,
+  createVirtualCardValidator,
   stopCardValidator,
   unstopCardValidator,
   cardIdParamValidator,

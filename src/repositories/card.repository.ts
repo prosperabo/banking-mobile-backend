@@ -31,4 +31,22 @@ export const CardRepository = {
       data,
     });
   },
+
+  async createCard(data: {
+    userId: number;
+    cardIdentifier: string;
+    cardType: 'VIRTUAL' | 'PHYSICAL';
+    prosperaCardId: string;
+    status: 'ACTIVE' | 'BLOCKED' | 'INACTIVE' | 'EXPIRED';
+    maskedNumber?: string;
+    expiryDate?: string;
+    cvv?: string;
+  }) {
+    return db.cards.create({
+      data: {
+        ...data,
+        updatedAt: new Date(),
+      },
+    });
+  },
 };
