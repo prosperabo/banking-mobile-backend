@@ -1,5 +1,8 @@
 import { CardRepository } from '@/repositories/card.repository';
-import { formatMaskedNumber } from '@/utils/card.utils';
+import {
+  formatMaskedNumber,
+  generateVirtualCardIdentifier,
+} from '@/utils/card.utils';
 import { ActivateCardResponse } from '@/schemas/card.schemas';
 import { buildLogger } from '@/utils';
 import { CardBackofficeService } from '@/services/card.backoffice.service';
@@ -302,7 +305,7 @@ export class CardService {
       customerToken
     );
 
-    const cardIdentifier = `VIRTUAL_${Date.now()}_${userId}`;
+    const cardIdentifier = generateVirtualCardIdentifier(userId);
 
     await CardRepository.createCard({
       userId,
@@ -312,7 +315,6 @@ export class CardService {
       status: 'ACTIVE',
       maskedNumber: formatMaskedNumber(virtualCardResponse.payload.card_number),
       expiryDate: virtualCardResponse.payload.valid_date,
-      cvv: virtualCardResponse.payload.cvv,
     });
 
     logger.info(`Virtual card created successfully for user ${userId}`);
