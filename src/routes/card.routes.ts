@@ -24,7 +24,7 @@ router.use(authenticateToken);
 router.get('/', CardController.getUserCards);
 
 // Route to get complete card info
-router.get('/info', CardController.getCardInfo);
+router.get('/debit', CardController.getCardDebitInfo);
 
 // Route to create a virtual card
 router.post(

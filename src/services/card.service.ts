@@ -12,7 +12,7 @@ import {
   UnstopCardResponsePayload,
   UserCardInfoResponse,
 } from '@/schemas/card.schemas';
-import { db } from '@/config/prisma';
+import { BackofficeRepository } from '@/repositories/backoffice.repository';
 
 const logger = buildLogger('CardService');
 
@@ -41,10 +41,9 @@ export class CardService {
       throw new Error('Card not found');
     }
 
-    const backofficeProfile = await db.backofficeCustomerProfile.findUnique({
-      where: { userId: card.userId },
-      select: { ewallet_id: true },
-    });
+    const backofficeProfile = await BackofficeRepository.findProfileByUserId(
+      card.userId
+    );
 
     if (!backofficeProfile || !backofficeProfile.ewallet_id) {
       logger.error(`No ewallet_id found for user ${card.userId}`);
@@ -227,10 +226,11 @@ export class CardService {
     };
   }
 
-  static async getUserCardInfo(
+  static async getUserCardDebitInfo(
     userId: number,
     customerToken: string,
-    customerId: number
+    customerId: number,
+    cardPrimaryId?: number
   ): Promise<UserCardInfoResponse> {
     logger.info(`Fetching card info for user ${userId}`);
 
@@ -242,10 +242,18 @@ export class CardService {
       throw new Error('No active card found');
     }
 
+    const card = cardPrimaryId
+      ? await CardRepository.getCardById(cardPrimaryId)
+      : undefined;
+
+    const resolvedBackofficeCardId = card?.prosperaCardId
+      ? Number(card.prosperaCardId)
+      : undefined;
+
     const cardInfoResponse = await CardBackofficeService.getCardFullInfo(
       customerId,
       customerToken,
-      Number(activeCard.prosperaCardId)
+      resolvedBackofficeCardId
     );
 
     if (
@@ -273,7 +281,6 @@ export class CardService {
       totalLimit: totalLimit,
       usedLimit: usedLimit,
       availableBalance: currentBalance,
-      expiryDate: cardInfo.validDate || '',
       cutoffDate: cutoffDate.toISOString().split('T')[0],
       paymentDueDate: cardInfo.duedate,
     };
@@ -287,10 +294,8 @@ export class CardService {
   ): Promise<CreateLinkedCardResponsePayload> {
     logger.info(`Creating virtual card for user ${userId}`);
 
-    const backofficeProfile = await db.backofficeCustomerProfile.findUnique({
-      where: { userId },
-      select: { ewallet_id: true },
-    });
+    const backofficeProfile =
+      await BackofficeRepository.findProfileByUserId(userId);
 
     if (!backofficeProfile || !backofficeProfile.ewallet_id) {
       logger.error(`No ewallet_id found for user ${userId}`);

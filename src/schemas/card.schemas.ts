@@ -129,7 +129,6 @@ export interface UserCardInfoResponse {
   totalLimit: number;
   usedLimit: number;
   availableBalance: number;
-  expiryDate: string;
   cutoffDate: string;
   paymentDueDate: string;
 }

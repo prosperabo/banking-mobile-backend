@@ -104,16 +104,22 @@ export class CardController {
     return successHandler(res, result, 'Card unstopped successfully');
   });
 
-  static getCardInfo = catchErrors(async (req: Request, res: Response) => {
+  static getCardDebitInfo = catchErrors(async (req: Request, res: Response) => {
     const userId = req.user!.userId;
     const { customer_oauth_token: customerToken, customerId } = req.backoffice!;
+    const queryCardId = req.query.cardId as string | undefined;
 
-    logger.info('Getting card info for user', { userId, customerId });
+    logger.info('Getting card info for user', {
+      userId,
+      customerId,
+      queryCardId,
+    });
 
-    const result = await CardService.getUserCardInfo(
+    const result = await CardService.getUserCardDebitInfo(
       userId,
       customerToken,
-      customerId
+      customerId,
+      queryCardId ? Number(queryCardId) : undefined
     );
 
     logger.info('Card debt info retrieved successfully', { userId });
