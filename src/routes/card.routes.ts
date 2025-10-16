@@ -23,6 +23,9 @@ router.use(authenticateToken);
 // Route to get all cards
 router.get('/', CardController.getUserCards);
 
+// Route to get complete card info
+router.get('/info', CardController.getCardInfo);
+
 // Route to create a virtual card
 router.post(
   '/virtual',

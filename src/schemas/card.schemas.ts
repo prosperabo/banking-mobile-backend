@@ -79,6 +79,61 @@ export interface UnstopCardRequest {
   note?: string;
 }
 
+export interface CardInfoResponsePayload {
+  cards: Array<CardInfoDetails>;
+}
+
+export interface CardInfoDetails {
+  balance_to_months: string;
+  can_request_reorder_card: boolean;
+  card_id: number;
+  card_type: number;
+  cardNumber: string;
+  cardholderName?: string;
+  credit_limit: string;
+  credit_line: string;
+  current_balance: string;
+  cvv2?: string;
+  duedate: string;
+  expiryDate?: string;
+  is_renewal_period: boolean;
+  original_billing_day: number;
+  overdue_balance: string;
+  status: number;
+  total_debt: string;
+  trackingNumber?: string;
+  validDate?: string;
+  cat?: string;
+  emissionFee?: string;
+  fullName?: string;
+  guarantee?: string;
+  has_VCN?: boolean;
+  has_deferred_charges?: boolean;
+  interestRate?: string;
+  isCardBlockedByTransactionReport?: boolean;
+  minimumPayment?: string;
+  reorder_card?: ReorderCardInfo;
+  timeToPay?: boolean;
+  urlContract?: string;
+  urlContractCover?: string;
+}
+
+export interface ReorderCardInfo {
+  replacedCardLastFourDigits?: string;
+  statusId: number;
+}
+
+export type CardInfoResponse = ApiResponse<CardInfoResponsePayload>;
+
+export interface UserCardInfoResponse {
+  totalLimit: number;
+  usedLimit: number;
+  availableBalance: number;
+  expiryDate: string;
+  cutoffDate: string;
+  paymentDueDate: string;
+}
+
 export interface CreateLinkedCardParams {
   campaign_id?: string;
   balance_id: number;
