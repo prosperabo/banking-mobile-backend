@@ -4,6 +4,7 @@ import { CardService } from '@/services/card.service';
 import { catchErrors, successHandler } from '@/shared/handlers';
 import {
   ActivateCardRequest,
+  CreateLinkedCardRequest,
   StopCardRequest,
   UnstopCardRequest,
 } from '@/schemas/card.schemas';
@@ -102,4 +103,29 @@ export class CardController {
 
     return successHandler(res, result, 'Card unstopped successfully');
   });
+
+  static createVirtualCard = catchErrors(
+    async (req: Request, res: Response) => {
+      const userId = req.user!.userId;
+      const { customer_oauth_token: customerToken, customerId } =
+        req.backoffice!;
+      const { campaign_id }: CreateLinkedCardRequest = req.body;
+
+      logger.info('Creating virtual card for user', {
+        userId,
+        customerId,
+        campaign_id,
+      });
+
+      const result = await CardService.createVirtualCard(
+        userId,
+        customerToken,
+        customerId,
+        campaign_id
+      );
+
+      logger.info('Virtual card created successfully', { userId, result });
+      return successHandler(res, result, 'Virtual card created successfully');
+    }
+  );
 }

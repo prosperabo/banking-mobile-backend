@@ -4,6 +4,7 @@ import { ActivateCardResponse } from '@/schemas/card.schemas';
 import { buildLogger } from '@/utils';
 import { CardBackofficeService } from '@/services/card.backoffice.service';
 import {
+  CreateLinkedCardResponsePayload,
   StopCardResponsePayload,
   UnstopCardResponsePayload,
 } from '@/schemas/card.schemas';
@@ -220,5 +221,48 @@ export class CardService {
       card_id: unstopResponse.payload.card_id,
       status: unstopResponse.payload.status,
     };
+  }
+
+  static async createVirtualCard(
+    userId: number,
+    customerToken: string,
+    customerId: number,
+    campaignId?: string
+  ): Promise<CreateLinkedCardResponsePayload> {
+    logger.info(`Creating virtual card for user ${userId}`);
+
+    const backofficeProfile = await db.backofficeCustomerProfile.findUnique({
+      where: { userId },
+      select: { ewallet_id: true },
+    });
+
+    if (!backofficeProfile || !backofficeProfile.ewallet_id) {
+      logger.error(`No ewallet_id found for user ${userId}`);
+      throw new Error('User ewallet not found');
+    }
+
+    const virtualCardResponse = await CardBackofficeService.createLinkedCard(
+      {
+        campaign_id: campaignId,
+        balance_id: backofficeProfile.ewallet_id,
+      },
+      customerToken
+    );
+
+    const cardIdentifier = `VIRTUAL_${Date.now()}_${userId}`;
+
+    await CardRepository.createCard({
+      userId,
+      cardIdentifier,
+      cardType: 'VIRTUAL',
+      prosperaCardId: virtualCardResponse.payload.card_id.toString(),
+      status: 'ACTIVE',
+      maskedNumber: formatMaskedNumber(virtualCardResponse.payload.card_number),
+      expiryDate: virtualCardResponse.payload.valid_date,
+      cvv: virtualCardResponse.payload.cvv,
+    });
+
+    logger.info(`Virtual card created successfully for user ${userId}`);
+    return virtualCardResponse.payload;
   }
 }

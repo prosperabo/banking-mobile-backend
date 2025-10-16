@@ -78,3 +78,24 @@ export type UnstopCardResponse = ApiResponse<UnstopCardResponsePayload>;
 export interface UnstopCardRequest {
   note?: string;
 }
+
+export interface CreateLinkedCardParams {
+  campaign_id?: string;
+  balance_id: number;
+}
+
+export interface CreateLinkedCardResponsePayload {
+  card_id: number;
+  card_number: string;
+  cvv: string;
+  valid_date: string;
+  status: number;
+  card_type: number;
+}
+
+export type CreateLinkedCardResponse =
+  ApiResponse<CreateLinkedCardResponsePayload>;
+
+export interface CreateLinkedCardRequest {
+  campaign_id?: string;
+}
