@@ -2,6 +2,8 @@ import { db } from '../src/config/prisma';
 import backOfficeInstance from '../src/api/backoffice.instance';
 import { buildLogger } from '../src/utils';
 import type { Users } from '@prisma/client';
+import FormData from 'form-data';
+import crypto from 'crypto';
 
 const logger = buildLogger('MigrateUsersScript');
 
@@ -91,27 +93,65 @@ function mapGender(gender: string): number {
   return gender === 'MASCULINO' ? 2 : 1;
 }
 
+function hashPassword(password: string): string {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
+
 async function createAccountIn123(user: UserForMigration) {
   logger.info(`Creating account in 123 for user: ${user.email}`);
 
   try {
+    // Crear FormData para el request
+    const formData = new FormData();
+    formData.append('device_id', `device_${user.id}_${Date.now()}`);
+    formData.append('email', user.email);
+    formData.append(
+      'first_name',
+      user.completeName.split(' ')[0] || user.completeName
+    );
+    formData.append(
+      'last_name',
+      user.completeName.split(' ').slice(1).join(' ') || 'Apellido'
+    );
+    formData.append(
+      'second_last_name',
+      user.completeName.split(' ')[2] ||
+        user.completeName.split(' ')[1] ||
+        'Apellido 2'
+    );
+    formData.append('gender', mapGender(user.gender).toString());
+    formData.append('kyc_level', '1');
+    formData.append('mobile', user.phone || '5551234568');
+    formData.append('password', hashPassword(user.password));
+    formData.append('rfc', user.rfc || 'XAXX010101000');
+    formData.append('campaign_code', 'XAXX010101000');
+
+    // Mostrar por consola todo el formData
+    logger.info('FormData contents:');
+    logger.info(`FormData - device_id: device_${user.id}_${Date.now()}`);
+    logger.info(`FormData - email: ${user.email}`);
+    logger.info(
+      `FormData - first_name: ${user.completeName.split(' ')[0] || user.completeName}`
+    );
+    logger.info(
+      `FormData - last_name: ${user.completeName.split(' ').slice(1).join(' ') || 'Apellido'}`
+    );
+    logger.info(
+      `FormData - second_last_name: ${user.completeName.split(' ')[2] || user.completeName.split(' ')[1] || 'Apellido 2'}`
+    );
+    logger.info(`FormData - gender: ${mapGender(user.gender).toString()}`);
+    logger.info(`FormData - kyc_level: 1`);
+    logger.info(`FormData - mobile: ${user.phone || '5555551234'}`);
+    logger.info(`FormData - password: [SHA256 HASHED]`);
+    logger.info(`FormData - rfc: ${user.rfc || 'XAXX010101000'}`);
+
     const response = await backOfficeInstance.post<CreateAccountResponse>(
       '/user/v1/account/create',
+      formData,
       {
-        device_id: `device_${user.id}_${Date.now()}`,
-        email: user.email,
-        first_name: user.completeName.split(' ')[0] || user.completeName,
-        last_name:
-          user.completeName.split(' ').slice(1).join(' ') || 'Apellido',
-        second_last_name:
-          user.completeName.split(' ')[2] ||
-          user.completeName.split(' ')[1] ||
-          'Apaza',
-        gender: mapGender(user.gender),
-        kyc_level: 1,
-        mobile: user.phone || '5555551234',
-        password: user.password, // hasheada?
-        rfc: user.rfc || 'XAXX010101000',
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
       }
     );
 
@@ -322,7 +362,33 @@ async function migrateUsers() {
   logger.info('Starting user migration to 123 backoffice...\n');
 
   try {
-    const users = await db.users.findMany({
+    // Comentado: Obtención masiva de usuarios
+    // const users = await db.users.findMany({
+    //   select: {
+    //     id: true,
+    //     email: true,
+    //     password: true,
+    //     phone: true,
+    //     completeName: true,
+    //     gender: true,
+    //     birthDate: true,
+    //     birthCountry: true,
+    //     curp: true,
+    //     postalCode: true,
+    //     state: true,
+    //     country: true,
+    //     municipality: true,
+    //     street: true,
+    //     colony: true,
+    //     externalNumber: true,
+    //     internalNumber: true,
+    //     rfc: true,
+    //   },
+    // });
+
+    // Solo procesar usuario con ID 37 para pruebas
+    const targetUser = await db.users.findUnique({
+      where: { id: 46 },
       select: {
         id: true,
         email: true,
@@ -345,7 +411,14 @@ async function migrateUsers() {
       },
     });
 
-    logger.info(`Found ${users.length} users to process\n`);
+    if (!targetUser) {
+      logger.error('User with ID 37 not found');
+      throw new Error('User with ID 37 not found');
+    }
+
+    const users = [targetUser]; // Array con solo el usuario ID 37
+
+    logger.info(`Found ${users.length} user to process (ID: 37)\n`);
 
     const results = [];
     let successCount = 0;
