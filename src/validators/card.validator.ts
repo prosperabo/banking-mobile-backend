@@ -34,9 +34,7 @@ const cardIdParamValidator = [
 
 const cardPinQueryValidator = [
   query('pin')
-    .exists()
-    .withMessage('PIN is required')
-    .bail()
+    .optional()
     .isLength({ min: 4, max: 6 })
     .withMessage('PIN must be between 4 and 6 characters long')
     .bail()

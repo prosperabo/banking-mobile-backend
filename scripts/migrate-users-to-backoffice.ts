@@ -30,7 +30,63 @@ type UserForMigration = Pick<
 >;
 
 interface CreateAccountResponse {
-  ss: {
+  ss?: {
+    account_level: number;
+    account_status: number;
+    account_status_string: string;
+    address: string;
+    address_document_back: string;
+    address_document_back_url: string;
+    address_document_front: string;
+    address_document_front_url: string;
+    address_document_type: number;
+    are_account_resources_of_user: boolean;
+    business_name: string;
+    business_purpose: string;
+    ciabe: string;
+    city: string;
+    colony: string;
+    constitution_date: string;
+    correspondence_address: string;
+    country_of_birth: string;
+    date_of_birth: string;
+    ecommerce_id: number;
+    email: string;
+    exterior: string;
+    first_name: string;
+    gender: number;
+    gender_string: string;
+    id: number;
+    identification_document_back: string;
+    identification_document_back_url: string;
+    identification_document_front: string;
+    identification_document_front_url: string;
+    identification_document_type: number;
+    interior: string;
+    is_business: boolean;
+    last_name: string;
+    mobile: string;
+    mobile_country_code: string;
+    nationality_id: number;
+    oauth_token: string;
+    occupation_id: number;
+    person_type: number;
+    private_key: string;
+    rfc: string;
+    refresh_token: string;
+    risk_level: number;
+    second_last_name: string;
+    society_type: number;
+    selfie: string;
+    selfie_url: string;
+    state_id: number;
+    street: string;
+    telephone: string;
+    zipcode: string;
+    ewallet_id: number;
+    ewallet_status: number;
+  };
+  rs?: {
     account_level: number;
     account_status: number;
     account_status_string: string;
@@ -124,7 +180,8 @@ async function createAccountIn123(user: UserForMigration) {
     formData.append('mobile', user.phone || '5551234568');
     formData.append('password', hashPassword(user.password));
     formData.append('rfc', user.rfc || 'XAXX010101000');
-    formData.append('campaign_code', 'XAXX010101000');
+    formData.append('campaign_id', 'SOF250820595');
+    formData.append('credit_line', 1000000);
 
     // Mostrar por consola todo el formData
     logger.info('FormData contents:');
@@ -155,11 +212,25 @@ async function createAccountIn123(user: UserForMigration) {
       }
     );
 
+    // Normalizar respuesta: algunos endpoints devuelven `ss`, otros `rs`.
+    const payload = (response.data as any).ss ?? (response.data as any).rs;
+
+    if (!payload) {
+      logger.error('Unexpected response format from backoffice:', {
+        data: response.data,
+      });
+      throw new Error('Unexpected response format from backoffice');
+    }
+
     logger.info(`Account created successfully for ${user.email}`, {
-      externalCustomerId: response.data.ss.id,
+      externalCustomerId: payload.id,
     });
 
-    return response.data;
+    // Devolver en la misma forma que el resto del código espera (ss)
+    return {
+      ss: payload,
+      err: (response.data as any).err ?? null,
+    } as CreateAccountResponse;
   } catch (error) {
     logger.error(`Failed to create account in 123 for ${user.email}:`, {
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -170,7 +241,7 @@ async function createAccountIn123(user: UserForMigration) {
 
 async function saveBackofficeProfile(
   userId: number,
-  backofficeData: CreateAccountResponse['ss']
+  backofficeData: NonNullable<CreateAccountResponse['ss']>
 ) {
   logger.info(`Saving backoffice profile for userId: ${userId}`);
 
@@ -265,7 +336,7 @@ async function saveBackofficeProfile(
 
 async function saveAuthState(
   userId: number,
-  backofficeData: CreateAccountResponse['ss']
+  backofficeData: NonNullable<CreateAccountResponse['ss']>
 ) {
   logger.info(`Saving auth state for userId: ${userId}`);
 
@@ -334,9 +405,17 @@ async function processUser(user: UserForMigration) {
       throw new Error(`123 API Error: ${accountResponse.err}`);
     }
 
-    await saveBackofficeProfile(user.id, accountResponse.ss);
+    // Normalizar respuesta a un objeto seguro (algunos envían `ss`, otros `rs`)
+    const backofficeData =
+      (accountResponse as any).ss ?? (accountResponse as any).rs;
 
-    await saveAuthState(user.id, accountResponse.ss);
+    if (!backofficeData) {
+      throw new Error('Backoffice response missing account data');
+    }
+
+    await saveBackofficeProfile(user.id, backofficeData);
+
+    await saveAuthState(user.id, backofficeData);
 
     logger.info(`User ${user.email} migrated successfully!`);
 

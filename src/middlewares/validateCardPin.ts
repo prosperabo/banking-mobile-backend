@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+
 import { CardRepository } from '@/repositories/card.repository';
 import { CardBackofficeService } from '@/services/card.backoffice.service';
 import { buildLogger } from '@/utils';
@@ -26,6 +27,14 @@ export const validateCardPin = () => {
         cardId,
       });
       throw new NotFoundError('Card inválida');
+    }
+
+    if (card.cardType !== 'PHYSICAL') {
+      logger.info('Card is not physical, skipping PIN validation', {
+        cardId,
+        cardType: card.cardType,
+      });
+      return next();
     }
 
     const pinResp = await CardBackofficeService.viewPinForCustomer(

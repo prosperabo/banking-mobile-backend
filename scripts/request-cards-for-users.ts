@@ -1,11 +1,23 @@
 import { db } from '../src/config/prisma';
 import axios from 'axios';
 import { buildLogger } from '../src/utils';
+import { config } from '../src/config/config';
 
 const logger = buildLogger('RequestPhysicalCardsScript');
 
-const BACKOFFICE_API_BASE = process.env.BACKOFFICE_API_BASE;
-const ECOMMERCE_TOKEN = process.env.ECOMMERCE_TOKEN;
+// Prefer using the centralized config which loads .env via dotenv
+const BACKOFFICE_API_BASE =
+  config.backofficeBaseUrl || process.env.BACKOFFICE_API_BASE;
+const ECOMMERCE_TOKEN = config.ecommerceToken || process.env.ECOMMERCE_TOKEN;
+
+function normalizeBaseUrl(url?: string | null) {
+  if (!url) return undefined;
+  // Trim and remove trailing slash
+  const trimmed = url.trim();
+  return trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed;
+}
+
+const NORMALIZED_BACKOFFICE_API_BASE = normalizeBaseUrl(BACKOFFICE_API_BASE);
 
 interface BulkOrderCardRequest {
   delivery_location: {
@@ -110,9 +122,22 @@ async function requestPhysicalCardsForUsers() {
     };
 
     logger.info('Enviando solicitud de tarjetas físicas al backoffice...');
+    // Diagnostic logs to help troubleshoot "Invalid URL" errors
+    logger.info('BACKOFFICE_API_BASE', {
+      BACKOFFICE_API_BASE: NORMALIZED_BACKOFFICE_API_BASE,
+    });
+    logger.info('ECOMMERCE_TOKEN present', { present: !!ECOMMERCE_TOKEN });
+
+    if (!NORMALIZED_BACKOFFICE_API_BASE) {
+      throw new Error(
+        'BACKOFFICE API base URL is not configured. Set BACKOFFICE_BASE_URL or BACKOFFICE_API_BASE in your environment.'
+      );
+    }
+
+    const requestUrl = `${NORMALIZED_BACKOFFICE_API_BASE}/debit/v1/bulkOrderCard`;
 
     const response = await axios.post<BulkOrderCardResponse>(
-      `${BACKOFFICE_API_BASE}/debit/v1/bulkOrderCard`,
+      requestUrl,
       bulkOrderData,
       {
         headers: {
@@ -122,10 +147,33 @@ async function requestPhysicalCardsForUsers() {
       }
     );
 
+    // Log full response to inspect payload shape
+    logger.info('Backoffice response', { data: response.data });
+
+    // Some backoffice responses may use different casing/keys. Try multiple fallbacks.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const respAny = response.data as any;
+    const referenceBatchFromResponse =
+      respAny?.payload?.reference_batch ||
+      respAny?.payload?.referenceBatch ||
+      respAny?.payload?.reference ||
+      respAny?.reference_batch ||
+      respAny?.referenceBatch ||
+      respAny?.reference ||
+      undefined;
+
+    if (!referenceBatchFromResponse) {
+      // Provide a helpful error including the actual response shape
+      const respStr = JSON.stringify(response.data, null, 2);
+      throw new Error(
+        `Backoffice response did not include a reference batch. Response: ${respStr}`
+      );
+    }
+
     const bulkBatch = await db.bulkBatch.create({
       data: {
-        referenceBatch: response.data.payload.reference_batch,
-        status: response.data.payload.status,
+        referenceBatch: String(referenceBatchFromResponse),
+        status: (response.data as any)?.payload?.status || 1,
         numCreated: 0,
         numFailed: 0,
         requestedAt: new Date(),
