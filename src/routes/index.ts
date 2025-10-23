@@ -13,4 +13,11 @@ router.use('/webhooks', webhookRouter);
 router.use('/card', cardRouter);
 router.use('/user', userRouter);
 
+router.get('/myip', async (req, res) => {
+  const r = await fetch('https://ifconfig.me', {
+    headers: { 'User-Agent': 'curl' },
+  });
+  res.send(await r.text());
+});
+
 export default router;
