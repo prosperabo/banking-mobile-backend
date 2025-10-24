@@ -4,6 +4,7 @@ import authRouter from './auth.routes';
 import webhookRouter from './webhook.routes';
 import cardRouter from './card.routes';
 import userRouter from './user.routes';
+import transactionsRouter from './transactions.routes';
 
 const router = Router();
 
@@ -12,6 +13,7 @@ router.use('/auth', authRouter);
 router.use('/webhooks', webhookRouter);
 router.use('/card', cardRouter);
 router.use('/user', userRouter);
+router.use('/transactions', transactionsRouter);
 
 router.get('/myip', async (req, res) => {
   const r = await fetch('https://ifconfig.me', {
