@@ -46,6 +46,7 @@ model Users {
   universityProfilePhotoLink String?
   rfc                        String?
   createdAt                  DateTime                   @default(now())
+  AcademicInformation        AcademicInformation?
   BackofficeAuthState        BackofficeAuthState?
   BackofficeCustomerProfile  BackofficeCustomerProfile?
   Cards                      Cards[]
@@ -222,6 +223,15 @@ model BulkBatch {
   Cards          Cards[]
 }
 
+model AcademicInformation {
+  id                    Int                               @id @default(autoincrement())
+  userId                Int                               @unique
+  academicArea          AcademicInformation_academicArea?
+  actualSemester        Int?
+  scholarshipPercentage Int?
+  Users                 Users                             @relation(fields: [userId], references: [id])
+}
+
 enum Gender {
   MASCULINO
   FEMENINO
@@ -252,4 +262,14 @@ enum Transactions_status {
   COMPLETED
   FAILED
   CANCELLED
+}
+
+enum AcademicInformation_academicArea {
+  STEM
+  NEGOCIOS_ECONOMIA
+  SALUD
+  CIENCIAS_SOCIALES
+  ARTES_HUMANIDADES
+  EDUCACION
+  DERECHO
 }

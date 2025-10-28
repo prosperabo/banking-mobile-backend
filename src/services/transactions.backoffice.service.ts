@@ -17,7 +17,7 @@ export class TransactionsBackofficeService {
     const { customer_id, ...queryParams } = params;
 
     const response = await backOfficeInstance.get<GetTransactionsResponse>(
-      `/transactions/${customer_id}`,
+      `wallet/v1/transactions/${customer_id}`,
       {
         params: queryParams,
         headers: {
