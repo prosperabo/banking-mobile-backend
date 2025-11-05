@@ -1,9 +1,12 @@
 import { db } from '@/config/prisma';
+import { BackofficeCustomerProfile } from '@prisma/client';
 
-export const BackofficeRepository = {
-  async findProfileByUserId(userId: number) {
-    return db.backofficeCustomerProfile.findUnique({
+export class BackofficeRepository {
+  static async findProfileByUserId(
+    userId: number
+  ): Promise<BackofficeCustomerProfile | null> {
+    return await db.backofficeCustomerProfile.findUnique({
       where: { userId },
     });
-  },
-};
+  }
+}

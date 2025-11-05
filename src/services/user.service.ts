@@ -7,6 +7,7 @@ import {
   ChangePasswordResponse,
 } from '@/schemas/user.schemas';
 import { buildLogger } from '@/utils';
+import { NotFoundError, BadRequestError } from '@/shared/errors';
 
 const logger = buildLogger('UserService');
 
@@ -17,7 +18,7 @@ export class UserService {
     const user = await UserRepository.findById(userId);
     if (!user) {
       logger.error(`User ${userId} not found`);
-      throw new Error('User not found');
+      throw new NotFoundError('User not found');
     }
 
     const {
@@ -110,17 +111,19 @@ export class UserService {
     const user = await UserRepository.findById(userId);
     if (!user) {
       logger.error(`User ${userId} not found`);
-      throw new Error('User not found');
+      throw new NotFoundError('User not found');
     }
 
     if (passwordData.currentPassword !== user.password) {
       logger.warn(`Invalid current password for user ${userId}`);
-      throw new Error('Current password is incorrect');
+      throw new BadRequestError('Current password is incorrect');
     }
 
     if (passwordData.currentPassword === passwordData.newPassword) {
       logger.warn(`New password is same as current for user ${userId}`);
-      throw new Error('New password must be different from current password');
+      throw new BadRequestError(
+        'New password must be different from current password'
+      );
     }
 
     await UserRepository.updateUser(userId, {

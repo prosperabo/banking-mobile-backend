@@ -6,11 +6,11 @@ import {
   BackofficeRefreshRequest,
   BackofficeRefreshResponse,
 } from '@/schemas';
-import { buildLogger } from '@/utils';
+import { buildLogger, JwtUtil } from '@/utils';
 import { BackofficeService } from '@/services/backoffice.service';
 import { UserRepository } from '@/repositories/user.repository';
-import { JwtUtil } from '@/utils/jwt.utils';
 import { config } from '@/config';
+import { UnauthorizedError, NotFoundError } from '@/shared/errors';
 // import bcrypt from 'bcrypt';
 
 const logger = buildLogger('auth-service');
@@ -22,20 +22,20 @@ export class AuthService {
     const user = await UserRepository.findByEmail(email);
     if (!user) {
       logger.warn('User not found', { email });
-      throw new Error('Credenciales inválidas');
+      throw new UnauthorizedError('Invalid credentials');
     }
 
-    // Validación en texto plano (la DB tiene contraseñas en texto plano)
+    // Plain text validation (DB has plain text passwords)
     if (password !== user.password) {
       logger.warn('Invalid password', { userId: user.id });
-      throw new Error('Credenciales inválidas');
+      throw new UnauthorizedError('Invalid credentials');
     }
 
-    // Validación con bcrypt (si las contraseñas estuvieran hasheadas)
+    // Bcrypt validation (if passwords were hashed)
     // const isValidPassword = await bcrypt.compare(password, user.password);
     // if (!isValidPassword) {
     //   logger.warn('Invalid password', { userId: user.id });
-    //   throw new Error('Credenciales inválidas');
+    //   throw new Error('Invalid credentials');
     // }
 
     const userWithAuthState =
@@ -45,7 +45,7 @@ export class AuthService {
       logger.error('BackofficeAuthState not found for user', {
         userId: user.id,
       });
-      throw new Error('Configuración de autenticación no encontrada');
+      throw new NotFoundError('Authentication configuration not found');
     }
 
     const ecommerceToken = config.ecommerceToken;

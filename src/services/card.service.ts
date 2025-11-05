@@ -1,10 +1,10 @@
 import { CardRepository } from '@/repositories/card.repository';
+import { ActivateCardResponse } from '@/schemas/card.schemas';
 import {
+  buildLogger,
   formatMaskedNumber,
   generateVirtualCardIdentifier,
-} from '@/utils/card.utils';
-import { ActivateCardResponse } from '@/schemas/card.schemas';
-import { buildLogger } from '@/utils';
+} from '@/utils';
 import { CardBackofficeService } from '@/services/card.backoffice.service';
 import {
   CreateLinkedCardResponsePayload,
@@ -13,6 +13,7 @@ import {
   UserCardInfoResponse,
 } from '@/schemas/card.schemas';
 import { BackofficeRepository } from '@/repositories/backoffice.repository';
+import { NotFoundError, BadRequestError } from '@/shared/errors';
 
 const logger = buildLogger('CardService');
 
@@ -38,7 +39,7 @@ export class CardService {
 
     if (!card) {
       logger.error(`Card ${cardId} not found`);
-      throw new Error('Card not found');
+      throw new NotFoundError('Card not found');
     }
 
     const backofficeProfile = await BackofficeRepository.findProfileByUserId(
@@ -47,7 +48,7 @@ export class CardService {
 
     if (!backofficeProfile || !backofficeProfile.ewallet_id) {
       logger.error(`No ewallet_id found for user ${card.userId}`);
-      throw new Error('User ewallet not found');
+      throw new NotFoundError('User ewallet not found');
     }
 
     const activatedResponse = await CardBackofficeService.activateCard(
@@ -91,7 +92,7 @@ export class CardService {
 
     if (!card) {
       logger.error(`Card ${cardId} not found`);
-      throw new Error('Card not found');
+      throw new NotFoundError('Card not found');
     }
 
     return card;
@@ -110,7 +111,7 @@ export class CardService {
       logger.error(
         `Card with ID ${cardId} not found or missing prosperaCardId`
       );
-      throw new Error('Card not found or invalid prosperaCardId');
+      throw new NotFoundError('Card not found or invalid prosperaCardId');
     }
 
     logger.info(`Found card with prosperaCardId: ${card.prosperaCardId}`);
@@ -130,7 +131,9 @@ export class CardService {
 
     if (!cardInfo || !cardInfo.payload) {
       logger.error('Invalid card info response: missing payload', { cardInfo });
-      throw new Error('Invalid response from card service: missing payload');
+      throw new BadRequestError(
+        'Invalid response from card service: missing payload'
+      );
     }
 
     if (
@@ -143,7 +146,7 @@ export class CardService {
         cardsType: typeof cardInfo.payload.cards,
         cardsIsArray: Array.isArray(cardInfo.payload.cards),
       });
-      throw new Error('No card information found in response');
+      throw new BadRequestError('No card information found in response');
     }
 
     return cardInfo.payload.cards[0];
@@ -159,7 +162,7 @@ export class CardService {
 
     const card = await CardRepository.getCardById(cardId);
     if (!card?.prosperaCardId) {
-      throw new Error('Card not found or missing prosperaCardId');
+      throw new NotFoundError('Card not found or missing prosperaCardId');
     }
 
     logger.info(
@@ -197,7 +200,7 @@ export class CardService {
       logger.error(
         `Card ${cardId} not found in database or missing prosperaCardId`
       );
-      throw new Error('Card not found or missing prosperaCardId');
+      throw new NotFoundError('Card not found or missing prosperaCardId');
     }
 
     logger.info(
@@ -239,7 +242,7 @@ export class CardService {
 
     if (!activeCard || !activeCard.prosperaCardId) {
       logger.error(`No active card found for user ${userId}`);
-      throw new Error('No active card found');
+      throw new NotFoundError('No active card found');
     }
 
     const card = cardPrimaryId
@@ -261,7 +264,7 @@ export class CardService {
       cardInfoResponse.payload.cards.length === 0
     ) {
       logger.error(`No card info returned for user ${userId}`);
-      throw new Error('Card information not found');
+      throw new NotFoundError('Card information not found');
     }
 
     const cardInfo = cardInfoResponse.payload.cards[0];
@@ -299,7 +302,7 @@ export class CardService {
 
     if (!backofficeProfile || !backofficeProfile.ewallet_id) {
       logger.error(`No ewallet_id found for user ${userId}`);
-      throw new Error('User ewallet not found');
+      throw new NotFoundError('User ewallet not found');
     }
 
     const virtualCardResponse = await CardBackofficeService.createLinkedCard(

@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 
 import { CardRepository } from '@/repositories/card.repository';
 import { CardBackofficeService } from '@/services/card.backoffice.service';
@@ -8,11 +8,16 @@ import {
   InternalServerError,
   UnauthorizedError,
 } from '@/shared/errors';
+import { AuthenticatedRequest } from '@/types/authenticated-request';
 
 const logger = buildLogger('validateCardPin');
 
 export const validateCardPin = () => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+  return async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ) => {
     const pinQuery = req.query.pin as string;
     const cardId = Number(req.params.cardId);
 
@@ -26,7 +31,7 @@ export const validateCardPin = () => {
       logger.error('Card not found or missing prosperaCardId in DB', {
         cardId,
       });
-      throw new NotFoundError('Card inválida');
+      throw new NotFoundError('Invalid card');
     }
 
     if (card.cardType !== 'PHYSICAL') {

@@ -1,16 +1,17 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { TransactionsService } from '@/services/transactions.service';
 import { catchErrors, successHandler } from '@/shared/handlers';
 import { buildLogger } from '@/utils';
+import { AuthenticatedRequest } from '@/types/authenticated-request';
 
 const logger = buildLogger('TransactionsController');
 
 export class TransactionsController {
-  static getUserTransactions = catchErrors(
-    async (req: Request, res: Response) => {
-      const userId = req.user!.userId;
+  static getUserTransactions = catchErrors<AuthenticatedRequest>(
+    async (req: AuthenticatedRequest, res: Response) => {
+      const userId = req.user.userId;
       const { customer_oauth_token: customerToken, customerId } =
-        req.backoffice!;
+        req.backoffice;
       const {
         limit = 100,
         offset,

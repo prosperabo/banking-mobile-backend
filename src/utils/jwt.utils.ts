@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { config } from '@/config';
 import { buildLogger } from '@/utils';
+import { InternalServerError, UnauthorizedError } from '@/shared/errors';
 
 const logger = buildLogger('jwt-service');
 
@@ -59,7 +60,7 @@ export class JwtUtil {
         error: error instanceof Error ? error.message : 'Unknown error',
         userId: payload.userId,
       });
-      throw new Error('Error generando token JWT');
+      throw new InternalServerError('Error generating JWT token');
     }
   }
 
@@ -79,11 +80,11 @@ export class JwtUtil {
       });
 
       if (error instanceof jwt.TokenExpiredError) {
-        throw new Error('Token expirado');
+        throw new UnauthorizedError('Token expired');
       } else if (error instanceof jwt.JsonWebTokenError) {
-        throw new Error('Token inválido');
+        throw new UnauthorizedError('Invalid token');
       } else {
-        throw new Error('Error verificando token JWT');
+        throw new InternalServerError('Error verifying JWT token');
       }
     }
   }

@@ -6,6 +6,7 @@ import {
   BackofficeRefreshRequest,
   BackofficeRefreshResponse,
 } from '@/schemas';
+import { BadRequestError, InternalServerError } from '@/shared/errors';
 
 const logger = buildLogger('backoffice-service');
 
@@ -40,7 +41,7 @@ export class BackofficeService {
           statusText: response.statusText,
           error: errorText,
         });
-        throw new Error(
+        throw new BadRequestError(
           `Backoffice API error: ${response.status} ${response.statusText} :: ${errorText}`
         );
       }
@@ -53,7 +54,7 @@ export class BackofficeService {
       logger.error('Error getting customer connection token', {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
-      throw new Error('Error comunicándose con el backoffice');
+      throw new InternalServerError('Error communicating with backoffice');
     }
   }
 
@@ -83,7 +84,7 @@ export class BackofficeService {
           statusText: response.statusText,
           error: errorText,
         });
-        throw new Error(
+        throw new BadRequestError(
           `Backoffice refresh API error: ${response.status} ${response.statusText} :: ${errorText}`
         );
       }
@@ -95,7 +96,7 @@ export class BackofficeService {
       logger.error('Error refreshing customer token', {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
-      throw new Error('Error refrescando token del backoffice');
+      throw new InternalServerError('Error refreshing backoffice token');
     }
   }
 }

@@ -1,9 +1,9 @@
 import { db } from '@/config/prisma';
 import { Cards } from '@prisma/client';
 
-export const CardRepository = {
-  async getUserCards(userId: number) {
-    return db.cards.findMany({
+export class CardRepository {
+  static async getUserCards(userId: number) {
+    return await db.cards.findMany({
       where: { userId },
       select: {
         id: true,
@@ -14,25 +14,25 @@ export const CardRepository = {
         prosperaCardId: true,
       },
     });
-  },
+  }
 
-  async getCardById(cardId: number) {
-    return db.cards.findUnique({
+  static async getCardById(cardId: number) {
+    return await db.cards.findUnique({
       where: { id: cardId },
       include: {
         BulkBatch: true,
       },
     });
-  },
+  }
 
-  async updateCard(cardId: number, data: Partial<Cards>) {
-    return db.cards.update({
+  static async updateCard(cardId: number, data: Partial<Cards>) {
+    return await db.cards.update({
       where: { id: cardId },
       data,
     });
-  },
+  }
 
-  async createCard(data: {
+  static async createCard(data: {
     userId: number;
     cardIdentifier: string;
     cardType: 'VIRTUAL' | 'PHYSICAL';
@@ -42,11 +42,11 @@ export const CardRepository = {
     expiryDate?: string;
     cvv?: string;
   }) {
-    return db.cards.create({
+    return await db.cards.create({
       data: {
         ...data,
         updatedAt: new Date(),
       },
     });
-  },
-};
+  }
+}

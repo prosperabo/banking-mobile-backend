@@ -14,7 +14,7 @@ export const validateRequest = (...schemas: ValidationChain[]) => {
     if (!errors.isEmpty()) {
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
-        message: 'Datos de entrada inválidos',
+        message: 'Invalid input data',
         errors: errors.array(),
       });
     }

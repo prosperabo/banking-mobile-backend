@@ -1,11 +1,12 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { JwtUtil } from '@/utils/jwt.utils';
 import { buildLogger } from '@/utils';
+import { AuthenticatedRequest } from '@/types/authenticated-request';
 
 const logger = buildLogger('auth-middleware');
 
 export const authenticateToken = (
-  req: Request,
+  req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
 ): void => {
@@ -35,11 +36,11 @@ export const authenticateToken = (
       error: error instanceof Error ? error.message : 'Unknown error',
     });
 
-    if (error instanceof Error && error.message === 'Token expirado') {
-      res.status(401).json({ message: 'Token expirado' });
+    if (error instanceof Error && error.message === 'Token expired') {
+      res.status(401).json({ message: 'Token expired' });
       return;
     }
 
-    res.status(403).json({ message: 'Token inválido' });
+    res.status(403).json({ message: 'Invalid token' });
   }
 };
