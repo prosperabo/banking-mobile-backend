@@ -8,22 +8,32 @@ if (process.env.NODE_ENV === 'production') {
   require('source-map-support/register');
 }
 
-import { config } from './config';
+import { config, prismaInit, registerPrismaShutdown } from './config';
 import { buildLogger } from './utils';
-import { NodeEnv } from './shared/consts';
 import app from './app';
 
 const logger = buildLogger('index');
 
-const { port, version, nodeEnv } = config;
+const { port, version } = config;
 
 const PORT = port || 3000;
 const API = `http://localhost:${PORT}/api/v${version}`;
 
-app.listen(PORT, async () => {
-  if (nodeEnv === NodeEnv.DEVELOPMENT) {
-    logger.info(`🚀 Server is running on ${API}`);
-    return;
+(async () => {
+  try {
+    await prismaInit();
+    const server = app.listen(PORT, () => {
+      logger.info(`🚀 Server is running on ${API}`);
+    });
+    registerPrismaShutdown(server);
+  } catch (err: unknown) {
+    const message =
+      err instanceof Error
+        ? err.message
+        : typeof err === 'string'
+          ? err
+          : JSON.stringify(err);
+    logger.error(`❌ Failed to start: ${message}`);
+    process.exit(1);
   }
-  logger.info('🚀 Server is running!');
-});
+})();

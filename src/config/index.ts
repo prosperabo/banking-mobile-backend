@@ -1,4 +1,4 @@
 import { config } from './config';
-import { db } from './prisma';
+import { db, prismaInit, registerPrismaShutdown } from './prisma';
 
-export { config, db };
+export { config, db, prismaInit, registerPrismaShutdown };
