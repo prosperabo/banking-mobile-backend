@@ -21,6 +21,7 @@ const API = `http://localhost:${PORT}/api/v${version}`;
 
 (async () => {
   try {
+    logger.info(`Trying to start on port: ${PORT}`);
     await prismaInit();
     const server = app.listen(PORT, () => {
       logger.info(`🚀 Server is running on ${API}`);
