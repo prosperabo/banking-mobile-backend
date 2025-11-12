@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 
 import { buildLogger } from '@/utils';
+import { config } from './config';
 
 const logger = buildLogger('DatabaseConfig');
 
@@ -15,8 +16,12 @@ const getPrismaClient = () => {
 
 export const db = getPrismaClient();
 
+const url = config.databaseUrl;
+const masked = url.replace(/\/\/(.+?)@/, '//****:****@');
+
 export const prismaInit = async (): Promise<void> => {
   logger.info('Connecting to database…');
+  logger.info(`DB URL: ${masked}`);
   await db.$connect();
   logger.info('Database connected');
 };
