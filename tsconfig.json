@@ -1,9 +1,11 @@
 {
   "compilerOptions": {
     "baseUrl": ".",
-		"paths": {
-			"@/*": ["src/*"],
-		},
+    "paths": {
+      "@/*": [
+        "src/*"
+      ],
+    },
     "target": "es2020",
     "module": "commonjs",
     "strict": true,
@@ -16,8 +18,17 @@
     "noImplicitAny": true,
     "sourceMap": true,
     "experimentalDecorators": true,
-    "typeRoots": ["./src/types", "./node_modules/@types"]
+    "typeRoots": [
+      "./src/types",
+      "./node_modules/@types"
+    ]
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": [
+    "src/**/*",
+    "scripts/**/*"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
 }

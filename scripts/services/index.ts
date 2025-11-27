@@ -1,2 +1,2 @@
 export * from './backoffice.service';
-export * from './database.service';
+export * from './user.service';

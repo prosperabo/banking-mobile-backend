@@ -1,43 +1,68 @@
-import { buildLogger } from '../../src/utils';
-import type { UserForMigration } from '../types';
+import { checkSchema, validationResult } from 'express-validator';
+import type { Request, Response, NextFunction } from 'express';
+import type { UserForMigration } from '../schemas/migration.schema';
 
-const logger = buildLogger('ValidationUtils');
+export const userMigrationSchema: any = {
+  id: {
+    in: ['body'],
+    isInt: true,
+    toInt: true,
+    errorMessage: 'ID must be an integer',
+  },
+  email: {
+    in: ['body'],
+    isEmail: true,
+    errorMessage: 'Invalid email format',
+  },
+  password: {
+    in: ['body'],
+    isString: true,
+    notEmpty: true,
+    errorMessage: 'Password is required',
+  },
+  completeName: {
+    in: ['body'],
+    isString: true,
+    trim: true,
+    custom: {
+      options: (value: string) => {
+        return value.trim().split(' ').length >= 1;
+      },
+      errorMessage: 'Complete name must have at least one word',
+    },
+  },
+};
+
+export const validateUserMigration = checkSchema(userMigrationSchema);
+
+export const validateUserMigrationMiddleware = [
+  ...validateUserMigration,
+  (req: Request, res: Response, next: NextFunction) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    next();
+  },
+];
 
 /**
- * Validates user data for migration
+ * Validates user data for migration using express-validator logic
  * @param user - User data to validate
- * @returns True if valid, false otherwise
+ * @returns Object with isValid boolean and errors array
  */
-export function validateUserForMigration(user: UserForMigration): boolean {
-  const requiredFields = ['id', 'email', 'password', 'completeName'] as const;
+export async function validateUserForMigration(user: UserForMigration) {
+  const req = { body: user } as any;
 
-  for (const field of requiredFields) {
-    if (!user[field]) {
-      logger.error(`Missing required field: ${field}`, { userId: user.id });
-      return false;
-    }
-  }
+  // Run all validations
+  await Promise.all(validateUserMigration.map(validation => validation.run(req)));
 
-  // Validate email format
-  const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;
-  if (!emailRegex.test(user.email)) {
-    logger.error('Invalid email format', {
-      userId: user.id,
-      email: user.email,
-    });
-    return false;
-  }
+  const errors = validationResult(req);
 
-  // Validate completeName has at least one word
-  if (user.completeName.trim().split(' ').length < 1) {
-    logger.error('Complete name must have at least one word', {
-      userId: user.id,
-      completeName: user.completeName,
-    });
-    return false;
-  }
-
-  return true;
+  return {
+    isValid: errors.isEmpty(),
+    errors: errors.array(),
+  };
 }
 
 /**
@@ -49,7 +74,7 @@ export function sanitizePhoneNumber(phone: string | null): string {
   if (!phone) return '5551234568';
 
   // Remove non-numeric characters
-  const cleaned = phone.replace(/\\D/g, '');
+  const cleaned = phone.replace(/\D/g, '');
 
   // Return cleaned number or default if too short
   return cleaned.length >= 10 ? cleaned : '5551234568';
