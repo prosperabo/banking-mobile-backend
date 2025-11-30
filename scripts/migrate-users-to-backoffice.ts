@@ -6,16 +6,12 @@ import type {
 } from './schemas/migration.schema';
 import { delay } from './utils/helpers';
 import { UserBackofficeService } from './services/backoffice.service';
-import {
-  saveBackofficeProfile,
-  saveAuthState,
-  hasExistingProfile,
-  getUsersForMigration,
-} from './services/user.service';
+import { UserService } from './services/user.service';
 import { validateUserForMigration } from './utils/validation.utils';
 
 const logger = buildLogger('MigrateUsersScript');
 const backofficeService = new UserBackofficeService();
+const userService = new UserService();
 
 /**
  * Processes a single user migration
@@ -38,7 +34,7 @@ async function processUser(user: UserForMigration): Promise<MigrationResult> {
     }
 
     // Check if user already has a backoffice profile
-    const profileExists = await hasExistingProfile(user.id);
+    const profileExists = await userService.hasExistingProfile(user.id);
     if (profileExists) {
       logger.warn(
         `User ${user.email} already has a backoffice profile. Skipping...`
@@ -65,8 +61,8 @@ async function processUser(user: UserForMigration): Promise<MigrationResult> {
     }
 
     // Save data to database
-    await saveBackofficeProfile(user.id, backofficeData);
-    await saveAuthState(user.id, backofficeData);
+    await userService.saveBackofficeProfile(user.id, backofficeData);
+    await userService.saveAuthState(user.id, backofficeData);
 
     logger.info(`User ${user.email} migrated successfully!`);
 
@@ -97,7 +93,7 @@ async function migrateUsers(targetUserId: number = 46): Promise<void> {
 
   try {
     // Get users for migration
-    const users = await getUsersForMigration(targetUserId);
+    const users = await userService.getUsersForMigration(targetUserId);
     logger.info(`Found ${users.length} user(s) to process\n`);
 
     // Initialize migration statistics

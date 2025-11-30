@@ -1,9 +1,12 @@
 import { db } from '../../src/config/prisma';
-import type { BackofficeAccountData } from '../schemas/backoffice.schema';
-import type { UserForMigration } from '../schemas/migration.schema';
+import type { Prisma } from '@prisma/client';
 
 export class BackofficeRepository {
-    async upsertProfile(userId: number, createData: any, updateData: any) {
+    async upsertProfile(
+        userId: number,
+        createData: Prisma.BackofficeCustomerProfileCreateInput,
+        updateData: Prisma.BackofficeCustomerProfileUpdateInput
+    ) {
         return db.backofficeCustomerProfile.upsert({
             where: { userId },
             create: createData,
@@ -14,7 +17,11 @@ export class BackofficeRepository {
         });
     }
 
-    async upsertAuthState(userId: number, createData: any, updateData: any) {
+    async upsertAuthState(
+        userId: number,
+        createData: Prisma.BackofficeAuthStateCreateInput,
+        updateData: Prisma.BackofficeAuthStateUpdateInput
+    ) {
         return db.backofficeAuthState.upsert({
             where: { userId },
             create: createData,

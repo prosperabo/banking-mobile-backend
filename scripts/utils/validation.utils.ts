@@ -1,8 +1,8 @@
-import { checkSchema, validationResult } from 'express-validator';
+import { checkSchema, validationResult, Schema } from 'express-validator';
 import type { Request, Response, NextFunction } from 'express';
 import type { UserForMigration } from '../schemas/migration.schema';
 
-export const userMigrationSchema: any = {
+export const userMigrationSchema: Schema = {
   id: {
     in: ['body'],
     isInt: true,
