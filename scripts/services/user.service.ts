@@ -2,16 +2,16 @@ import { buildLogger } from '../../src/utils';
 import type { BackofficeAccountData } from '../schemas/backoffice.schema';
 import type { UserForMigration } from '../schemas/migration.schema';
 import { generateDeviceId } from '../utils/auth.utils';
-import { BackofficeRepository } from '../repositories/backoffice.repository';
+import { UserBackofficeRepository } from '../repositories/user-backoffice.repository';
 import type { Prisma } from '@prisma/client';
 
 const logger = buildLogger('UserService');
 
 export class UserService {
-    private backofficeRepository: BackofficeRepository;
+    private backofficeRepository: UserBackofficeRepository;
 
     constructor() {
-        this.backofficeRepository = new BackofficeRepository();
+        this.backofficeRepository = new UserBackofficeRepository();
     }
 
     /**

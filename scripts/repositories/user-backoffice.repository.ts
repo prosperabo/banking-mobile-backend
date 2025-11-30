@@ -1,7 +1,7 @@
 import { db } from '../../src/config/prisma';
 import type { Prisma } from '@prisma/client';
 
-export class BackofficeRepository {
+export class UserBackofficeRepository {
     async upsertProfile(
         userId: number,
         createData: Prisma.BackofficeCustomerProfileCreateInput,
