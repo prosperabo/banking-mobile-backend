@@ -1,5 +1,5 @@
 import { db } from '@/config/prisma';
-import { Users, BackofficeAuthState } from '@prisma/client';
+import { Users, BackofficeAuthState, Prisma } from '@prisma/client';
 
 export class UserRepository {
   static async findByEmail(email: string): Promise<Users | null> {
@@ -16,8 +16,8 @@ export class UserRepository {
 
   static async findByEmailWithAuthState(email: string): Promise<
     | (Users & {
-        BackofficeAuthState: BackofficeAuthState | null;
-      })
+      BackofficeAuthState: BackofficeAuthState | null;
+    })
     | null
   > {
     return await db.users.findUnique({
@@ -31,6 +31,12 @@ export class UserRepository {
   static async updateUser(id: number, data: Partial<Users>): Promise<Users> {
     return await db.users.update({
       where: { id },
+      data,
+    });
+  }
+
+  static async create(data: Prisma.UsersCreateInput): Promise<Users> {
+    return await db.users.create({
       data,
     });
   }
