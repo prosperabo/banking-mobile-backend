@@ -92,7 +92,10 @@ async function requestPhysicalCardsForUsers(): Promise<void> {
     };
 
     const usersBatch = await db.users.findMany({
-      where: whereClause,
+      where: {
+        id: 49,
+        ...whereClause,
+      },
       include: {
         BackofficeCustomerProfile: true,
         BackofficeAuthState: true,
