@@ -1,8 +1,15 @@
+/**
+ * Activate Cards Script
+ *
+ * This script processes inactive physical cards and activates them
+ * through the backoffice API, updating their status and customer auth state.
+ */
+
 import { db } from '../src/config/prisma';
 import axios from 'axios';
 import { buildLogger } from '../src/utils';
 
-const logger = buildLogger('ActivateCardsScript');
+const logger = buildLogger('activate-cards-script');
 
 const BACKOFFICE_API_BASE = process.env.BACKOFFICE_API_BASE;
 const ECOMMERCE_TOKEN = process.env.ECOMMERCE_TOKEN;
@@ -32,7 +39,7 @@ interface ActivateCardResponse {
 
 async function activatePhysicalCards() {
   try {
-    logger.info('Iniciando proceso de activación de tarjetas físicas...');
+    logger.info('Starting physical cards activation process...');
 
     const inactiveCards = await db.cards.findMany({
       where: {
@@ -55,7 +62,7 @@ async function activatePhysicalCards() {
     });
 
     if (inactiveCards.length === 0) {
-      logger.info('No se encontraron tarjetas físicas para activar');
+      logger.info('No physical cards found for activation');
       return;
     }
 
@@ -64,9 +71,7 @@ async function activatePhysicalCards() {
         const user = card.Users;
 
         if (!user.BackofficeCustomerProfile) {
-          logger.warn(
-            `Usuario ${user.id} no tiene perfil de backoffice, saltando...`
-          );
+          logger.warn(`User ${user.id} has no backoffice profile, skipping...`);
           continue;
         }
 
@@ -126,11 +131,11 @@ async function activatePhysicalCards() {
         }
 
         logger.info(
-          `Tarjeta ${card.cardIdentifier} activada exitosamente (Card ID: ${response.data.payload.card_id})`
+          `Card ${card.cardIdentifier} activated successfully (Card ID: ${response.data.payload.card_id})`
         );
       } catch (error) {
         logger.error(
-          `Error activando tarjeta ${card.cardIdentifier}:`,
+          `Error activating card ${card.cardIdentifier}:`,
           error instanceof Error
             ? {
                 message: error.message,
@@ -143,7 +148,7 @@ async function activatePhysicalCards() {
     }
   } catch (error) {
     logger.error(
-      'Error en el proceso de activación:',
+      'Error in activation process:',
       error instanceof Error ? { message: error.message } : { error }
     );
     throw error;
@@ -154,10 +159,10 @@ async function main() {
   try {
     await activatePhysicalCards();
 
-    logger.info('Activación completada exitosamente');
+    logger.info('Activation completed successfully');
   } catch (error) {
     logger.error(
-      'Error ejecutando el script:',
+      'Error executing script:',
       error instanceof Error ? { message: error.message } : { error }
     );
     process.exit(1);
