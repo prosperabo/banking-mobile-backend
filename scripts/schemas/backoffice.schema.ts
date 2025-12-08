@@ -1,62 +1,78 @@
+/**
+ * @fileoverview Type definitions for 123 Backoffice API integration
+ * @description Contains interfaces for backoffice account data and API responses
+ */
+
+/**
+ * Represents account data structure from the 123 Backoffice API
+ * Contains user profile, authentication, and e-wallet information
+ */
 export interface BackofficeAccountData {
-    account_level: number;
-    account_status: number;
-    account_status_string: string;
-    address: string;
-    address_document_back: string;
-    address_document_back_url: string;
-    address_document_front: string;
-    address_document_front_url: string;
-    address_document_type: number;
-    are_account_resources_of_user: boolean;
-    business_name: string;
-    business_purpose: string;
-    ciabe: string;
-    city: string;
-    colony: string;
-    constitution_date: string;
-    correspondence_address: string;
-    country_of_birth: string;
-    date_of_birth: string;
-    ecommerce_id: number;
-    email: string;
-    exterior: string;
-    first_name: string;
-    gender: number;
-    gender_string: string;
-    id: number;
-    identification_document_back: string;
-    identification_document_back_url: string;
-    identification_document_front: string;
-    identification_document_front_url: string;
-    identification_document_type: number;
-    interior: string;
-    is_business: boolean;
-    last_name: string;
-    mobile: string;
-    mobile_country_code: string;
-    nationality_id: number;
-    oauth_token: string;
-    occupation_id: number;
-    person_type: number;
-    private_key: string;
-    rfc: string;
-    refresh_token: string;
-    risk_level: number;
-    second_last_name: string;
-    society_type: number;
-    selfie: string;
-    selfie_url: string;
-    state_id: number;
-    street: string;
-    telephone: string;
-    zipcode: string;
-    ewallet_id: number;
-    ewallet_status: number;
+  account_level: number;
+  account_status: number;
+  account_status_string: string;
+  address: string;
+  address_document_back: string;
+  address_document_back_url: string;
+  address_document_front: string;
+  address_document_front_url: string;
+  address_document_type: number;
+  are_account_resources_of_user: boolean;
+  business_name: string;
+  business_purpose: string;
+  ciabe: string;
+  city: string;
+  colony: string;
+  constitution_date: string;
+  correspondence_address: string;
+  country_of_birth: string;
+  date_of_birth: string;
+  ecommerce_id: number;
+  email: string;
+  exterior: string;
+  first_name: string;
+  gender: number;
+  gender_string: string;
+  id: number;
+  identification_document_back: string;
+  identification_document_back_url: string;
+  identification_document_front: string;
+  identification_document_front_url: string;
+  identification_document_type: number;
+  interior: string;
+  is_business: boolean;
+  last_name: string;
+  mobile: string;
+  mobile_country_code: string;
+  nationality_id: number;
+  oauth_token: string;
+  occupation_id: number;
+  person_type: number;
+  private_key: string;
+  rfc: string;
+  refresh_token: string;
+  risk_level: number;
+  second_last_name: string;
+  society_type: number;
+  selfie: string;
+  selfie_url: string;
+  state_id: number;
+  street: string;
+  telephone: string;
+  zipcode: string;
+  ewallet_id: number;
+  ewallet_status: number;
 }
 
+/**
+ * Response structure from the backoffice account creation API
+ * Contains success/failure data and error information
+ */
 export interface CreateAccountResponse {
-    ss?: BackofficeAccountData;
-    rs?: BackofficeAccountData;
-    err: null | string;
+  /** Success response with account data */
+  ss?: BackofficeAccountData;
+  /** Result response with account data */
+  rs?: BackofficeAccountData;
+  /** Error message, null if successful */
+  err: null | string;
 }
