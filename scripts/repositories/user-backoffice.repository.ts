@@ -22,7 +22,7 @@ export class UserBackofficeRepository {
     userId: number,
     createData: Prisma.BackofficeCustomerProfileCreateInput,
     updateData: Prisma.BackofficeCustomerProfileUpdateInput
-  ): Promise<Prisma.BackofficeCustomerProfileGetPayload<{}>> {
+  ): Promise<Prisma.BackofficeCustomerProfileGetPayload<object>> {
     return db.backofficeCustomerProfile.upsert({
       where: { userId },
       create: createData,
@@ -44,7 +44,7 @@ export class UserBackofficeRepository {
     userId: number,
     createData: Prisma.BackofficeAuthStateCreateInput,
     updateData: Prisma.BackofficeAuthStateUpdateInput
-  ): Promise<Prisma.BackofficeAuthStateGetPayload<{}>> {
+  ): Promise<Prisma.BackofficeAuthStateGetPayload<object>> {
     return db.backofficeAuthState.upsert({
       where: { userId },
       create: createData,
@@ -62,7 +62,7 @@ export class UserBackofficeRepository {
    */
   async findProfileByUserId(
     userId: number
-  ): Promise<Prisma.BackofficeCustomerProfileGetPayload<{}> | null> {
+  ): Promise<Prisma.BackofficeCustomerProfileGetPayload<object> | null> {
     return db.backofficeCustomerProfile.findUnique({
       where: { userId },
     });

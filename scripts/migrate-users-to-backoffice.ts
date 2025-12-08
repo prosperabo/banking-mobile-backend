@@ -101,14 +101,15 @@ async function processUser(user: UserForMigration): Promise<MigrationResult> {
 }
 
 /**
- * Main migration function - migrates all users without backoffice profiles
+ * Main migration function - migrates users to backoffice
  */
 async function migrateUsers(): Promise<void> {
-  logger.info('Starting user migration to 123 backoffice...');
+  logger.info('Starting user migration to 123 backoffice for ALL users...');
 
   try {
-    // Get users for migration
+    // Get users for migration (targeted or all)
     const users = await userService.getUsersForMigration();
+
     logger.info(`Found ${users.length} user(s) to process`);
 
     // Initialize migration statistics
