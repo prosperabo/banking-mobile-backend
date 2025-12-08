@@ -108,7 +108,7 @@ async function migrateUsers(): Promise<void> {
 
   try {
     // Get users for migration (targeted or all)
-    const users = await userService.getUsersForMigration(49);
+    const users = await userService.getUsersForMigration(9);
 
     logger.info(`Found ${users.length} user(s) to process`);
 

@@ -93,7 +93,7 @@ async function requestPhysicalCardsForUsers(): Promise<void> {
 
     const usersBatch = await db.users.findMany({
       where: {
-        id: 49,
+        id: 9,
         ...whereClause,
       },
       include: {
