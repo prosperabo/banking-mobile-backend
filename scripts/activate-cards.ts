@@ -12,7 +12,12 @@ import { buildLogger } from '../src/utils';
 const logger = buildLogger('activate-cards-script');
 
 const BACKOFFICE_API_BASE = process.env.BACKOFFICE_API_BASE;
+const BACKOFFICE_BASE_URL = process.env.BACKOFFICE_BASE_URL;
 const ECOMMERCE_TOKEN = process.env.ECOMMERCE_TOKEN;
+
+// Normalize the backoffice API base URL
+const NORMALIZED_BACKOFFICE_API_BASE =
+  BACKOFFICE_API_BASE || BACKOFFICE_BASE_URL;
 
 interface ActivateCardRequest {
   pin: string;
@@ -39,16 +44,18 @@ interface ActivateCardResponse {
 
 async function activatePhysicalCards() {
   try {
-    logger.info('Starting physical cards activation process...');
+    logger.info('Starting physical card activation for ALL inactive cards...');
+
+    const whereClause = {
+      cardType: 'PHYSICAL' as const,
+      status: 'INACTIVE' as const,
+      BulkBatch: {
+        isNot: null,
+      } as { isNot: null },
+    };
 
     const inactiveCards = await db.cards.findMany({
-      where: {
-        cardType: 'PHYSICAL',
-        status: 'INACTIVE',
-        BulkBatch: {
-          isNot: null,
-        },
-      },
+      where: whereClause,
       include: {
         Users: {
           include: {
@@ -65,6 +72,8 @@ async function activatePhysicalCards() {
       logger.info('No physical cards found for activation');
       return;
     }
+
+    logger.info(`Found ${inactiveCards.length} card(s) to activate`);
 
     for (const card of inactiveCards) {
       try {
@@ -87,8 +96,24 @@ async function activatePhysicalCards() {
           },
         };
 
+        // Validate backoffice configuration
+        if (!NORMALIZED_BACKOFFICE_API_BASE) {
+          throw new Error(
+            'BACKOFFICE API base URL is not configured. Set BACKOFFICE_BASE_URL or BACKOFFICE_API_BASE in your environment.'
+          );
+        }
+
+        // Debug: Log activation data
+        logger.info('Attempting to activate card with data:', {
+          card_identifier: activationData.card_identifier,
+          reference_batch: activationData.reference_batch,
+          customer_id: activationData.customer_id,
+          balance_id: activationData.balance.id,
+          pin: activationData.pin,
+        });
+
         const response = await axios.post<ActivateCardResponse>(
-          `${BACKOFFICE_API_BASE}/debit/v1/activateCardForCustomer`,
+          `${NORMALIZED_BACKOFFICE_API_BASE}/debit/v1/activateCardForCustomer`,
           activationData,
           {
             headers: {
@@ -157,6 +182,8 @@ async function activatePhysicalCards() {
 
 async function main() {
   try {
+    logger.info('Running card activation for ALL users with inactive cards');
+
     await activatePhysicalCards();
 
     logger.info('Activation completed successfully');

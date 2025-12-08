@@ -11,6 +11,8 @@ import { config } from '../src/config/config';
 
 const logger = buildLogger('RequestPhysicalCardsScript');
 
+// TEMPORAL: Target specific user ID for card request (set to null for all users)
+
 /**
  * Backoffice API configuration
  * Prioritizes centralized config which loads .env via dotenv
@@ -71,23 +73,26 @@ interface BulkOrderCardResponse {
 
 /**
  * Requests physical cards for users who have backoffice profiles but no physical cards
+ * @param targetUserId - Optional user ID to request cards specifically (temporal feature)
  * @throws {Error} When configuration is invalid or API request fails
  */
 async function requestPhysicalCardsForUsers(): Promise<void> {
   try {
-    logger.info('Starting physical card request process...');
+    logger.info('Starting physical card request process for ALL users...');
 
-    const usersBatch = await db.users.findMany({
-      where: {
-        BackofficeCustomerProfile: {
-          isNot: null,
-        },
-        Cards: {
-          none: {
-            cardType: 'PHYSICAL',
-          },
+    const whereClause = {
+      BackofficeCustomerProfile: {
+        isNot: null,
+      } as { isNot: null },
+      Cards: {
+        none: {
+          cardType: 'PHYSICAL' as const,
         },
       },
+    };
+
+    const usersBatch = await db.users.findMany({
+      where: whereClause,
       include: {
         BackofficeCustomerProfile: true,
         BackofficeAuthState: true,
@@ -99,6 +104,8 @@ async function requestPhysicalCardsForUsers(): Promise<void> {
       logger.info('No users found that need physical cards');
       return;
     }
+
+    logger.info(`Found ${usersBatch.length} user(s) for card request`);
 
     const batch = usersBatch.map((user, index) => ({
       card_identifier: `${Date.now()}${String(index + 1).padStart(3, '0')}`,
@@ -122,14 +129,24 @@ async function requestPhysicalCardsForUsers(): Promise<void> {
         firstUser.externalNumber,
       city: firstUser.BackofficeCustomerProfile?.city || firstUser.municipality,
       street: firstUser.BackofficeCustomerProfile?.street || firstUser.street,
-      mobile: parseInt(
+      mobile: Number(
         firstUser.BackofficeCustomerProfile?.mobile ||
           firstUser.phone ||
           '5555555555'
       ),
-      interior_number:
-        firstUser.BackofficeCustomerProfile?.interior ||
-        firstUser.internalNumber,
+      interior_number: (() => {
+        const interiorValue =
+          firstUser.BackofficeCustomerProfile?.interior ||
+          firstUser.internalNumber;
+
+        // Only use the value if it's numeric
+        if (interiorValue && /^\d+$/.test(interiorValue)) {
+          return interiorValue;
+        }
+
+        // Default to '1' if not valid (must be numeric)
+        return '1';
+      })(),
       state: firstUser.state,
       neighborhood:
         firstUser.BackofficeCustomerProfile?.colony || firstUser.colony,
@@ -144,6 +161,13 @@ async function requestPhysicalCardsForUsers(): Promise<void> {
     };
 
     logger.info('Sending physical card request to backoffice...');
+
+    // Log the data being sent for debugging
+    logger.info('Request data:', {
+      delivery_location: deliveryLocation,
+      batch_count: batch.length,
+      first_batch_item: batch[0],
+    });
 
     // Diagnostic logs to help troubleshoot "Invalid URL" errors
     logger.info('Backoffice API configuration', {
@@ -221,10 +245,44 @@ async function requestPhysicalCardsForUsers(): Promise<void> {
       logger.info(`Card registered for user ${user.id} (${user.email})`);
     }
   } catch (error) {
-    logger.error(
-      'Error requesting physical cards:',
-      error instanceof Error ? { message: error.message } : { error }
-    );
+    logger.error('Error requesting physical cards:');
+
+    // Type-safe error handling
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as {
+        response?: {
+          status?: number;
+          statusText?: string;
+          data?: unknown;
+        };
+        config?: {
+          url?: string;
+          method?: string;
+        };
+      };
+
+      logger.error('HTTP error details:', {
+        status: axiosError.response?.status,
+        statusText: axiosError.response?.statusText,
+        data: axiosError.response?.data,
+        url: axiosError.config?.url,
+        method: axiosError.config?.method,
+      });
+
+      if (axiosError.response?.status === 400) {
+        logger.error(
+          'Bad Request (400) - Check the request data in logs above'
+        );
+      }
+    } else {
+      logger.error(
+        'Non-HTTP error:',
+        error instanceof Error
+          ? { message: error.message, stack: error.stack }
+          : { error }
+      );
+    }
+
     throw error;
   }
 }
@@ -235,6 +293,8 @@ async function requestPhysicalCardsForUsers(): Promise<void> {
  */
 async function main(): Promise<void> {
   try {
+    logger.info('Running card request for ALL users without physical cards');
+
     await requestPhysicalCardsForUsers();
     logger.info('Process completed successfully');
   } catch (error) {

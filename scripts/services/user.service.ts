@@ -79,7 +79,7 @@ export class UserService {
         interior: backofficeData.interior,
         is_business: backofficeData.is_business,
         last_name: backofficeData.last_name,
-        mobile: backofficeData.mobile,
+        mobile: backofficeData.mobile ? String(backofficeData.mobile) : null,
         mobile_country_code: backofficeData.mobile_country_code,
         nationality_id: backofficeData.nationality_id,
         oauth_token: backofficeData.oauth_token,
