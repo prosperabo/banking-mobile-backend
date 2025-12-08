@@ -179,14 +179,18 @@ export class AuthService {
     // We need to match the type expected by Prisma.
     // upsertProfile expects CreateInput.
     // BackofficeCustomerProfileCreateInput requires 'Users' relation connection.
-    const profileData: any = {
+    const profileData = {
       Users: { connect: { id: newUser.id } },
-      ...backofficeData
+      ...backofficeData,
     };
-    await BackofficeRepository.upsertProfile(newUser.id, profileData, backofficeData);
+    await BackofficeRepository.upsertProfile(
+      newUser.id,
+      profileData,
+      backofficeData
+    );
 
     // Prepare auth state data
-    const authStateData: any = {
+    const authStateData = {
       Users: { connect: { id: newUser.id } },
       clientState: 9,
       deviceId: 'generated-device-id', // We need generateDeviceId here
@@ -201,7 +205,11 @@ export class AuthService {
       ewalletId: backofficeData.ewallet_id,
     };
 
-    await BackofficeRepository.upsertAuthState(newUser.id, authStateData, authStateData);
+    await BackofficeRepository.upsertAuthState(
+      newUser.id,
+      authStateData,
+      authStateData
+    );
 
     // 5. Generate token
     const jwt = JwtUtil.generateToken({
