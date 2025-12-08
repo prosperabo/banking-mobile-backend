@@ -76,4 +76,12 @@ router.post(
   CardController.unstopCard
 );
 
+// Route to update card CVV
+router.post(
+  '/:cardId/update-cvv',
+  validateRequest(...cardIdParamValidator),
+  validateCardOwnership(),
+  CardController.updateCardCVV
+);
+
 export default router;

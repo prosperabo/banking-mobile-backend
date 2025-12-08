@@ -11,6 +11,8 @@ import {
   UnstopCardResponse,
   ViewPinForCustomerResponse,
   CardInfoResponse,
+  UpdateCVVParams,
+  UpdateCVVResponse,
 } from '@/schemas/card.schemas';
 import { buildLogger } from '@/utils';
 
@@ -187,6 +189,28 @@ export class CardBackofficeService {
     );
 
     logger.info('Linked card created successfully. Response:', {
+      response: response.data,
+    });
+    return response.data;
+  }
+
+  static async updateCardCVV(
+    params: UpdateCVVParams,
+    customerToken: string
+  ): Promise<UpdateCVVResponse> {
+    logger.info('Updating card CVV with params:', { params });
+
+    const response = await backOfficeInstance.post<UpdateCVVResponse>(
+      '/debit/v1/update-cvv-linked-card',
+      params,
+      {
+        headers: {
+          'Authorization-customer': customerToken,
+        },
+      }
+    );
+
+    logger.info('Card CVV updated successfully. Response:', {
       response: response.data,
     });
     return response.data;

@@ -11,6 +11,7 @@ import {
   StopCardResponsePayload,
   UnstopCardResponsePayload,
   UserCardInfoResponse,
+  UpdateCVVResponsePayload,
 } from '@/schemas/card.schemas';
 import { BackofficeRepository } from '@/repositories/backoffice.repository';
 
@@ -324,5 +325,35 @@ export class CardService {
 
     logger.info(`Virtual card created successfully for user ${userId}`);
     return virtualCardResponse.payload;
+  }
+
+  static async updateCardCVV(
+    cardId: number,
+    customerToken: string,
+    _customerId: number
+  ): Promise<UpdateCVVResponsePayload> {
+    logger.info(`Updating CVV for card ${cardId}`);
+
+    const card = await CardRepository.getCardById(cardId);
+    if (!card?.prosperaCardId) {
+      logger.error(
+        `Card ${cardId} not found in database or missing prosperaCardId`
+      );
+      throw new Error('Card not found or missing prosperaCardId');
+    }
+
+    logger.info(
+      `Found card in database with prosperaCardId: ${card.prosperaCardId}`
+    );
+
+    const updateResponse = await CardBackofficeService.updateCardCVV(
+      {
+        card_id: Number(card.prosperaCardId),
+      },
+      customerToken
+    );
+
+    logger.info(`Card CVV ${cardId} updated successfully`);
+    return updateResponse.payload;
   }
 }
