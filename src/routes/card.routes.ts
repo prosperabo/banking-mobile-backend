@@ -77,7 +77,7 @@ router.post(
 );
 
 // Route to show card CVV
-router.post(
+router.get(
   '/:cardId/show-cvv',
   validateRequest(...cardIdParamValidator),
   validateCardOwnership(),
