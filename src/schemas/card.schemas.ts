@@ -164,3 +164,11 @@ export interface UpdateCVVResponsePayload {
 }
 
 export type UpdateCVVResponse = ApiResponse<UpdateCVVResponsePayload>;
+
+export interface ShowCvvResponsePayload {
+  cvv: string;
+  expiration_time_in_minutes?: number;
+  update_digit?: string;
+}
+
+export type ShowCvvResponse = ApiResponse<ShowCvvResponsePayload>;

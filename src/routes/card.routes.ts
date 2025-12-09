@@ -76,12 +76,12 @@ router.post(
   CardController.unstopCard
 );
 
-// Route to update card CVV
+// Route to show card CVV
 router.post(
-  '/:cardId/update-cvv',
+  '/:cardId/show-cvv',
   validateRequest(...cardIdParamValidator),
   validateCardOwnership(),
-  CardController.updateCardCVV
+  CardController.showCardCvv
 );
 
 export default router;

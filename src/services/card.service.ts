@@ -12,7 +12,9 @@ import {
   UnstopCardResponsePayload,
   UserCardInfoResponse,
   UpdateCVVResponsePayload,
+  ShowCvvResponsePayload,
 } from '@/schemas/card.schemas';
+import { generateUpdateDigit } from '@/utils/card.utils';
 import { BackofficeRepository } from '@/repositories/backoffice.repository';
 
 const logger = buildLogger('CardService');
@@ -355,5 +357,51 @@ export class CardService {
 
     logger.info(`Card CVV ${cardId} updated successfully`);
     return updateResponse.payload;
+  }
+
+  static async showCardCvv(
+    cardId: number,
+    customerToken: string,
+    customerId: number
+  ): Promise<ShowCvvResponsePayload> {
+    logger.info('Showing CVV for card', { cardId });
+
+    const card = await CardRepository.getCardById(cardId);
+    if (!card) {
+      logger.error(`Card ${cardId} not found`);
+      throw new Error('Card not found');
+    }
+
+    if (card.cardType === 'PHYSICAL') {
+      logger.info('Card is physical; fetching details from backoffice', {
+        cardId,
+      });
+
+      const details = await this.getCardDetailsById(
+        cardId,
+        customerToken,
+        customerId
+      );
+
+      const cardDetails = details as unknown as { cvv?: string; cvv2?: string };
+      const cvv = cardDetails.cvv || cardDetails.cvv2 || '';
+      return { cvv };
+    }
+
+    // For virtual cards, update the CVV first then return it with an update digit
+    logger.info('Card is virtual; updating CVV before showing', { cardId });
+    const updatePayload = await this.updateCardCVV(
+      cardId,
+      customerToken,
+      customerId
+    );
+
+    const updateDigit = generateUpdateDigit();
+
+    return {
+      cvv: updatePayload.cvv2,
+      expiration_time_in_minutes: updatePayload.expiration_time_in_minutes,
+      update_digit: updateDigit,
+    };
   }
 }
