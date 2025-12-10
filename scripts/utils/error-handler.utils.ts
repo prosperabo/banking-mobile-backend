@@ -1,5 +1,5 @@
 import { buildLogger } from '../../src/utils';
-import type { BackofficeError, ErrorHandlerResult } from '../schemas';
+import type { BackofficeError, ErrorHandlerResult, ErrorLogContext } from '../schemas';
 
 const logger = buildLogger('BackofficeErrorHandler');
 
@@ -20,7 +20,7 @@ export class BackofficeErrorHandler {
     const suggestions: string[] = [];
     let canRetry = false;
     let reason = 'Unknown backoffice error';
-    let details: BackofficeError | Record<string, unknown> | null = null;
+    let details: BackofficeError | null = null;
 
     try {
       // Handle common backoffice errors
@@ -99,7 +99,7 @@ export class BackofficeErrorHandler {
    * @param context - Additional context
    * @returns Formatted error info
    */
-  static formatErrorForLogging(error: Error, context: string): Record<string, unknown> {
+  static formatErrorForLogging(error: Error, context: string): ErrorLogContext {
     const errorWithResponse = error as Error & { 
       response?: { 
         status?: number; 
@@ -109,12 +109,11 @@ export class BackofficeErrorHandler {
     };
 
     return {
-      context,
       message: error.message || 'Unknown error',
-      status: errorWithResponse.response?.status,
-      statusText: errorWithResponse.response?.statusText,
-      data: errorWithResponse.response?.data,
-      stack: error.stack
+      stack: error.stack,
+      name: error.name,
+      context,
+      timestamp: new Date().toISOString()
     };
   }
 }
