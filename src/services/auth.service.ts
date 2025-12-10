@@ -181,9 +181,13 @@ export class AuthService {
     // BackofficeCustomerProfileCreateInput requires 'Users' relation connection.
     const profileData: any = {
       Users: { connect: { id: newUser.id } },
-      ...backofficeData
+      ...backofficeData,
     };
-    await BackofficeRepository.upsertProfile(newUser.id, profileData, backofficeData);
+    await BackofficeRepository.upsertProfile(
+      newUser.id,
+      profileData,
+      backofficeData
+    );
 
     // Prepare auth state data
     const authStateData: any = {
@@ -201,7 +205,11 @@ export class AuthService {
       ewalletId: backofficeData.ewallet_id,
     };
 
-    await BackofficeRepository.upsertAuthState(newUser.id, authStateData, authStateData);
+    await BackofficeRepository.upsertAuthState(
+      newUser.id,
+      authStateData,
+      authStateData
+    );
 
     // 5. Generate token
     const jwt = JwtUtil.generateToken({

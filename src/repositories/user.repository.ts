@@ -16,8 +16,8 @@ export class UserRepository {
 
   static async findByEmailWithAuthState(email: string): Promise<
     | (Users & {
-      BackofficeAuthState: BackofficeAuthState | null;
-    })
+        BackofficeAuthState: BackofficeAuthState | null;
+      })
     | null
   > {
     return await db.users.findUnique({
