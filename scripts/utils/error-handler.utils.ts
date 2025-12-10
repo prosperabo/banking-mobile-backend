@@ -1,20 +1,7 @@
 import { buildLogger } from '../../src/utils';
+import type { BackofficeError, ErrorHandlerResult } from '../schemas';
 
 const logger = buildLogger('BackofficeErrorHandler');
-
-interface BackofficeError {
-  rfc?: string;
-  mobile?: string;
-  email?: string;
-  [key: string]: string | undefined;
-}
-
-interface ErrorHandlerResult {
-  canRetry: boolean;
-  reason: string;
-  suggestions: string[];
-  details: BackofficeError | Record<string, unknown> | null;
-}
 
 /**
  * Handles backoffice API errors and provides actionable feedback

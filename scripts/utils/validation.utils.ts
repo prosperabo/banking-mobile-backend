@@ -5,7 +5,7 @@
 
 import { checkSchema, validationResult, Schema } from 'express-validator';
 import type { Request, Response, NextFunction } from 'express';
-import type { UserForMigration } from '../schemas/migration.schema';
+import type { UserForMigration } from '../schemas';
 
 /**
  * Express-validator schema for user migration data
