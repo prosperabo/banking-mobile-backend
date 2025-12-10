@@ -19,3 +19,9 @@ export const generateVirtualCardIdentifier = (userId: number): string => {
   const randomSuffix = Math.random().toString(36).substring(2, 8).toUpperCase();
   return `VIRTUAL_${timestamp}_${userId}_${randomSuffix}`;
 };
+
+export const generateUpdateDigit = (): string => {
+  // Generate a random 3-digit string between 100 and 999
+  const value = Math.floor(Math.random() * 900) + 100;
+  return String(value);
+};

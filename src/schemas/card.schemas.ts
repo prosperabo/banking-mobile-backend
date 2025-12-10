@@ -153,3 +153,22 @@ export type CreateLinkedCardResponse =
 export interface CreateLinkedCardRequest {
   campaign_id?: string;
 }
+
+export interface UpdateCVVParams {
+  card_id: number;
+}
+
+export interface UpdateCVVResponsePayload {
+  cvv2: string;
+  expiration_time_in_minutes: number;
+}
+
+export type UpdateCVVResponse = ApiResponse<UpdateCVVResponsePayload>;
+
+export interface ShowCvvResponsePayload {
+  cvv: string;
+  expiration_time_in_minutes?: number;
+  update_digit?: string;
+}
+
+export type ShowCvvResponse = ApiResponse<ShowCvvResponsePayload>;

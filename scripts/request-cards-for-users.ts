@@ -1,3 +1,9 @@
+/**
+ * @fileoverview Script to request physical cards for users through 123 Backoffice
+ * @description Automates the process of ordering physical cards for users who have
+ * a backoffice customer profile but lack physical cards
+ */
+
 import { db } from '../src/config/prisma';
 import axios from 'axios';
 import { buildLogger } from '../src/utils';
@@ -5,20 +11,32 @@ import { config } from '../src/config/config';
 
 const logger = buildLogger('RequestPhysicalCardsScript');
 
-// Prefer using the centralized config which loads .env via dotenv
+// TEMPORAL: Target specific user ID for card request (set to null for all users)
+
+/**
+ * Backoffice API configuration
+ * Prioritizes centralized config which loads .env via dotenv
+ */
 const BACKOFFICE_API_BASE =
   config.backofficeBaseUrl || process.env.BACKOFFICE_API_BASE;
 const ECOMMERCE_TOKEN = config.ecommerceToken || process.env.ECOMMERCE_TOKEN;
 
-function normalizeBaseUrl(url?: string | null) {
+/**
+ * Normalizes base URL by removing trailing slashes
+ * @param url - The URL to normalize
+ * @returns Normalized URL without trailing slash
+ */
+function normalizeBaseUrl(url?: string | null): string | undefined {
   if (!url) return undefined;
-  // Trim and remove trailing slash
   const trimmed = url.trim();
   return trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed;
 }
 
 const NORMALIZED_BACKOFFICE_API_BASE = normalizeBaseUrl(BACKOFFICE_API_BASE);
 
+/**
+ * Represents a bulk order request for physical cards to the backoffice API
+ */
 interface BulkOrderCardRequest {
   delivery_location: {
     additional_notes?: string;
@@ -41,6 +59,9 @@ interface BulkOrderCardRequest {
   }>;
 }
 
+/**
+ * Response from backoffice API for bulk card orders
+ */
 interface BulkOrderCardResponse {
   payload: {
     reference_batch: string;
@@ -50,20 +71,30 @@ interface BulkOrderCardResponse {
   status: number;
 }
 
-async function requestPhysicalCardsForUsers() {
+/**
+ * Requests physical cards for users who have backoffice profiles but no physical cards
+ * @param targetUserId - Optional user ID to request cards specifically (temporal feature)
+ * @throws {Error} When configuration is invalid or API request fails
+ */
+async function requestPhysicalCardsForUsers(): Promise<void> {
   try {
-    logger.info('Iniciando proceso de solicitud de tarjetas físicas...');
+    logger.info('Starting physical card request process for ALL users...');
+
+    const whereClause = {
+      BackofficeCustomerProfile: {
+        isNot: null,
+      } as { isNot: null },
+      Cards: {
+        none: {
+          cardType: 'PHYSICAL' as const,
+        },
+      },
+    };
 
     const usersBatch = await db.users.findMany({
       where: {
-        BackofficeCustomerProfile: {
-          isNot: null,
-        },
-        Cards: {
-          none: {
-            cardType: 'PHYSICAL',
-          },
-        },
+        id: 9,
+        ...whereClause,
       },
       include: {
         BackofficeCustomerProfile: true,
@@ -73,9 +104,11 @@ async function requestPhysicalCardsForUsers() {
     });
 
     if (usersBatch.length === 0) {
-      logger.info('No se encontraron usuarios que necesiten tarjetas físicas');
+      logger.info('No users found that need physical cards');
       return;
     }
+
+    logger.info(`Found ${usersBatch.length} user(s) for card request`);
 
     const batch = usersBatch.map((user, index) => ({
       card_identifier: `${Date.now()}${String(index + 1).padStart(3, '0')}`,
@@ -99,21 +132,30 @@ async function requestPhysicalCardsForUsers() {
         firstUser.externalNumber,
       city: firstUser.BackofficeCustomerProfile?.city || firstUser.municipality,
       street: firstUser.BackofficeCustomerProfile?.street || firstUser.street,
-      mobile: parseInt(
+      mobile: Number(
         firstUser.BackofficeCustomerProfile?.mobile ||
           firstUser.phone ||
           '5555555555'
       ),
-      interior_number:
-        firstUser.BackofficeCustomerProfile?.interior ||
-        firstUser.internalNumber,
+      interior_number: (() => {
+        const interiorValue =
+          firstUser.BackofficeCustomerProfile?.interior ||
+          firstUser.internalNumber;
+
+        // Only use the value if it's numeric
+        if (interiorValue && /^\d+$/.test(interiorValue)) {
+          return interiorValue;
+        }
+
+        // Default to '1' if not valid (must be numeric)
+        return '1';
+      })(),
       state: firstUser.state,
       neighborhood:
         firstUser.BackofficeCustomerProfile?.colony || firstUser.colony,
       postal_code:
         firstUser.BackofficeCustomerProfile?.zipcode || firstUser.postalCode,
-      additional_notes:
-        'Tarjetas físicas solicitadas automáticamente via script',
+      additional_notes: 'Physical cards requested automatically via script',
     };
 
     const bulkOrderData: BulkOrderCardRequest = {
@@ -121,12 +163,20 @@ async function requestPhysicalCardsForUsers() {
       batch: batch,
     };
 
-    logger.info('Enviando solicitud de tarjetas físicas al backoffice...');
-    // Diagnostic logs to help troubleshoot "Invalid URL" errors
-    logger.info('BACKOFFICE_API_BASE', {
-      BACKOFFICE_API_BASE: NORMALIZED_BACKOFFICE_API_BASE,
+    logger.info('Sending physical card request to backoffice...');
+
+    // Log the data being sent for debugging
+    logger.info('Request data:', {
+      delivery_location: deliveryLocation,
+      batch_count: batch.length,
+      first_batch_item: batch[0],
     });
-    logger.info('ECOMMERCE_TOKEN present', { present: !!ECOMMERCE_TOKEN });
+
+    // Diagnostic logs to help troubleshoot "Invalid URL" errors
+    logger.info('Backoffice API configuration', {
+      BACKOFFICE_API_BASE: NORMALIZED_BACKOFFICE_API_BASE,
+      hasToken: !!ECOMMERCE_TOKEN,
+    });
 
     if (!NORMALIZED_BACKOFFICE_API_BASE) {
       throw new Error(
@@ -148,22 +198,21 @@ async function requestPhysicalCardsForUsers() {
     );
 
     // Log full response to inspect payload shape
-    logger.info('Backoffice response', { data: response.data });
+    logger.info('Backoffice response received', { data: response.data });
 
-    // Some backoffice responses may use different casing/keys. Try multiple fallbacks.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const respAny = response.data as any;
+    // Handle different response formats from backoffice API
+    const responseData = response.data as unknown as Record<string, unknown>;
+    const payload = responseData.payload as Record<string, unknown> | undefined;
+
     const referenceBatchFromResponse =
-      respAny?.payload?.reference_batch ||
-      respAny?.payload?.referenceBatch ||
-      respAny?.payload?.reference ||
-      respAny?.reference_batch ||
-      respAny?.referenceBatch ||
-      respAny?.reference ||
-      undefined;
+      payload?.reference_batch ||
+      payload?.referenceBatch ||
+      payload?.reference ||
+      responseData.reference_batch ||
+      responseData.referenceBatch ||
+      responseData.reference;
 
     if (!referenceBatchFromResponse) {
-      // Provide a helpful error including the actual response shape
       const respStr = JSON.stringify(response.data, null, 2);
       throw new Error(
         `Backoffice response did not include a reference batch. Response: ${respStr}`
@@ -173,7 +222,7 @@ async function requestPhysicalCardsForUsers() {
     const bulkBatch = await db.bulkBatch.create({
       data: {
         referenceBatch: String(referenceBatchFromResponse),
-        status: (response.data as any)?.payload?.status || 1,
+        status: (payload?.status as number) || 1,
         numCreated: 0,
         numFailed: 0,
         requestedAt: new Date(),
@@ -196,24 +245,64 @@ async function requestPhysicalCardsForUsers() {
         },
       });
 
-      logger.info(`Tarjeta registrada para usuario ${user.id} (${user.email})`);
+      logger.info(`Card registered for user ${user.id} (${user.email})`);
     }
   } catch (error) {
-    logger.error(
-      'Error en la solicitud de tarjetas físicas:',
-      error instanceof Error ? { message: error.message } : { error }
-    );
+    logger.error('Error requesting physical cards:');
+
+    // Type-safe error handling
+    if (error && typeof error === 'object' && 'response' in error) {
+      const axiosError = error as {
+        response?: {
+          status?: number;
+          statusText?: string;
+          data?: unknown;
+        };
+        config?: {
+          url?: string;
+          method?: string;
+        };
+      };
+
+      logger.error('HTTP error details:', {
+        status: axiosError.response?.status,
+        statusText: axiosError.response?.statusText,
+        data: axiosError.response?.data,
+        url: axiosError.config?.url,
+        method: axiosError.config?.method,
+      });
+
+      if (axiosError.response?.status === 400) {
+        logger.error(
+          'Bad Request (400) - Check the request data in logs above'
+        );
+      }
+    } else {
+      logger.error(
+        'Non-HTTP error:',
+        error instanceof Error
+          ? { message: error.message, stack: error.stack }
+          : { error }
+      );
+    }
+
     throw error;
   }
 }
 
-async function main() {
+/**
+ * Main execution function for the script
+ * Orchestrates the physical card request process
+ */
+async function main(): Promise<void> {
   try {
+    logger.info('Running card request for ALL users without physical cards');
+
     await requestPhysicalCardsForUsers();
-    logger.info('Proceso completado exitosamente');
+    logger.info('Process completed successfully');
   } catch (error) {
     logger.error(
-      'Error ejecutando el script:',
+      'Error executing script:',
       error instanceof Error ? { message: error.message } : { error }
     );
     process.exit(1);

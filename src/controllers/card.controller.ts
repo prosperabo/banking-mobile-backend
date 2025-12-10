@@ -154,4 +154,36 @@ export class CardController {
       return successHandler(res, result, 'Virtual card created successfully');
     }
   );
+
+  static showCardCvv = catchErrors(async (req: Request, res: Response) => {
+    const { cardId } = req.params;
+    const { customer_oauth_token: customerToken, customerId } = req.backoffice!;
+
+    logger.info('Showing card CVV', { cardId, customerId });
+
+    const result = await CardService.showCardCvv(
+      Number(cardId),
+      customerToken,
+      customerId
+    );
+
+    logger.info('Card CVV shown successfully', { cardId, result });
+    return successHandler(res, result, 'Card CVV shown successfully');
+  });
+
+  static updateCardCVV = catchErrors(async (req: Request, res: Response) => {
+    const { cardId } = req.params;
+    const { customer_oauth_token: customerToken, customerId } = req.backoffice!;
+
+    logger.info('Updating card CVV', { cardId, customerId });
+
+    const result = await CardService.updateCardCVV(
+      Number(cardId),
+      customerToken,
+      customerId
+    );
+
+    logger.info('Card CVV updated successfully', { cardId, result });
+    return successHandler(res, result, 'Card CVV updated successfully');
+  });
 }

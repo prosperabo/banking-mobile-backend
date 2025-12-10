@@ -179,7 +179,7 @@ export class AuthService {
     // We need to match the type expected by Prisma.
     // upsertProfile expects CreateInput.
     // BackofficeCustomerProfileCreateInput requires 'Users' relation connection.
-    const profileData: any = {
+    const profileData = {
       Users: { connect: { id: newUser.id } },
       ...backofficeData,
     };
@@ -190,7 +190,7 @@ export class AuthService {
     );
 
     // Prepare auth state data
-    const authStateData: any = {
+    const authStateData = {
       Users: { connect: { id: newUser.id } },
       clientState: 9,
       deviceId: 'generated-device-id', // We need generateDeviceId here

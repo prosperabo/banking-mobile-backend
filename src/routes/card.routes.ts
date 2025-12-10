@@ -76,4 +76,12 @@ router.post(
   CardController.unstopCard
 );
 
+// Route to show card CVV
+router.get(
+  '/:cardId/show-cvv',
+  validateRequest(...cardIdParamValidator),
+  validateCardOwnership(),
+  CardController.showCardCvv
+);
+
 export default router;

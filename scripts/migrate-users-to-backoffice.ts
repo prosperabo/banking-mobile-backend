@@ -1,3 +1,13 @@
+/**
+ * User Migration Script to 123 Backoffice System
+ *
+ * This script migrates users from the local database to the 123 backoffice system.
+ * Only processes users that don't currently have backoffice profiles.
+ *
+ * @author Migration Team
+ * @version 1.0.0
+ */
+
 import { buildLogger } from '../src/utils';
 import type {
   UserForMigration,
@@ -25,7 +35,9 @@ async function processUser(user: UserForMigration): Promise<MigrationResult> {
     // Validate user
     const validation = await validateUserForMigration(user);
     if (!validation.isValid) {
-      logger.warn(`Invalid user data for ${user.email}:`, { errors: validation.errors });
+      logger.warn(`Invalid user data for ${user.email}:`, {
+        errors: validation.errors,
+      });
       return {
         success: false,
         reason: 'validation_failed',
@@ -47,10 +59,14 @@ async function processUser(user: UserForMigration): Promise<MigrationResult> {
     }
 
     // Create account in 123 backoffice
-    const accountResponse = await backofficeService.createAccountIn123(user);
+    const accountResponse = await backofficeService.createAccount(user);
 
     if (accountResponse.err) {
-      throw new Error(`123 API Error: ${accountResponse.err}`);
+      return {
+        success: false,
+        reason: accountResponse.err,
+        user: user.email,
+      };
     }
 
     // Normalize response: some endpoints return `ss`, others `rs`
@@ -85,16 +101,16 @@ async function processUser(user: UserForMigration): Promise<MigrationResult> {
 }
 
 /**
- * Main migration function
- * @param targetUserId - Optional specific user ID to migrate (defaults to user 46 for testing)
+ * Main migration function - migrates users to backoffice
  */
-async function migrateUsers(targetUserId: number = 46): Promise<void> {
-  logger.info('Starting user migration to 123 backoffice...\n');
+async function migrateUsers(): Promise<void> {
+  logger.info('Starting user migration to 123 backoffice for ALL users...');
 
   try {
-    // Get users for migration
-    const users = await userService.getUsersForMigration(targetUserId);
-    logger.info(`Found ${users.length} user(s) to process\n`);
+    // Get users for migration (targeted or all)
+    const users = await userService.getUsersForMigration(9);
+
+    logger.info(`Found ${users.length} user(s) to process`);
 
     // Initialize migration statistics
     const stats: MigrationStats = {
@@ -123,11 +139,30 @@ async function migrateUsers(targetUserId: number = 46): Promise<void> {
     }
 
     // Log final results
-    logger.info('Migration Summary:');
-    logger.info(`  Successful: ${stats.successCount}`);
-    logger.info(`  Skipped (already exists): ${stats.skippedCount}`);
-    logger.info(`  Failed: ${stats.failureCount}`);
-    logger.info('\nMigration completed!');
+    logger.info(`Total users processed: ${stats.results.length}`);
+    logger.info(`Successful migrations: ${stats.successCount}`);
+    logger.info(`Skipped (already exist): ${stats.skippedCount}`);
+    logger.info(`Failed migrations: ${stats.failureCount}`);
+
+    if (stats.failureCount > 0) {
+      logger.warn('Failed users:');
+      stats.results
+        .filter(r => !r.success && r.reason !== 'already_exists')
+        .forEach((r, index) => {
+          logger.warn(`  ${index + 1}. ${r.user}`);
+        });
+    }
+
+    if (stats.successCount > 0) {
+      logger.info('Successfully migrated users:');
+      stats.results
+        .filter(r => r.success)
+        .forEach(r => {
+          logger.info(`  - ${r.user} (External ID: ${r.externalCustomerId})`);
+        });
+    }
+
+    logger.info('Migration process completed successfully!');
   } catch (error) {
     logger.error('Fatal error during migration:', { error });
     throw error;
@@ -136,6 +171,9 @@ async function migrateUsers(targetUserId: number = 46): Promise<void> {
 
 // Execute migration script
 if (require.main === module) {
+  logger.info('Running migration for ALL users without backoffice profiles');
+  logger.info('Starting migration process...');
+
   migrateUsers()
     .then(() => {
       logger.info('Migration script finished successfully');

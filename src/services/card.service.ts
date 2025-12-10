@@ -11,6 +11,8 @@ import {
   StopCardResponsePayload,
   UnstopCardResponsePayload,
   UserCardInfoResponse,
+  UpdateCVVResponsePayload,
+  ShowCvvResponsePayload,
 } from '@/schemas/card.schemas';
 import { BackofficeRepository } from '@/repositories/backoffice.repository';
 
@@ -324,5 +326,88 @@ export class CardService {
 
     logger.info(`Virtual card created successfully for user ${userId}`);
     return virtualCardResponse.payload;
+  }
+
+  static async updateCardCVV(
+    cardId: number,
+    customerToken: string,
+    _customerId: number
+  ): Promise<UpdateCVVResponsePayload> {
+    logger.info(`Updating CVV for card ${cardId}`);
+
+    const card = await CardRepository.getCardById(cardId);
+    if (!card?.prosperaCardId) {
+      logger.error(
+        `Card ${cardId} not found in database or missing prosperaCardId`
+      );
+      throw new Error('Card not found or missing prosperaCardId');
+    }
+
+    logger.info(
+      `Found card in database with prosperaCardId: ${card.prosperaCardId}`
+    );
+
+    const updateResponse = await CardBackofficeService.updateCardCVV(
+      {
+        card_id: Number(card.prosperaCardId),
+      },
+      customerToken
+    );
+
+    logger.info(`Card CVV ${cardId} updated successfully`);
+    return updateResponse.payload;
+  }
+
+  static async showCardCvv(
+    cardId: number,
+    customerToken: string,
+    customerId: number
+  ): Promise<ShowCvvResponsePayload> {
+    logger.info('Showing CVV for card', { cardId });
+
+    const card = await CardRepository.getCardById(cardId);
+    if (!card) {
+      logger.error('Card not found', { cardId });
+      throw new Error('Card not found');
+    }
+
+    const strategies: Record<string, () => Promise<ShowCvvResponsePayload>> = {
+      PHYSICAL: async () => {
+        logger.info('Physical card handler', { cardId });
+        const details = await this.getCardDetailsById(
+          cardId,
+          customerToken,
+          customerId
+        );
+
+        const { cvv } = details;
+
+        return { cvv };
+      },
+      VIRTUAL: async () => {
+        logger.info('Virtual card handler: updating CVV then returning it', {
+          cardId,
+        });
+
+        const updatePayload = await this.updateCardCVV(
+          cardId,
+          customerToken,
+          customerId
+        );
+
+        return {
+          cvv: updatePayload.cvv2,
+          expiration_time_in_minutes: updatePayload.expiration_time_in_minutes,
+        };
+      },
+    };
+
+    const handler = strategies[card.cardType];
+    if (!handler) {
+      logger.error('Unsupported card type', { cardType: card.cardType });
+      throw new Error('Unsupported card type');
+    }
+
+    return handler();
   }
 }
