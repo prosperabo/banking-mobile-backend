@@ -14,7 +14,6 @@ import {
   UpdateCVVResponsePayload,
   ShowCvvResponsePayload,
 } from '@/schemas/card.schemas';
-import { generateUpdateDigit } from '@/utils/card.utils';
 import { BackofficeRepository } from '@/repositories/backoffice.repository';
 
 const logger = buildLogger('CardService');
@@ -368,40 +367,47 @@ export class CardService {
 
     const card = await CardRepository.getCardById(cardId);
     if (!card) {
-      logger.error(`Card ${cardId} not found`);
+      logger.error('Card not found', { cardId });
       throw new Error('Card not found');
     }
 
-    if (card.cardType === 'PHYSICAL') {
-      logger.info('Card is physical; fetching details from backoffice', {
-        cardId,
-      });
+    const strategies: Record<string, () => Promise<ShowCvvResponsePayload>> = {
+      PHYSICAL: async () => {
+        logger.info('Physical card handler', { cardId });
+        const details = await this.getCardDetailsById(
+          cardId,
+          customerToken,
+          customerId
+        );
 
-      const details = await this.getCardDetailsById(
-        cardId,
-        customerToken,
-        customerId
-      );
+        const { cvv } = details;
 
-      const cardDetails = details as unknown as { cvv?: string; cvv2?: string };
-      const cvv = cardDetails.cvv || cardDetails.cvv2 || '';
-      return { cvv };
+        return { cvv };
+      },
+      VIRTUAL: async () => {
+        logger.info('Virtual card handler: updating CVV then returning it', {
+          cardId,
+        });
+
+        const updatePayload = await this.updateCardCVV(
+          cardId,
+          customerToken,
+          customerId
+        );
+
+        return {
+          cvv: updatePayload.cvv2,
+          expiration_time_in_minutes: updatePayload.expiration_time_in_minutes,
+        };
+      },
+    };
+
+    const handler = strategies[card.cardType];
+    if (!handler) {
+      logger.error('Unsupported card type', { cardType: card.cardType });
+      throw new Error('Unsupported card type');
     }
 
-    // For virtual cards, update the CVV first then return it with an update digit
-    logger.info('Card is virtual; updating CVV before showing', { cardId });
-    const updatePayload = await this.updateCardCVV(
-      cardId,
-      customerToken,
-      customerId
-    );
-
-    const updateDigit = generateUpdateDigit();
-
-    return {
-      cvv: updatePayload.cvv2,
-      expiration_time_in_minutes: updatePayload.expiration_time_in_minutes,
-      update_digit: updateDigit,
-    };
+    return handler();
   }
 }
