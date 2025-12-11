@@ -8,6 +8,7 @@ import { db } from '../src/config/prisma';
 import axios from 'axios';
 import { buildLogger } from '../src/utils';
 import { config } from '../src/config/config';
+import type { BackofficeApiResponse } from './schemas';
 
 const logger = buildLogger('RequestPhysicalCardsScript');
 
@@ -201,8 +202,8 @@ async function requestPhysicalCardsForUsers(): Promise<void> {
     logger.info('Backoffice response received', { data: response.data });
 
     // Handle different response formats from backoffice API
-    const responseData = response.data as unknown as Record<string, unknown>;
-    const payload = responseData.payload as Record<string, unknown> | undefined;
+    const responseData = response.data as unknown as BackofficeApiResponse;
+    const payload = responseData.payload;
 
     const referenceBatchFromResponse =
       payload?.reference_batch ||

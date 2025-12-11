@@ -4,31 +4,50 @@
  */
 
 import { db } from '../../src/config/prisma';
-import type { Prisma } from '@prisma/client';
+import type {
+  CustomerProfileCreateData,
+  CustomerProfileUpdateData,
+  AuthenticationStateCreateData,
+  AuthenticationStateUpdateData,
+  CustomerProfileData,
+  UserMigrationData,
+} from '../schemas';
 
 /**
  * Repository class for managing user backoffice data in the database
  * Provides methods for CRUD operations on backoffice customer profiles and authentication states
  */
-export class UserBackofficeRepository {
+export class CustomerProfileRepository {
   /**
    * Creates or updates a user's backoffice customer profile
    * @param userId - The unique identifier of the user
    * @param createData - Data to use when creating a new profile
    * @param updateData - Data to use when updating an existing profile
-   * @returns Promise resolving to the upserted profile
    */
   async upsertProfile(
     userId: number,
-    createData: Prisma.BackofficeCustomerProfileCreateInput,
-    updateData: Prisma.BackofficeCustomerProfileUpdateInput
-  ): Promise<Prisma.BackofficeCustomerProfileGetPayload<object>> {
+    createData: CustomerProfileCreateData,
+    updateData: CustomerProfileUpdateData
+  ): Promise<CustomerProfileData> {
     return db.backofficeCustomerProfile.upsert({
       where: { userId },
       create: createData,
       update: {
         ...updateData,
         updatedAt: new Date(),
+      },
+      select: {
+        id: true,
+        userId: true,
+        external_customer_id: true,
+        account_level: true,
+        account_status: true,
+        oauth_token: true,
+        private_key: true,
+        refresh_token: true,
+        ewallet_id: true,
+        createdAt: true,
+        updatedAt: true,
       },
     });
   }
@@ -38,13 +57,12 @@ export class UserBackofficeRepository {
    * @param userId - The unique identifier of the user
    * @param createData - Data to use when creating a new auth state
    * @param updateData - Data to use when updating an existing auth state
-   * @returns Promise resolving to the upserted authentication state
    */
   async upsertAuthState(
     userId: number,
-    createData: Prisma.BackofficeAuthStateCreateInput,
-    updateData: Prisma.BackofficeAuthStateUpdateInput
-  ): Promise<Prisma.BackofficeAuthStateGetPayload<object>> {
+    createData: AuthenticationStateCreateData,
+    updateData: AuthenticationStateUpdateData
+  ) {
     return db.backofficeAuthState.upsert({
       where: { userId },
       create: createData,
@@ -58,44 +76,35 @@ export class UserBackofficeRepository {
   /**
    * Finds a backoffice customer profile by user ID
    * @param userId - The unique identifier of the user
-   * @returns Promise resolving to the profile if found, null otherwise
    */
   async findProfileByUserId(
     userId: number
-  ): Promise<Prisma.BackofficeCustomerProfileGetPayload<object> | null> {
-    return db.backofficeCustomerProfile.findUnique({
+  ): Promise<CustomerProfileData | null> {
+    const profile = await db.backofficeCustomerProfile.findUnique({
       where: { userId },
+      select: {
+        id: true,
+        userId: true,
+        external_customer_id: true,
+        account_level: true,
+        account_status: true,
+        oauth_token: true,
+        private_key: true,
+        refresh_token: true,
+        ewallet_id: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
+    return profile;
   }
 
   /**
    * Finds a user by ID with selected fields for migration
    * @param userId - The unique identifier of the user
-   * @returns Promise resolving to the user data if found, null otherwise
    */
-  async findUserById(userId: number): Promise<Prisma.UsersGetPayload<{
-    select: {
-      id: true;
-      email: true;
-      password: true;
-      phone: true;
-      completeName: true;
-      gender: true;
-      birthDate: true;
-      birthCountry: true;
-      curp: true;
-      postalCode: true;
-      state: true;
-      country: true;
-      municipality: true;
-      street: true;
-      colony: true;
-      externalNumber: true;
-      internalNumber: true;
-      rfc: true;
-    };
-  }> | null> {
-    return db.users.findUnique({
+  async findUserById(userId: number): Promise<UserMigrationData | null> {
+    return await db.users.findUnique({
       where: { id: userId },
       select: {
         id: true,
@@ -122,32 +131,8 @@ export class UserBackofficeRepository {
 
   /**
    * Retrieves all users with selected fields for migration
-   * @returns Promise resolving to an array of users with migration-relevant data
    */
-  async findAllUsers(): Promise<
-    Prisma.UsersGetPayload<{
-      select: {
-        id: true;
-        email: true;
-        password: true;
-        phone: true;
-        completeName: true;
-        gender: true;
-        birthDate: true;
-        birthCountry: true;
-        curp: true;
-        postalCode: true;
-        state: true;
-        country: true;
-        municipality: true;
-        street: true;
-        colony: true;
-        externalNumber: true;
-        internalNumber: true;
-        rfc: true;
-      };
-    }>[]
-  > {
+  async findAllUsers(): Promise<UserMigrationData[]> {
     return db.users.findMany({
       select: {
         id: true,

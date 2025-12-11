@@ -3,9 +3,9 @@
  * @description Provides validation functions and schemas for user data before backoffice migration
  */
 
-import { checkSchema, validationResult, Schema } from 'express-validator';
+import { checkSchema, validationResult, Schema, ValidationError } from 'express-validator';
 import type { Request, Response, NextFunction } from 'express';
-import type { UserForMigration } from '../schemas/migration.schema';
+import type { UserForMigration, ValidationResult, ValidationErrorDetail } from '../schemas';
 
 /**
  * Express-validator schema for user migration data
@@ -59,20 +59,24 @@ export const validateUserMigrationMiddleware = [
  * @param user - User data to validate for migration
  * @returns Promise resolving to validation result with isValid boolean and errors array
  */
-export async function validateUserForMigration(user: UserForMigration): Promise<{
-    isValid: boolean;
-    errors: unknown[];
-}> {
+export async function validateUserForMigration(user: UserForMigration): Promise<ValidationResult> {
     const req = { body: user } as Request;
 
     // Run all validations
     await Promise.all(validateUserMigration.map(validation => validation.run(req)));
 
-    const errors = validationResult(req);
+    const result = validationResult(req);
+    
+    const errors: ValidationErrorDetail[] = result.array().map((error: ValidationError) => ({
+        field: 'field' in error ? error.field as string : 'unknown',
+        message: error.msg,
+        value: 'value' in error ? String(error.value) : undefined,
+        type: error.type || 'field'
+    }));
 
     return {
-        isValid: errors.isEmpty(),
-        errors: errors.array(),
+        isValid: result.isEmpty(),
+        errors
     };
 }
 

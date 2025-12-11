@@ -13,15 +13,15 @@ import type {
   UserForMigration,
   MigrationResult,
   MigrationStats,
-} from './schemas/migration.schema';
+} from './schemas';
 import { delay } from './utils/helpers';
 import { UserBackofficeService } from './services/backoffice.service';
-import { UserService } from './services/user.service';
+import { CustomerProfileService } from './services/user.service';
 import { validateUserForMigration } from './utils/validation.utils';
 
-const logger = buildLogger('MigrateUsersScript');
+const logger = buildLogger('CustomerMigrationProcess');
 const backofficeService = new UserBackofficeService();
-const userService = new UserService();
+const userService = new CustomerProfileService();
 
 /**
  * Processes a single user migration
@@ -46,7 +46,7 @@ async function processUser(user: UserForMigration): Promise<MigrationResult> {
     }
 
     // Check if user already has a backoffice profile
-    const profileExists = await userService.hasExistingProfile(user.id);
+    const profileExists = await userService.hasExistingCustomerProfile(user.id);
     if (profileExists) {
       logger.warn(
         `User ${user.email} already has a backoffice profile. Skipping...`
@@ -59,7 +59,7 @@ async function processUser(user: UserForMigration): Promise<MigrationResult> {
     }
 
     // Create account in 123 backoffice
-    const accountResponse = await backofficeService.createAccount(user);
+    const accountResponse = await backofficeService.createCustomerAccount(user);
 
     if (accountResponse.err) {
       return {
@@ -77,8 +77,8 @@ async function processUser(user: UserForMigration): Promise<MigrationResult> {
     }
 
     // Save data to database
-    await userService.saveBackofficeProfile(user.id, backofficeData);
-    await userService.saveAuthState(user.id, backofficeData);
+    await userService.saveCustomerProfile(user.id, backofficeData);
+    await userService.saveAuthenticationState(user.id, backofficeData);
 
     logger.info(`User ${user.email} migrated successfully!`);
 
@@ -108,7 +108,7 @@ async function migrateUsers(): Promise<void> {
 
   try {
     // Get users for migration (targeted or all)
-    const users = await userService.getUsersForMigration(9);
+    const users = await userService.getUsersForMigration();
 
     logger.info(`Found ${users.length} user(s) to process`);
 
