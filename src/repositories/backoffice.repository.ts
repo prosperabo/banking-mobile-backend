@@ -1,11 +1,16 @@
 import { db } from '@/config/prisma';
-import { Prisma } from '@prisma/client';
+import type {
+  BackofficeCustomerProfileCreate,
+  BackofficeCustomerProfileUpdate,
+  BackofficeAuthStateCreate,
+  BackofficeAuthStateUpdate,
+} from '@/schemas';
 
 export const BackofficeRepository = {
   async upsertProfile(
     userId: number,
-    createData: Prisma.BackofficeCustomerProfileCreateInput,
-    updateData: Prisma.BackofficeCustomerProfileUpdateInput
+    createData: BackofficeCustomerProfileCreate,
+    updateData: BackofficeCustomerProfileUpdate
   ) {
     return db.backofficeCustomerProfile.upsert({
       where: { userId },
@@ -19,8 +24,8 @@ export const BackofficeRepository = {
 
   async upsertAuthState(
     userId: number,
-    createData: Prisma.BackofficeAuthStateCreateInput,
-    updateData: Prisma.BackofficeAuthStateUpdateInput
+    createData: BackofficeAuthStateCreate,
+    updateData: BackofficeAuthStateUpdate
   ) {
     return db.backofficeAuthState.upsert({
       where: { userId },
