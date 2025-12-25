@@ -21,4 +21,9 @@ export const config = {
     secret: process.env.JWT_SECRET,
     expiresIn: (process.env.JWT_EXPIRES_IN || '24h') as string,
   },
+  paymentService: {
+    apiKey: process.env.PAYMENT_SERVICE_API_KEY || '',
+    secretKey: process.env.PAYMENT_SERVICE_SECRET_KEY || '',
+    baseUrl: process.env.PAYMENT_SERVICE_BASE_URL || 'https://api.payclip.com',
+  },
 };

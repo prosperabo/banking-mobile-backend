@@ -6,6 +6,7 @@ import cardRouter from './card.routes';
 import userRouter from './user.routes';
 import transactionsRouter from './transactions.routes';
 import inspirationRouter from './inspiration.routes';
+import paymentServiceRouter from './paymentService.routes';
 
 const router = Router();
 
@@ -16,6 +17,7 @@ router.use('/card', cardRouter);
 router.use('/user', userRouter);
 router.use('/transactions', transactionsRouter);
 router.use('/inspiration', inspirationRouter);
+router.use('/payment-service', paymentServiceRouter);
 
 router.get('/myip', async (req, res) => {
   const r = await fetch('https://ifconfig.me', {
