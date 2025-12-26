@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Checkout - Prospera Banking</title>
+    
+    <!-- Importar SDK de Clip -->
+    <script src="https://sdk.clip.mx/js/clip-sdk.js"></script>
+    
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+      }
+
+      .container {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        max-width: 500px;
+        width: 100%;
+        padding: 40px;
+      }
+
+      h1 {
+        color: #333;
+        margin-bottom: 10px;
+        font-size: 28px;
+      }
+
+      .subtitle {
+        color: #666;
+        margin-bottom: 30px;
+        font-size: 14px;
+      }
+
+      .amount-section {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 30px;
+      }
+
+      .amount-label {
+        color: #666;
+        font-size: 14px;
+        margin-bottom: 5px;
+      }
+
+      .amount-input {
+        width: 100%;
+        padding: 12px;
+        font-size: 24px;
+        border: 2px solid #ddd;
+        border-radius: 8px;
+        margin-top: 5px;
+        font-weight: 600;
+      }
+
+      .amount-input:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      #checkout {
+        margin-bottom: 20px;
+      }
+
+      #submit {
+        width: 100%;
+        padding: 16px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s;
+      }
+
+      #submit:hover {
+        transform: translateY(-2px);
+      }
+
+      #submit:disabled {
+        background: #ccc;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .message {
+        margin-top: 20px;
+        padding: 15px;
+        border-radius: 8px;
+        display: none;
+      }
+
+      .message.success {
+        background: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+
+      .message.error {
+        background: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+
+      .message.show {
+        display: block;
+      }
+
+      .loader {
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #667eea;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        animation: spin 1s linear infinite;
+        display: inline-block;
+        margin-right: 10px;
+      }
+
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .receipt-info {
+        background: #f8f9fa;
+        padding: 15px;
+        border-radius: 8px;
+        margin-top: 15px;
+      }
+
+      .receipt-info p {
+        margin: 8px 0;
+        color: #333;
+      }
+
+      .receipt-info strong {
+        color: #667eea;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Checkout Seguro</h1>
+      <p class="subtitle">Procesado por Clip - PCI Compliant</p>
+
+      <!-- Sección de monto -->
+      <div class="amount-section">
+        <label class="amount-label">Monto a pagar (MXN)</label>
+        <input 
+          type="number" 
+          id="amount" 
+          class="amount-input" 
+          placeholder="0.00" 
+          step="0.01"
+          min="0.01"
+          value="100.00"
+        />
+      </div>
+
+      <!-- Formulario de pago -->
+      <form id="payment-form">
+        <div id="checkout"></div>
+        <button type="submit" id="submit">
+          <span id="button-text">Procesar Pago</span>
+          <span id="button-loader" class="hidden">
+            <span class="loader"></span>Procesando...
+          </span>
+        </button>
+      </form>
+
+      <!-- Mensajes -->
+      <div id="message" class="message"></div>
+
+      <!-- Información del recibo -->
+      <div id="receipt" class="receipt-info hidden"></div>
+    </div>
+
+    <script>
+      const PAYMENT_SERVICE_API_KEY = "ac12a9b5-4bc7-4ec3-8d86-fd5edd2aeb6b";
+      const BACKEND_URL = "http://localhost:3000/api/v1";
+      
+      const USER_TOKEN = localStorage.getItem('authToken') || 'DEMO_TOKEN';
+
+      if (PAYMENT_SERVICE_API_KEY === "TU_PAYMENT_SERVICE_API_KEY_AQUI") {
+        showMessage("Configure your PAYMENT_SERVICE_API_KEY in the HTML file", "error");
+      }
+
+      const clip = new ClipSDK(PAYMENT_SERVICE_API_KEY);
+
+      const card = clip.element.create("Card", {
+        theme: "light",
+        locale: "es",
+      });
+
+      card.mount("checkout");
+
+      const form = document.getElementById("payment-form");
+      const submitButton = document.getElementById("submit");
+      const buttonText = document.getElementById("button-text");
+      const buttonLoader = document.getElementById("button-loader");
+      const messageDiv = document.getElementById("message");
+      const receiptDiv = document.getElementById("receipt");
+      const amountInput = document.getElementById("amount");
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        
+        const amount = parseFloat(amountInput.value);
+        
+        if (!amount || amount <= 0) {
+          showMessage("Please enter a valid amount", "error");
+          return;
+        }
+
+        setLoading(true);
+        hideMessage();
+        hideReceipt();
+
+        try {
+          // Step 1: Get card token from Clip SDK
+          const cardToken = await card.cardToken();
+          const cardTokenID = cardToken.id;
+          
+          console.log("Card Token obtained:", cardTokenID);
+
+          // Step 2: Send token to backend
+          const response = await fetch(`${BACKEND_URL}/payment-service/payments`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${USER_TOKEN}`
+            },
+            body: JSON.stringify({
+              card_token: cardTokenID,
+              amount: amount,
+              currency: "MXN",
+              description: "Payment from web checkout"
+            })
+          });
+
+          const data = await response.json();
+
+          if (!response.ok) {
+            throw new Error(data.message || 'Error processing payment');
+          }
+
+          showMessage("Payment processed successfully!", "success");
+          showReceipt(data.data);
+          
+          amountInput.value = "100.00";
+          
+        } catch (error) {
+          console.error("Error:", error);
+          
+          if (error.code) {
+            switch (error.code) {
+              case "CL2200":
+              case "CL2290":
+                showMessage(`Error tokenizing card: ${error.message}`, "error");
+                break;
+              case "AI1300":
+                showMessage("Authentication error. Check your API Key", "error");
+                break;
+              default:
+                showMessage(`Error: ${error.message}`, "error");
+            }
+          } else {
+            showMessage(`${error.message}`, "error");
+          }
+        } finally {
+          setLoading(false);
+        }
+      });
+
+      function setLoading(loading) {
+        submitButton.disabled = loading;
+        buttonText.classList.toggle("hidden", loading);
+        buttonLoader.classList.toggle("hidden", !loading);
+      }
+
+      function showMessage(text, type) {
+        messageDiv.textContent = text;
+        messageDiv.className = `message ${type} show`;
+      }
+
+      function hideMessage() {
+        messageDiv.classList.remove("show");
+      }
+
+      function showReceipt(payment) {
+        receiptDiv.innerHTML = `
+          <p><strong>ID de Pago:</strong> ${payment.paymentId}</p>
+          <p><strong>Monto:</strong> $${payment.amount} ${payment.currency}</p>
+          <p><strong>Estado:</strong> ${payment.status.toUpperCase()}</p>
+          <p><strong>Mensaje:</strong> ${payment.statusMessage}</p>
+          ${payment.receiptNo ? `<p><strong>Recibo:</strong> ${payment.receiptNo}</p>` : ''}
+          ${payment.card ? `<p><strong>Tarjeta:</strong> **** ${payment.card.lastDigits} (${payment.card.issuer})</p>` : ''}
+        `;
+        receiptDiv.classList.remove("hidden");
+      }
+
+      function hideReceipt() {
+        receiptDiv.classList.add("hidden");
+      }
+    </script>
+  </body>
+</html>
