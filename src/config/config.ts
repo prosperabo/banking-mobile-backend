@@ -12,6 +12,7 @@ export const config = {
   clientUrls: String(process.env.CLIENT_URLS).split(',') || [
     'http://localhost:5173',
   ],
+  apiUrl: process.env.API_URL,
   backofficeBaseUrl: process.env.BACKOFFICE_BASE_URL,
   ecommerceToken: process.env.ECOMMERCE_TOKEN,
   oauthEndpoint: process.env.OAUTH_ENDPOINT,
