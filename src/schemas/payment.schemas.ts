@@ -26,7 +26,7 @@ export interface PaymentCreateRequest {
 
 // Response for creating a payment
 export interface PaymentServiceCreateResponse {
-  paymentId: number;
+  paymentId: string;
   amount: number;
   currency: string;
   description?: string;

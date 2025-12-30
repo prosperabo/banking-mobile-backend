@@ -44,8 +44,8 @@ export class PaymentService {
     const paymentUrl = `${this.BASE_API_URL}${this.CHECKOUT_ENDPOINT}?paymentId=${payment.id}`;
 
     const response: PaymentServiceCreateResponse = {
-      paymentId: Number(payment.id),
-      amount: Number(payment.amount),
+      paymentId: payment.id.toString(),
+      amount: payment.amount.toNumber(),
       currency: payment.currency,
       description: payment.description || undefined,
       status: payment.status as PaymentStatus,
@@ -76,7 +76,7 @@ export class PaymentService {
     }
 
     const providerRequest: PaymentProviderAPIPaymentRequest = {
-      amount: Number(dbPayment.amount),
+      amount: dbPayment.amount.toNumber(),
       currency: dbPayment.currency,
       description: dbPayment.description || 'Payment via banking app',
       payment_method: {
