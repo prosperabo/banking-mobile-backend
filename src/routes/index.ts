@@ -17,7 +17,7 @@ router.use('/card', cardRouter);
 router.use('/user', userRouter);
 router.use('/transactions', transactionsRouter);
 router.use('/inspiration', inspirationRouter);
-router.use('/payment', paymentRouter);
+router.use('/payments', paymentRouter);
 
 router.get('/myip', async (req, res) => {
   const r = await fetch('https://ifconfig.me', {

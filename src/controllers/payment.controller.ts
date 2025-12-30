@@ -3,23 +3,23 @@ import { Request, Response } from 'express';
 import { PaymentService } from '@/services/payment.service';
 import { catchErrors, successHandler } from '@/shared/handlers';
 import { buildLogger } from '@/utils';
-import { PaymentServicePaymentRequest } from '@/schemas/payment.schemas';
+import { PaymentCreateRequest } from '@/schemas/payment.schemas';
 
-const logger = buildLogger('PaymentServiceController');
+const logger = buildLogger('PaymentController');
 
 export class PaymentController {
   /**
-   * Process a new payment
+   * Create a new payment record with commission calculation
    */
-  static processPayment = catchErrors(async (req: Request, res: Response) => {
+  static createPayment = catchErrors(async (req: Request, res: Response) => {
     const userId = req.user!.userId;
-    const paymentData: PaymentServicePaymentRequest = req.body;
+    const paymentData: PaymentCreateRequest = req.body;
 
-    logger.info('Processing payment request', { userId });
+    logger.info('Creating payment record', { userId });
 
-    const result = await PaymentService.processPayment(userId, paymentData);
+    const payment = await PaymentService.createPayment(userId, paymentData);
 
-    return successHandler(res, result, 'Payment processed successfully');
+    return successHandler(res, payment, 'Payment created successfully');
   });
 
   /**

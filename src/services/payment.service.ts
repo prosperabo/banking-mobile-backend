@@ -1,15 +1,56 @@
 import paymentServiceInstance from '@/api/paymentService.instance';
-import { buildLogger } from '@/utils';
+import { PaymentRepository } from '@/repositories/payment.repository';
+import { buildLogger, paymentUtils } from '@/utils';
 import {
+  PaymentCreateRequest,
+  PaymentServiceCreateResponse,
   PaymentServicePaymentRequest,
   PaymentProviderAPIPaymentRequest,
   PaymentProviderPaymentResponse,
   PaymentServiceClientResponse,
+  PaymentStatus,
 } from '@/schemas/payment.schemas';
 
 const logger = buildLogger('PaymentService');
 
 export class PaymentService {
+  /**
+   * Create a new payment record with commission calculation
+   */
+  static async createPayment(
+    userId: number,
+    paymentData: PaymentCreateRequest
+  ): Promise<PaymentServiceCreateResponse> {
+    const { amount } = paymentData;
+
+    logger.info('Creating payment record', { userId, amount });
+
+    const fees = paymentUtils.calculatePaymentFees(amount);
+    const idempotencyKey = paymentUtils.generateIdempotencyKey();
+
+    const payment = await PaymentRepository.createPayment(
+      userId,
+      paymentData,
+      fees,
+      idempotencyKey
+    );
+
+    // Generate mock payment URL
+    const paymentUrl = `https://payment-gateway.com/pay/${payment.id}`;
+
+    const response: PaymentServiceCreateResponse = {
+      paymentId: Number(payment.id),
+      amount: Number(payment.amount),
+      currency: payment.currency,
+      description: payment.description || undefined,
+      status: payment.status as PaymentStatus,
+      paymentUrl,
+      createdAt: payment.created_at,
+    };
+
+    return response;
+  }
+
   /**
    * Process a payment using Payment Provider API
    */
@@ -69,7 +110,7 @@ export class PaymentService {
   }
 
   /**
-   * Get payment details by payment ID
+   * Get payment details by payment ID from provider
    */
   static async getPaymentDetails(
     paymentId: string

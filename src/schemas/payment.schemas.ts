@@ -4,7 +4,26 @@ export interface PaymentMetadata {
   [key: string]: string | number | boolean | undefined;
 }
 
+// Enums for payments
+export enum PaymentProvider {
+  CLIP = 'clip',
+}
+
+export enum PaymentStatus {
+  PENDING = 'PENDING',
+  COMPLETED = 'COMPLETED',
+  FAILED = 'FAILED',
+  CANCELLED = 'CANCELLED',
+}
+
 // Request schemas
+export interface PaymentCreateRequest {
+  amount: number;
+  currency?: string;
+  description?: string;
+  metadata?: PaymentMetadata;
+}
+
 export interface PaymentServicePaymentRequest {
   card_token: string;
   amount: number;
@@ -15,6 +34,17 @@ export interface PaymentServicePaymentRequest {
     phone?: string;
   };
   metadata?: PaymentMetadata;
+}
+
+// Response for creating a payment
+export interface PaymentServiceCreateResponse {
+  paymentId: number;
+  amount: number;
+  currency: string;
+  description?: string;
+  status: PaymentStatus;
+  paymentUrl: string; // Mock URL for payment
+  createdAt: Date;
 }
 
 // Payment Provider API Payment Request
@@ -82,7 +112,7 @@ export interface PaymentProviderPaymentResponse {
 }
 
 // Payment Status
-export type PaymentStatus =
+export type PaymentApiStatus =
   | 'approved'
   | 'rejected'
   | 'pending'
@@ -128,7 +158,7 @@ export interface PaymentServiceDB {
   cardToken: string;
   amount: number;
   currency: string;
-  status: string;
+  status: PaymentStatus;
   statusCode: string;
   statusMessage: string;
   description?: string;

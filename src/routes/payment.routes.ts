@@ -3,7 +3,7 @@ import { authenticateToken } from '@/middlewares/authenticateToken';
 import { PaymentController } from '@/controllers/payment.controller';
 import { validateRequest } from '@/middlewares';
 import {
-  processPaymentValidator,
+  createPaymentValidator,
   paymentIdParamValidator,
 } from '@/validators/payment.validator';
 
@@ -11,16 +11,16 @@ const router = Router();
 
 router.use(authenticateToken);
 
-// Process payment with card token
+// Create payment record
 router.post(
-  '/payments',
-  validateRequest(...processPaymentValidator),
-  PaymentController.processPayment
+  '/',
+  validateRequest(...createPaymentValidator),
+  PaymentController.createPayment
 );
 
 // Get payment details
 router.get(
-  '/payments/:paymentId',
+  '/:paymentId',
   validateRequest(...paymentIdParamValidator),
   PaymentController.getPaymentDetails
 );
