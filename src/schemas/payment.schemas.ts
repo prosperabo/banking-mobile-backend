@@ -24,18 +24,6 @@ export interface PaymentCreateRequest {
   metadata?: PaymentMetadata;
 }
 
-export interface PaymentServicePaymentRequest {
-  card_token: string;
-  amount: number;
-  currency?: string;
-  description?: string;
-  customer?: {
-    email?: string;
-    phone?: string;
-  };
-  metadata?: PaymentMetadata;
-}
-
 // Response for creating a payment
 export interface PaymentServiceCreateResponse {
   paymentId: number;
@@ -60,6 +48,10 @@ export interface PaymentProviderAPIPaymentRequest {
     phone?: string;
   };
   metadata?: PaymentMetadata;
+}
+
+export interface ProcessPaymentRequest {
+  card_token: string;
 }
 
 // Payment Provider API Payment Response

@@ -1,19 +1,24 @@
-import paymentServiceInstance from '@/api/paymentService.instance';
 import { PaymentRepository } from '@/repositories/payment.repository';
 import { buildLogger, paymentUtils } from '@/utils';
+import { PaymentProviderService } from './payment.provider.service';
 import {
   PaymentCreateRequest,
   PaymentServiceCreateResponse,
-  PaymentServicePaymentRequest,
+  ProcessPaymentRequest,
   PaymentProviderAPIPaymentRequest,
   PaymentProviderPaymentResponse,
   PaymentServiceClientResponse,
   PaymentStatus,
 } from '@/schemas/payment.schemas';
+import { BadRequestError } from '@/shared/errors';
+import { config } from '@/config';
 
 const logger = buildLogger('PaymentService');
 
 export class PaymentService {
+  private static readonly CHECKOUT_ENDPOINT = '/public/checkout.html?';
+  private static readonly BASE_API_URL = config.apiUrl;
+
   /**
    * Create a new payment record with commission calculation
    */
@@ -36,7 +41,7 @@ export class PaymentService {
     );
 
     // Generate mock payment URL
-    const paymentUrl = `https://payment-gateway.com/pay/${payment.id}`;
+    const paymentUrl = `${this.BASE_API_URL}${this.CHECKOUT_ENDPOINT}?paymentId=${payment.id}`;
 
     const response: PaymentServiceCreateResponse = {
       paymentId: Number(payment.id),
@@ -55,57 +60,57 @@ export class PaymentService {
    * Process a payment using Payment Provider API
    */
   static async processPayment(
-    userId: number,
-    paymentData: PaymentServicePaymentRequest
+    paymentId: number,
+    paymentData: ProcessPaymentRequest
   ): Promise<PaymentServiceClientResponse> {
-    const {
-      card_token,
-      amount,
-      currency = 'MXN',
-      description,
-      customer,
-      metadata,
-    } = paymentData;
+    logger.info('Processing payment', { paymentId });
 
-    logger.info('Processing payment', {
-      userId,
-      amount,
-      currency,
-    });
+    const dbPayment = await PaymentRepository.getPaymentById(paymentId);
 
-    // Prepare request for Payment Provider API
+    if (!dbPayment) {
+      throw new BadRequestError('Payment not found');
+    }
+
+    if (dbPayment.status !== PaymentStatus.PENDING) {
+      throw new BadRequestError('Payment has already been processed');
+    }
+
     const providerRequest: PaymentProviderAPIPaymentRequest = {
-      amount,
-      currency,
-      description: description || 'Payment via banking app',
+      amount: Number(dbPayment.amount),
+      currency: dbPayment.currency,
+      description: dbPayment.description || 'Payment via banking app',
       payment_method: {
-        token: card_token,
+        token: paymentData.card_token,
       },
-      customer,
-      metadata: {
-        ...metadata,
-        userId,
+      customer: {
+        email: dbPayment.Users.email,
+        phone: dbPayment.Users.phone,
       },
     };
 
-    const response =
-      await paymentServiceInstance.post<PaymentProviderPaymentResponse>(
-        '/payments',
-        providerRequest
-      );
+    await PaymentRepository.updatePaymentStatus(
+      paymentId,
+      PaymentStatus.PENDING,
+      undefined,
+      undefined,
+      providerRequest
+    );
 
-    const payment = response.data;
+    const payment =
+      await PaymentProviderService.processPayment(providerRequest);
 
     logger.info('Payment processed successfully', {
       paymentId: payment.id,
       status: payment.status,
-      userId,
     });
 
-    // TODO: Save to database here
-    // await PaymentRepository.create({...})
+    await PaymentRepository.updatePaymentStatus(
+      paymentId,
+      payment.status,
+      payment.id,
+      payment
+    );
 
-    // Return simplified response
     return this.mapToClientResponse(payment);
   }
 
@@ -117,14 +122,11 @@ export class PaymentService {
   ): Promise<PaymentServiceClientResponse> {
     logger.info('Fetching payment details', { paymentId });
 
-    const response =
-      await paymentServiceInstance.get<PaymentProviderPaymentResponse>(
-        `/payments/${paymentId}`
-      );
+    const payment = await PaymentProviderService.getPaymentDetails(paymentId);
 
     logger.info('Payment details fetched', { paymentId });
 
-    return this.mapToClientResponse(response.data);
+    return this.mapToClientResponse(payment);
   }
 
   /**

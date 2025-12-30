@@ -3,7 +3,10 @@ import { Request, Response } from 'express';
 import { PaymentService } from '@/services/payment.service';
 import { catchErrors, successHandler } from '@/shared/handlers';
 import { buildLogger } from '@/utils';
-import { PaymentCreateRequest } from '@/schemas/payment.schemas';
+import {
+  PaymentCreateRequest,
+  ProcessPaymentRequest,
+} from '@/schemas/payment.schemas';
 
 const logger = buildLogger('PaymentController');
 
@@ -20,6 +23,23 @@ export class PaymentController {
     const payment = await PaymentService.createPayment(userId, paymentData);
 
     return successHandler(res, payment, 'Payment created successfully');
+  });
+
+  /**
+   * Process a payment
+   */
+  static processPayment = catchErrors(async (req: Request, res: Response) => {
+    const { paymentId } = req.params;
+    const paymentRequest: ProcessPaymentRequest = req.body;
+
+    logger.info('Processing payment', { paymentId });
+
+    const result = await PaymentService.processPayment(
+      Number(paymentId),
+      paymentRequest
+    );
+
+    return successHandler(res, result, 'Payment processed successfully');
   });
 
   /**

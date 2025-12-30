@@ -5,22 +5,27 @@ import { validateRequest } from '@/middlewares';
 import {
   createPaymentValidator,
   paymentIdParamValidator,
+  processPaymentValidator,
 } from '@/validators/payment.validator';
 
 const router = Router();
 
-router.use(authenticateToken);
-
-// Create payment record
 router.post(
   '/',
+  authenticateToken,
   validateRequest(...createPaymentValidator),
   PaymentController.createPayment
 );
 
-// Get payment details
+router.post(
+  '/process/:paymentId',
+  validateRequest(...paymentIdParamValidator, ...processPaymentValidator),
+  PaymentController.processPayment
+);
+
 router.get(
   '/:paymentId',
+  authenticateToken,
   validateRequest(...paymentIdParamValidator),
   PaymentController.getPaymentDetails
 );
