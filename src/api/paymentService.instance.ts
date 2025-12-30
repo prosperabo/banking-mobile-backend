@@ -8,6 +8,7 @@ import {
   InternalServerError,
 } from '@/shared/errors';
 import { buildLogger } from '@/utils';
+import { buildBasicAuthToken } from '@/utils/basicAuth';
 
 const logger = buildLogger('PaymentServiceInstance');
 
@@ -31,7 +32,10 @@ const paymentServiceInstance = axios.create({
   baseURL: config.paymentService.baseUrl,
   headers: {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${config.paymentService.secretKey}`,
+    Authorization: buildBasicAuthToken(
+      config.paymentService.apiKey,
+      config.paymentService.secretKey
+    ),
   },
 });
 
