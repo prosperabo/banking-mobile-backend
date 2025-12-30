@@ -1,28 +1,28 @@
 import { Router } from 'express';
 import { authenticateToken } from '@/middlewares/authenticateToken';
-import { PaymentServiceController } from '@/controllers/paymentService.controller';
+import { PaymentController } from '@/controllers/payment.controller';
 import { validateRequest } from '@/middlewares';
 import {
-  processPaymentValidator,
+  createPaymentValidator,
   paymentIdParamValidator,
-} from '@/validators/paymentService.validator';
+} from '@/validators/payment.validator';
 
 const router = Router();
 
 router.use(authenticateToken);
 
-// Process payment with card token
+// Create payment record
 router.post(
-  '/payments',
-  validateRequest(...processPaymentValidator),
-  PaymentServiceController.processPayment
+  '/',
+  validateRequest(...createPaymentValidator),
+  PaymentController.createPayment
 );
 
 // Get payment details
 router.get(
-  '/payments/:paymentId',
+  '/:paymentId',
   validateRequest(...paymentIdParamValidator),
-  PaymentServiceController.getPaymentDetails
+  PaymentController.getPaymentDetails
 );
 
 export default router;

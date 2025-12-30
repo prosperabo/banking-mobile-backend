@@ -1,5 +1,20 @@
 import { body, param } from 'express-validator';
 
+export const createPaymentValidator = [
+  body('amount')
+    .isFloat({ min: 0.01 })
+    .withMessage('Amount must be greater than 0'),
+  body('currency')
+    .optional()
+    .isIn(['MXN', 'USD'])
+    .withMessage('Currency must be MXN or USD'),
+  body('description')
+    .optional()
+    .isString()
+    .isLength({ max: 255 })
+    .withMessage('Description must be less than 255 characters'),
+];
+
 export const processPaymentValidator = [
   body('card_token')
     .isString()
@@ -29,7 +44,6 @@ export const processPaymentValidator = [
 
 export const paymentIdParamValidator = [
   param('paymentId')
-    .isString()
-    .notEmpty()
-    .withMessage('Payment ID is required'),
+    .isInt({ min: 1 })
+    .withMessage('Payment ID must be a positive integer'),
 ];
