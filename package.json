@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node dist/src/index.js",
     "dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/index.ts",
-    "build": "rimraf dist && tsc && copyfiles \"public/**\" dist/",
+    "build": "tsc && copyfiles \"public/**\" dist/",
     "lint": "eslint \"src/**/*.ts\" --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "orm:init": "npx prisma init",
