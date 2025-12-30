@@ -1,12 +1,13 @@
 import { Request, Response } from 'express';
-import { PaymentService } from '@/services/paymentService.service';
+
+import { PaymentService } from '@/services/payment.service';
 import { catchErrors, successHandler } from '@/shared/handlers';
 import { buildLogger } from '@/utils';
-import { PaymentServicePaymentRequest } from '@/schemas/paymentService.schemas';
+import { PaymentServicePaymentRequest } from '@/schemas/payment.schemas';
 
 const logger = buildLogger('PaymentServiceController');
 
-export class PaymentServiceController {
+export class PaymentController {
   /**
    * Process a new payment
    */

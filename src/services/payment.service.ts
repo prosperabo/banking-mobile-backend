@@ -5,8 +5,7 @@ import {
   PaymentProviderAPIPaymentRequest,
   PaymentProviderPaymentResponse,
   PaymentServiceClientResponse,
-} from '@/schemas/paymentService.schemas';
-import { BadRequestError } from '@/shared/errors';
+} from '@/schemas/payment.schemas';
 
 const logger = buildLogger('PaymentService');
 
@@ -33,11 +32,6 @@ export class PaymentService {
       currency,
     });
 
-    // Validate amount
-    if (amount <= 0) {
-      throw new BadRequestError('Amount must be greater than 0');
-    }
-
     // Prepare request for Payment Provider API
     const providerRequest: PaymentProviderAPIPaymentRequest = {
       amount,
@@ -53,34 +47,25 @@ export class PaymentService {
       },
     };
 
-    try {
-      // Call Payment Provider API
-      const response =
-        await paymentServiceInstance.post<PaymentProviderPaymentResponse>(
-          '/payments',
-          providerRequest
-        );
+    const response =
+      await paymentServiceInstance.post<PaymentProviderPaymentResponse>(
+        '/payments',
+        providerRequest
+      );
 
-      const payment = response.data;
+    const payment = response.data;
 
-      logger.info('Payment processed successfully', {
-        paymentId: payment.id,
-        status: payment.status,
-        userId,
-      });
+    logger.info('Payment processed successfully', {
+      paymentId: payment.id,
+      status: payment.status,
+      userId,
+    });
 
-      // TODO: Save to database here
-      // await PaymentRepository.create({...})
+    // TODO: Save to database here
+    // await PaymentRepository.create({...})
 
-      // Return simplified response
-      return this.mapToClientResponse(payment);
-    } catch (error) {
-      logger.error('Error processing payment', {
-        userId,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-      throw error;
-    }
+    // Return simplified response
+    return this.mapToClientResponse(payment);
   }
 
   /**
@@ -91,22 +76,14 @@ export class PaymentService {
   ): Promise<PaymentServiceClientResponse> {
     logger.info('Fetching payment details', { paymentId });
 
-    try {
-      const response =
-        await paymentServiceInstance.get<PaymentProviderPaymentResponse>(
-          `/payments/${paymentId}`
-        );
+    const response =
+      await paymentServiceInstance.get<PaymentProviderPaymentResponse>(
+        `/payments/${paymentId}`
+      );
 
-      logger.info('Payment details fetched', { paymentId });
+    logger.info('Payment details fetched', { paymentId });
 
-      return this.mapToClientResponse(response.data);
-    } catch (error) {
-      logger.error('Error fetching payment details', {
-        paymentId,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-      throw error;
-    }
+    return this.mapToClientResponse(response.data);
   }
 
   /**

@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import { authenticateToken } from '@/middlewares/authenticateToken';
-import { PaymentServiceController } from '@/controllers/paymentService.controller';
+import { PaymentController } from '@/controllers/payment.controller';
 import { validateRequest } from '@/middlewares';
 import {
   processPaymentValidator,
   paymentIdParamValidator,
-} from '@/validators/paymentService.validator';
+} from '@/validators/payment.validator';
 
 const router = Router();
 
@@ -15,14 +15,14 @@ router.use(authenticateToken);
 router.post(
   '/payments',
   validateRequest(...processPaymentValidator),
-  PaymentServiceController.processPayment
+  PaymentController.processPayment
 );
 
 // Get payment details
 router.get(
   '/payments/:paymentId',
   validateRequest(...paymentIdParamValidator),
-  PaymentServiceController.getPaymentDetails
+  PaymentController.getPaymentDetails
 );
 
 export default router;
