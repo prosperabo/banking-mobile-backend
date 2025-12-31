@@ -17,7 +17,7 @@ import { mapClipStatusToInternal } from '@/utils/payment.utils';
 const logger = buildLogger('PaymentService');
 
 export class PaymentService {
-  private static readonly CHECKOUT_ENDPOINT = '/public/checkout.html?';
+  private static readonly CHECKOUT_ENDPOINT = '/public/checkout.html';
   private static readonly BASE_API_URL = config.apiUrl;
 
   /**
