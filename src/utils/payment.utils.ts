@@ -1,3 +1,4 @@
+import { PaymentStatus } from '@/schemas/payment.schemas';
 import { buildLogger } from '@/utils';
 import { randomUUID } from 'crypto';
 
@@ -38,4 +39,23 @@ export function calculatePaymentFees(amount: number): PaymentFeeCalculation {
  */
 export function generateIdempotencyKey(): string {
   return randomUUID();
+}
+
+export function mapClipStatusToInternal(status?: string): PaymentStatus {
+  switch (status?.toLowerCase()) {
+    case 'approved':
+      return PaymentStatus.COMPLETED;
+
+    case 'pending':
+    case 'in_process':
+      return PaymentStatus.PENDING;
+
+    case 'rejected':
+    case 'cancelled':
+    case 'canceled':
+      return PaymentStatus.FAILED;
+
+    default:
+      return PaymentStatus.FAILED;
+  }
 }

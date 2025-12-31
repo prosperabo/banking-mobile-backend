@@ -12,6 +12,7 @@ import {
 } from '@/schemas/payment.schemas';
 import { BadRequestError } from '@/shared/errors';
 import { config } from '@/config';
+import { mapClipStatusToInternal } from '@/utils/payment.utils';
 
 const logger = buildLogger('PaymentService');
 
@@ -106,7 +107,7 @@ export class PaymentService {
 
     await PaymentRepository.updatePaymentStatus(
       paymentId,
-      payment.status,
+      mapClipStatusToInternal(payment.status),
       payment.id,
       payment
     );
@@ -139,7 +140,7 @@ export class PaymentService {
       paymentId: payment.id,
       amount: payment.amount,
       currency: payment.currency,
-      status: payment.status,
+      status: mapClipStatusToInternal(payment.status),
       statusMessage: payment.status_detail.message,
       receiptNo: payment.receipt_no,
       approvedAt: payment.approved_at,

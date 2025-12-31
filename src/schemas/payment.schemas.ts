@@ -93,7 +93,7 @@ export interface PaymentProviderPaymentResponse {
     token: string;
   };
   receipt_no: string;
-  status: PaymentStatus;
+  status: PaymentApiStatus;
   status_detail: {
     code: string;
     message: string;
