@@ -46,7 +46,7 @@ export class PaymentRepository {
       },
     });
 
-    logger.info('Payment record created', { paymentId: payment.id });
+    logger.info('Payment record created', { paymentId: payment.id.toString() });
 
     return payment;
   }
