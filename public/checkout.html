@@ -13,23 +13,17 @@
   <script src="https://sdk.clip.mx/js/clip-sdk.js"></script>
 
   <style>
-    /* ===== RESET / BODY ===== */
     body {
       font-family: 'Nunito Sans', Arial, sans-serif;
       min-height: 100vh;
       margin: 0;
-      background: radial-gradient(circle at top,
-          #2a0000 0%,
-          #0b0b0b 45%,
-          #000 100%);
+      background: radial-gradient(circle at top, #2a0000 0%, #0b0b0b 45%, #000 100%);
       display: flex;
       align-items: center;
       justify-content: center;
       padding: 12px;
-      /* compacto para WebView */
     }
 
-    /* ===== FORM CONTAINER ===== */
     form {
       width: 100%;
       max-width: 420px;
@@ -39,34 +33,21 @@
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
     }
 
-    /* ===== CHECKOUT (Clip Card) ===== */
     #checkout {
       width: 100%;
       height: 195px;
-      /* 🔑 elimina el espacio negro */
       margin-bottom: 12px;
-      /* distancia corta al botón */
       overflow: hidden;
       border-radius: 14px;
     }
 
-    /* Iframe del SDK de Clip */
     #checkout iframe {
       width: 100% !important;
       height: 195px !important;
-      min-height: 195px !important;
-      max-height: 195px !important;
       border-radius: 14px;
       display: block;
     }
 
-    /* Evita márgenes internos que mete el SDK */
-    #checkout * {
-      margin: 0 !important;
-      padding: 0 !important;
-    }
-
-    /* ===== BOTÓN PRINCIPAL ===== */
     button {
       width: 100%;
       padding: 16px;
@@ -74,60 +55,31 @@
       border-radius: 999px;
       font-size: 16px;
       font-weight: 700;
-      letter-spacing: 0.3px;
       cursor: pointer;
       color: #fff;
-      background: linear-gradient(135deg,
-          #b00000 0%,
-          #ff1a1a 100%);
-      box-shadow:
-        0 8px 25px rgba(255, 0, 0, 0.45),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2);
-      transition: all 0.2s ease;
-    }
-
-    button:hover {
-      transform: translateY(-2px);
-      box-shadow:
-        0 12px 35px rgba(255, 0, 0, 0.6),
-        inset 0 1px 0 rgba(255, 255, 255, 0.25);
+      background: linear-gradient(135deg, #b00000 0%, #ff1a1a 100%);
     }
 
     button:disabled {
       background: #444;
       cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
     }
 
-    /* ===== TOKEN INFO ===== */
-    #cardTokenId {
-      margin-top: 8px;
-      font-size: 12px;
-      color: #aaa;
+    /* ===== MENSAJE DE ÉXITO ===== */
+    .success-message {
       text-align: center;
-      word-break: break-all;
-    }
-
-    /* ===== AJUSTE PARA TELÉFONOS ALTOS ===== */
-    @media (min-height: 750px) {
-
-      #checkout,
-      #checkout iframe {
-        height: 205px !important;
-        min-height: 205px !important;
-        max-height: 205px !important;
-      }
+      color: #4caf50;
+      font-size: 20px;
+      font-weight: 700;
+      padding: 40px 10px;
     }
   </style>
-
 </head>
 
 <body>
   <form id="payment-form">
     <div id="checkout"></div>
     <button id="submit">Procesar Pago</button>
-    <p id="cardTokenId"></p>
   </form>
 
   <script>
@@ -136,10 +88,11 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const paymentId = urlParams.get('paymentId');
+    const submitButton = document.querySelector('#submit');
+    const form = document.querySelector('#payment-form');
 
     if (!paymentId) {
-      alert('Payment ID is required in the URL');
-      document.querySelector('#submit').disabled = true;
+      submitButton.disabled = true;
     }
 
     const clip = new ClipSDK(API_KEY);
@@ -151,45 +104,48 @@
 
     card.mount("checkout");
 
-    document
-      .querySelector("#payment-form")
-      .addEventListener("submit", async (event) => {
-        event.preventDefault();
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
 
-        const submitButton = document.querySelector('#submit');
-        submitButton.disabled = true;
-        submitButton.textContent = 'Procesando...';
+      submitButton.disabled = true;
+      submitButton.textContent = 'Procesando...';
 
-        try {
-          const cardToken = await card.cardToken();
-          const cardTokenID = cardToken.id;
+      try {
+        const { id: cardTokenID } = await card.cardToken();
 
-          document.querySelector('#cardTokenId').textContent =
-            `Token: ${cardTokenID}`;
-
-          const response = await fetch(
-            `${BACKEND_URL}/payments/process/${paymentId}`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ card_token: cardTokenID }),
-            }
-          );
-
-          const data = await response.json();
-
-          if (!response.ok) {
-            throw new Error(data.message || 'Error processing payment');
+        const response = await fetch(
+          `${BACKEND_URL}/payments/process/${paymentId}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ card_token: cardTokenID }),
           }
+        );
 
-          alert('Pago procesado exitosamente!');
-        } catch (error) {
-          alert("Error procesando pago: " + error.message);
-        } finally {
-          submitButton.disabled = false;
-          submitButton.textContent = 'Procesar Pago';
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.message || 'Error procesando pago');
         }
-      });
+
+        // 🔥 Mensaje de éxito en el HTML
+        form.innerHTML = `
+          <div class="success-message">
+            ✅ Pago realizado con éxito
+          </div>
+        `;
+
+        // ⏳ Cierra la pestaña automáticamente
+        setTimeout(() => {
+          window.close();
+        }, 1800);
+
+      } catch (error) {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Procesar Pago';
+        alert("Error procesando el pago");
+      }
+    });
   </script>
 </body>
 
