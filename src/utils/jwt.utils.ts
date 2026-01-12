@@ -5,12 +5,15 @@ import { buildLogger } from '@/utils';
 const logger = buildLogger('jwt-service');
 
 export interface JwtPayload {
-  user: {
+  user?: {
     userId: number;
     email: string;
     username: string;
   };
-  backoffice: BackofficePayload;
+  backoffice?: BackofficePayload;
+  userId?: number;
+  email?: string;
+  type?: string;
   iat?: number;
   exp?: number;
 }
@@ -97,6 +100,37 @@ export class JwtUtil {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
       return null;
+    }
+  }
+
+  /**
+   * Generates a temporary token for 2FA verification
+   * This token has a short duration and only allows verifying the 2FA code
+   */
+  static generateTempToken(payload: { userId: number; email: string }): string {
+    try {
+      const token = jwt.sign(
+        {
+          userId: payload.userId,
+          email: payload.email,
+          type: '2fa-verification',
+        },
+        this.SECRET,
+        { expiresIn: `${config.twoFactor.tempTokenExpiry}s` } // 10 minutos por defecto
+      );
+
+      logger.info('Temp token generated successfully', {
+        userId: payload.userId,
+        email: payload.email,
+      });
+
+      return token;
+    } catch (error) {
+      logger.error('Error generating temp token', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        userId: payload.userId,
+      });
+      throw new Error('Error generando token temporal');
     }
   }
 }

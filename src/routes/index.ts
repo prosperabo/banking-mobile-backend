@@ -7,11 +7,13 @@ import userRouter from './user.routes';
 import transactionsRouter from './transactions.routes';
 import inspirationRouter from './inspiration.routes';
 import paymentRouter from './payment.routes';
+import twoFactorRouter from './twoFactor.routes';
 
 const router = Router();
 
 router.get('/', (_req, res) => res.send({ message: 'API is up!' }));
 router.use('/auth', authRouter);
+router.use('/auth/2fa', twoFactorRouter);
 router.use('/webhooks', webhookRouter);
 router.use('/card', cardRouter);
 router.use('/user', userRouter);
