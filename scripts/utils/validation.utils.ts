@@ -3,9 +3,18 @@
  * @description Provides validation functions and schemas for user data before backoffice migration
  */
 
-import { checkSchema, validationResult, Schema, ValidationError } from 'express-validator';
+import {
+  checkSchema,
+  validationResult,
+  Schema,
+  ValidationError,
+} from 'express-validator';
 import type { Request, Response, NextFunction } from 'express';
-import type { UserForMigration, ValidationResult, ValidationErrorDetail } from '../schemas';
+import type {
+  UserForMigration,
+  ValidationResult,
+  ValidationErrorDetail,
+} from '../schemas';
 
 /**
  * Express-validator schema for user migration data
@@ -59,25 +68,31 @@ export const validateUserMigrationMiddleware = [
  * @param user - User data to validate for migration
  * @returns Promise resolving to validation result with isValid boolean and errors array
  */
-export async function validateUserForMigration(user: UserForMigration): Promise<ValidationResult> {
-    const req = { body: user } as Request;
+export async function validateUserForMigration(
+  user: UserForMigration
+): Promise<ValidationResult> {
+  const req = { body: user } as Request;
 
-    // Run all validations
-    await Promise.all(validateUserMigration.map(validation => validation.run(req)));
+  // Run all validations
+  await Promise.all(
+    validateUserMigration.map(validation => validation.run(req))
+  );
 
-    const result = validationResult(req);
-    
-    const errors: ValidationErrorDetail[] = result.array().map((error: ValidationError) => ({
-        field: 'field' in error ? error.field as string : 'unknown',
-        message: error.msg,
-        value: 'value' in error ? String(error.value) : undefined,
-        type: error.type || 'field'
+  const result = validationResult(req);
+
+  const errors: ValidationErrorDetail[] = result
+    .array()
+    .map((error: ValidationError) => ({
+      field: 'field' in error ? (error.field as string) : 'unknown',
+      message: error.msg,
+      value: 'value' in error ? String(error.value) : undefined,
+      type: error.type || 'field',
     }));
 
-    return {
-        isValid: result.isEmpty(),
-        errors
-    };
+  return {
+    isValid: result.isEmpty(),
+    errors,
+  };
 }
 
 /**
@@ -121,11 +136,11 @@ export function generateTestRFC(name: string): string {
   const firstNameInitials = nameParts[0]?.substring(0, 2) || 'XX';
   const lastNameInitial = nameParts[1]?.charAt(0) || 'X';
   const secondLastNameInitial = nameParts[2]?.charAt(0) || 'X';
-  
+
   // Generate a test RFC: XXXXYYMMDDHXX
   const randomDate = '900101'; // Default test date
   const randomChars = 'H01'; // Default test chars
-  
+
   return `${firstNameInitials}${lastNameInitial}${secondLastNameInitial}${randomDate}${randomChars}`;
 }
 
@@ -143,35 +158,35 @@ export function validateMobilePhone(phone: string | null): {
     return {
       isValid: false,
       cleanedPhone: '5551234568', // Default fallback
-      error: 'Phone number is required'
+      error: 'Phone number is required',
     };
   }
 
   // Remove all non-numeric characters
   const cleaned = phone.replace(/\D/g, '');
-  
+
   // Check length (Mexican mobile numbers are 10 digits)
   if (cleaned.length < 10) {
     return {
       isValid: false,
       cleanedPhone: '5551234568',
-      error: 'Phone number too short (minimum 10 digits)'
+      error: 'Phone number too short (minimum 10 digits)',
     };
   }
-  
+
   if (cleaned.length > 10) {
     // If more than 10 digits, take the last 10
     const truncated = cleaned.slice(-10);
     return {
       isValid: true,
       cleanedPhone: truncated,
-      error: 'Phone number truncated to 10 digits'
+      error: 'Phone number truncated to 10 digits',
     };
   }
-  
+
   return {
     isValid: true,
-    cleanedPhone: cleaned
+    cleanedPhone: cleaned,
   };
 }
 
@@ -189,14 +204,14 @@ export function preValidateBackofficeData(user: UserForMigration): {
   const warnings: string[] = [];
   const errors: string[] = [];
   const correctedData = { ...user };
-  
+
   // Validate and correct RFC
   if (!user.rfc) {
     const generatedRFC = generateTestRFC(user.completeName);
     correctedData.rfc = generatedRFC;
     warnings.push(`Generated RFC: ${generatedRFC}`);
   }
-  
+
   // Validate and correct phone
   const phoneValidation = validateMobilePhone(user.phone);
   if (!phoneValidation.isValid) {
@@ -207,22 +222,22 @@ export function preValidateBackofficeData(user: UserForMigration): {
   } else {
     correctedData.phone = phoneValidation.cleanedPhone;
   }
-  
+
   // Validate email format
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(user.email)) {
     errors.push('Invalid email format');
   }
-  
+
   // Validate complete name
   if (!user.completeName || user.completeName.trim().length < 2) {
     errors.push('Complete name is required and must be at least 2 characters');
   }
-  
+
   return {
     isValid: errors.length === 0,
     correctedData,
     warnings,
-    errors
+    errors,
   };
 }

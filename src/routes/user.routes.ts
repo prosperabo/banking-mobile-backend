@@ -4,6 +4,7 @@ import { UserController } from '@/controllers/user.controller';
 import {
   updateUserValidator,
   changePasswordValidator,
+  addAliasValidator,
 } from '@/validators/user.validator';
 import { validateRequest } from '@/middlewares/validateRequest';
 import { authenticateToken } from '@/middlewares/authenticateToken';
@@ -21,6 +22,11 @@ router.put(
   '/password',
   validateRequest(...changePasswordValidator),
   UserController.changePassword
+);
+router.put(
+  '/alias',
+  validateRequest(...addAliasValidator),
+  UserController.addAlias
 );
 
 export default router;

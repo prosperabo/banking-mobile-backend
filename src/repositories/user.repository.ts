@@ -40,4 +40,10 @@ export class UserRepository {
       data,
     });
   }
+
+  static async findByAlias(alias: string): Promise<Users | null> {
+    return await db.users.findUnique({
+      where: { alias },
+    });
+  }
 }

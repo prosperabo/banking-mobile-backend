@@ -111,3 +111,13 @@ export const changePasswordValidator = [
       'New password must contain at least one letter and one number'
     ),
 ];
+
+export const addAliasValidator = [
+  body('alias')
+    .notEmpty()
+    .withMessage('Alias is required')
+    .isLength({ min: 3, max: 255 })
+    .withMessage('Alias must be between 3 and 255 characters')
+    .matches(/^[a-zA-Z0-9_-]+$/)
+    .withMessage('Alias can only contain letters, numbers, hyphens and underscores'),
+];

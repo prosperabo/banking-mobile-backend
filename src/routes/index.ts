@@ -7,6 +7,7 @@ import userRouter from './user.routes';
 import transactionsRouter from './transactions.routes';
 import inspirationRouter from './inspiration.routes';
 import paymentRouter from './payment.routes';
+import transferRouter from './transfer.routes';
 
 const router = Router();
 
@@ -18,6 +19,7 @@ router.use('/user', userRouter);
 router.use('/transactions', transactionsRouter);
 router.use('/inspiration', inspirationRouter);
 router.use('/payments', paymentRouter);
+router.use('/transfers', transferRouter);
 
 router.get('/myip', async (req, res) => {
   const r = await fetch('https://ifconfig.me', {
