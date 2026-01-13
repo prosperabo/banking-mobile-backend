@@ -130,10 +130,13 @@ export class CustomerProfileRepository {
   }
 
   /**
-   * Retrieves all users with selected fields for migration
+   * Retrieves all users or a specific user with selected fields for migration
+   * @param userId - Optional user ID to filter to a specific user
    */
-  async findAllUsers(): Promise<UserMigrationData[]> {
+  async findAllUsers(userId?: number | null): Promise<UserMigrationData[]> {
+    const where = userId ? { id: userId } : {};
     return db.users.findMany({
+      where,
       select: {
         id: true,
         email: true,
