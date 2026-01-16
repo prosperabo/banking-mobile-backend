@@ -119,5 +119,7 @@ export const addAliasValidator = [
     .isLength({ min: 3, max: 255 })
     .withMessage('Alias must be between 3 and 255 characters')
     .matches(/^[a-zA-Z0-9_-]+$/)
-    .withMessage('Alias can only contain letters, numbers, hyphens and underscores'),
+    .withMessage(
+      'Alias can only contain letters, numbers, hyphens and underscores'
+    ),
 ];
