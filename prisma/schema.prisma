@@ -12,14 +12,14 @@ model Users {
   email                      String                     @unique
   password                   String
   phone                      String?
-  completeName               String
+  completeName               String?                    @db.VarChar(255)
   gender                     Gender
   birthDate                  DateTime
-  birthCountry               String
+  birthCountry               String?                    @db.VarChar(255)
   curp                       String
-  postalCode                 String
+  postalCode                 String?                    @db.VarChar(255)
   state                      String
-  country                    String
+  country                    String?                    @db.VarChar(255)
   municipality               String
   street                     String
   colony                     String
@@ -46,6 +46,14 @@ model Users {
   universityProfilePhotoLink String?
   rfc                        String?
   createdAt                  DateTime                   @default(now())
+  firstName                  String?                    @db.VarChar(255)
+  lastName                   String?                    @db.VarChar(255)
+  secondLastName             String?                    @db.VarChar(255)
+  nationality                String?                    @db.VarChar(255)
+  countryCode                String?                    @db.VarChar(10)
+  monthlyIncomeRange         String?                    @db.VarChar(255)
+  isUniversityStudent        Boolean                    @default(false)
+  alias                      String?                    @unique(map: "ux_users_alias") @db.VarChar(255)
   AcademicInformation        AcademicInformation?
   BackofficeAuthState        BackofficeAuthState?
   BackofficeCustomerProfile  BackofficeCustomerProfile?
@@ -225,12 +233,13 @@ model BulkBatch {
 }
 
 model AcademicInformation {
-  id                    Int                               @id @default(autoincrement())
-  userId                Int                               @unique
-  academicArea          AcademicInformation_academicArea?
-  actualSemester        Int?
-  scholarshipPercentage Int?
-  Users                 Users                             @relation(fields: [userId], references: [id])
+  id                         Int                               @id @default(autoincrement())
+  userId                     Int                               @unique
+  academicArea               AcademicInformation_academicArea?
+  actualSemester             Int?
+  scholarshipPercentage      Int?
+  scholarshipPercentageRange String?                           @db.VarChar(255)
+  Users                      Users                             @relation(fields: [userId], references: [id])
 }
 
 model payments {

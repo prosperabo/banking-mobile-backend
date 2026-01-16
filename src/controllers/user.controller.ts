@@ -4,6 +4,7 @@ import { UserService } from '@/services/user.service';
 import {
   UpdateUserRequest,
   ChangePasswordRequest,
+  AddAliasRequest,
 } from '@/schemas/user.schemas';
 import { catchErrors, successHandler } from '@/shared/handlers';
 import { buildLogger } from '@/utils';
@@ -44,5 +45,17 @@ export class UserController {
 
     logger.info('Password changed successfully', { userId });
     successHandler(res, result, 'Password changed successfully');
+  });
+
+  static addAlias = catchErrors(async (req: Request, res: Response) => {
+    const userId = req.user!.userId;
+
+    logger.info('Adding alias for user', { userId, body: req.body });
+
+    const aliasData: AddAliasRequest = req.body;
+    const result = await UserService.addAlias(userId, aliasData);
+
+    logger.info('Alias added successfully', { userId });
+    successHandler(res, result, 'Alias added successfully');
   });
 }
