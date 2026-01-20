@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { JwtUtil } from '@/utils/jwt.utils';
+import { JwtUtil, TempTokenPayload } from '@/utils/jwt.utils';
 import { buildLogger } from '@/utils';
 
 const logger = buildLogger('validateTempToken-middleware');
@@ -23,7 +23,7 @@ export const validateTempToken = (
   }
 
   try {
-    const decoded = JwtUtil.verifyToken(token);
+    const decoded = JwtUtil.verifyToken(token) as TempTokenPayload;
 
     // Verify that it is a temporary token
     if (!decoded.type || decoded.type !== '2fa-verification') {

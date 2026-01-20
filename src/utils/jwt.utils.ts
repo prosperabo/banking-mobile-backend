@@ -4,6 +4,7 @@ import { buildLogger } from '@/utils';
 
 const logger = buildLogger('jwt-service');
 
+// Payload para JWT completo (con backoffice)
 export interface JwtPayload {
   user?: {
     userId: number;
@@ -14,6 +15,15 @@ export interface JwtPayload {
   userId?: number;
   email?: string;
   type?: string;
+  iat?: number;
+  exp?: number;
+}
+
+// Payload para token temporal de 2FA
+export interface TempTokenPayload {
+  userId: number;
+  email: string;
+  type: '2fa-verification';
   iat?: number;
   exp?: number;
 }
@@ -66,14 +76,24 @@ export class JwtUtil {
     }
   }
 
-  static verifyToken(token: string): JwtPayload {
+  static verifyToken(token: string): JwtPayload | TempTokenPayload {
     try {
-      const decoded = jwt.verify(token, this.SECRET) as JwtPayload;
+      const decoded = jwt.verify(token, this.SECRET) as
+        | JwtPayload
+        | TempTokenPayload;
 
-      logger.info('JWT token verified successfully', {
-        userId: decoded.user.userId,
-        email: decoded.user.email,
-      });
+      // Log based on token type
+      if ('type' in decoded && decoded.type === '2fa-verification') {
+        logger.info('Temp token verified successfully', {
+          userId: decoded.userId,
+          email: decoded.email,
+        });
+      } else if ('user' in decoded && decoded.user) {
+        logger.info('JWT token verified successfully', {
+          userId: decoded.user.userId,
+          email: decoded.user.email,
+        });
+      }
 
       return decoded;
     } catch (error) {

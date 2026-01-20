@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { JwtUtil } from '@/utils/jwt.utils';
+import { JwtUtil, JwtPayload } from '@/utils/jwt.utils';
 import { buildLogger } from '@/utils';
 
 const logger = buildLogger('auth-middleware');
@@ -19,14 +19,14 @@ export const authenticateToken = (
   }
 
   try {
-    const decoded = JwtUtil.verifyToken(token);
+    const decoded = JwtUtil.verifyToken(token) as JwtPayload;
 
     req.user = decoded.user;
     req.backoffice = decoded.backoffice;
 
     logger.info('Token verified and user data attached to request', {
-      userId: decoded.user.userId,
-      email: decoded.user.email,
+      userId: decoded.user?.userId,
+      email: decoded.user?.email,
     });
 
     next();

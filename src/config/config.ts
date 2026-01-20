@@ -28,8 +28,9 @@ export const config = {
     baseUrl: process.env.PAYMENT_SERVICE_BASE_URL || 'https://api.payclip.com',
   },
   twoFactor: {
-    issuer: process.env.TWO_FACTOR_ISSUER,
+    issuer: process.env.TWO_FACTOR_ISSUER || 'Prospera',
     encryptionKey: process.env.TWO_FACTOR_ENCRYPTION_KEY,
-    tempTokenExpiry: Number(process.env.TWO_FACTOR_TEMP_TOKEN_EXPIRY),
+    encryptionAlgorithm: 'aes-256-cbc',
+    tempTokenExpiry: Number(process.env.TWO_FACTOR_TEMP_TOKEN_EXPIRY) || 600,
   },
 };

@@ -55,6 +55,15 @@ model Users {
   payments                   payments[]
 }
 
+model TwoFactorAuth {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  secret    String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
 model VerifiedEmails {
   id         Int      @id @default(autoincrement())
   email      String   @unique
