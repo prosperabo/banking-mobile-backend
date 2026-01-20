@@ -7,6 +7,7 @@ import {
   BackofficeRefreshRequest,
   BackofficeRefreshResponse,
 } from '@/schemas';
+import { LoginWith2FAResponse } from '@/schemas/twoFactor.schemas';
 import { buildLogger } from '@/utils';
 import { BackofficeService } from '@/services/backoffice.service';
 import { UserRepository } from '@/repositories/user.repository';
@@ -18,7 +19,9 @@ import { config } from '@/config';
 const logger = buildLogger('auth-service');
 
 export class AuthService {
-  static async login(loginData: LoginRequest): Promise<LoginResponse> {
+  static async login(
+    loginData: LoginRequest
+  ): Promise<LoginResponse | LoginWith2FAResponse> {
     const { email, password } = loginData;
 
     const user = await UserRepository.findByEmail(email);
@@ -40,6 +43,26 @@ export class AuthService {
     //   throw new Error('Invalid credentials');
     // }
 
+    // Check if user has 2FA enabled
+    if (user.twoFactorEnabled) {
+      logger.info('User has 2FA enabled, generating temp token', {
+        userId: user.id,
+      });
+
+      // Generate temporary token (valid for 10 minutes)
+      const tempToken = JwtUtil.generateTempToken({
+        userId: user.id,
+        email: user.email,
+      });
+
+      return {
+        requires2FA: true,
+        tempToken,
+        expiresIn: config.twoFactor.tempTokenExpiry,
+      };
+    }
+
+    // If NO 2FA, continue with normal flow
     const userWithAuthState =
       await UserRepository.findByEmailWithAuthState(email);
     const authState = userWithAuthState?.BackofficeAuthState;

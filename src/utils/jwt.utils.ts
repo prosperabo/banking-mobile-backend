@@ -4,13 +4,26 @@ import { buildLogger } from '@/utils';
 
 const logger = buildLogger('jwt-service');
 
+// Payload para JWT completo (con backoffice)
 export interface JwtPayload {
-  user: {
+  user?: {
     userId: number;
     email: string;
     username: string;
   };
-  backoffice: BackofficePayload;
+  backoffice?: BackofficePayload;
+  userId?: number;
+  email?: string;
+  type?: string;
+  iat?: number;
+  exp?: number;
+}
+
+// Payload para token temporal de 2FA
+export interface TempTokenPayload {
+  userId: number;
+  email: string;
+  type: '2fa-verification';
   iat?: number;
   exp?: number;
 }
@@ -63,14 +76,24 @@ export class JwtUtil {
     }
   }
 
-  static verifyToken(token: string): JwtPayload {
+  static verifyToken(token: string): JwtPayload | TempTokenPayload {
     try {
-      const decoded = jwt.verify(token, this.SECRET) as JwtPayload;
+      const decoded = jwt.verify(token, this.SECRET) as
+        | JwtPayload
+        | TempTokenPayload;
 
-      logger.info('JWT token verified successfully', {
-        userId: decoded.user.userId,
-        email: decoded.user.email,
-      });
+      // Log based on token type
+      if ('type' in decoded && decoded.type === '2fa-verification') {
+        logger.info('Temp token verified successfully', {
+          userId: decoded.userId,
+          email: decoded.email,
+        });
+      } else if ('user' in decoded && decoded.user) {
+        logger.info('JWT token verified successfully', {
+          userId: decoded.user.userId,
+          email: decoded.user.email,
+        });
+      }
 
       return decoded;
     } catch (error) {
@@ -97,6 +120,36 @@ export class JwtUtil {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
       return null;
+    }
+  }
+  /**
+   * Generates a temporary token for 2FA verification
+   * This token has a short duration and only allows verifying the 2FA code
+   */
+  static generateTempToken(payload: { userId: number; email: string }): string {
+    try {
+      const token = jwt.sign(
+        {
+          userId: payload.userId,
+          email: payload.email,
+          type: '2fa-verification',
+        },
+        this.SECRET,
+        { expiresIn: `${config.twoFactor.tempTokenExpiry}s` } // 10 minutos por defecto
+      );
+
+      logger.info('Temp token generated successfully', {
+        userId: payload.userId,
+        email: payload.email,
+      });
+
+      return token;
+    } catch (error) {
+      logger.error('Error generating temp token', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        userId: payload.userId,
+      });
+      throw new Error('Error generando token temporal');
     }
   }
 }

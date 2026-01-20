@@ -54,13 +54,24 @@ model Users {
   monthlyIncomeRange         String?                    @db.VarChar(255)
   isUniversityStudent        Boolean                    @default(false)
   alias                      String?                    @unique(map: "ux_users_alias") @db.VarChar(255)
+  twoFactorEnabled           Boolean                    @default(false)
   AcademicInformation        AcademicInformation?
   BackofficeAuthState        BackofficeAuthState?
   BackofficeCustomerProfile  BackofficeCustomerProfile?
+  TwoFactorAuth              TwoFactorAuth?
   Cards                      Cards[]
   completedLessons           CompletedLesson[]
   Transactions               Transactions[]
   payments                   payments[]
+}
+
+model TwoFactorAuth {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  secret    String   @db.Text
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      Users    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model VerifiedEmails {
