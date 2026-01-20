@@ -8,6 +8,7 @@ import transactionsRouter from './transactions.routes';
 import inspirationRouter from './inspiration.routes';
 import paymentRouter from './payment.routes';
 import twoFactorRouter from './twoFactor.routes';
+import transferRouter from './transfer.routes';
 
 const router = Router();
 
