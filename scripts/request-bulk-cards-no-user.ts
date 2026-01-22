@@ -1,34 +1,11 @@
-/**
- * @fileoverview Script to request N physical cards in one bulk batch (no user relation)
- * @description Orders N cards to a fixed delivery location and stores reference + identifiers in DB
- *
- * Usage:
- *   npx tsx scripts/request-bulk-cards-no-user.ts --count=200 --pin=1234
- *   npx tsx scripts/request-bulk-cards-no-user.ts --count=100 --pin=1234
- *   npx tsx scripts/request-bulk-cards-no-user.ts --count=300 --pin=1234
- */
-
-import { db } from '../src/config/prisma';
-import axios from 'axios';
 import { randomBytes } from 'crypto';
+import { db } from '../src/config/prisma';
 import { buildLogger } from '../src/utils';
-import { config } from '../src/config/config';
+import backOfficeInstance from './api/backoffice.instance';
 
 const logger = buildLogger('RequestBulkCardsNoUserScript');
 
-const BACKOFFICE_API_BASE =
-  config.backofficeBaseUrl || process.env.BACKOFFICE_API_BASE;
-const ECOMMERCE_TOKEN = config.ecommerceToken || process.env.ECOMMERCE_TOKEN;
-
-function normalizeBaseUrl(url?: string | null): string | undefined {
-  if (!url) return undefined;
-  const trimmed = url.trim();
-  return trimmed.endsWith('/') ? trimmed.slice(0, -1) : trimmed;
-}
-
-const NORMALIZED_BACKOFFICE_API_BASE = normalizeBaseUrl(BACKOFFICE_API_BASE);
-
-/** ---------- Types ---------- */
+/* ================= TYPES ================= */
 
 interface BulkOrderCardRequest {
   delivery_location: {
@@ -46,40 +23,43 @@ interface BulkOrderCardRequest {
   };
   batch: Array<{
     card_identifier: string;
-    front_name?: string;
-    qr?: string;
     pin: string;
-    campaign_id?: string; // ✅ optional per docs
+    qr: string;
+    campaign_id: string;
   }>;
 }
 
-/**
- * 200 OK response body (per backoffice docs)
- */
 type BulkOrderCardApiResponse = {
   endpoint: string;
-  error: string; // empty in successful requests
+  error: string;
   payload: {
-    reference: string; // The batch order's id
-    status: number; // int16
+    reference: string;
+    status: number;
   };
   text: string;
-  timestamp: string; // date-time
+  timestamp: string;
 };
 
-/** ---------- Config & helpers ---------- */
+/* ================= HELPERS ================= */
 
-function assertConfigured(): void {
-  if (!NORMALIZED_BACKOFFICE_API_BASE) {
-    throw new Error(
-      'BACKOFFICE API base URL is not configured. Set BACKOFFICE_BASE_URL or BACKOFFICE_API_BASE in your environment.'
-    );
+function parseArgs(argv: string[]): { count: number; pin: string } {
+  let count = 200;
+  let pin = '1234';
+
+  for (const arg of argv) {
+    if (arg.startsWith('--count=')) {
+      const n = Number(arg.replace('--count=', ''));
+      if (!Number.isFinite(n) || n <= 0) throw new Error('Invalid count');
+      count = Math.floor(n);
+    }
+    if (arg.startsWith('--pin=')) {
+      const p = arg.replace('--pin=', '');
+      if (!/^\d{4}$/.test(p)) throw new Error('PIN must be 4 digits');
+      pin = p;
+    }
   }
-  if (!ECOMMERCE_TOKEN) {
-    throw new Error(
-      'ECOMMERCE_TOKEN is not configured. Set ECOMMERCE_TOKEN in your environment.'
-    );
-  }
+
+  return { count, pin };
 }
 
 function randomBase32(len: number): string {
@@ -90,54 +70,26 @@ function randomBase32(len: number): string {
     .join('');
 }
 
-function buildCardIdentifiers(count: number): string[] {
-  const prefix = 'PHYSICAL';
+function buildIdentifiers(count: number): string[] {
   const ts = Date.now();
-
   return Array.from({ length: count }, (_, i) => {
     const seq = i + 1;
     const suffix = randomBase32(6);
-    return `${prefix}_${ts}_${seq}_${suffix}`;
+    return `PHYSICAL_${ts}_${seq}_${suffix}`;
   });
 }
 
-function parseArgs(argv: string[]): { count: number; pin: string } {
-  let count = 200;
-  let pin = '1234';
-
-  for (const arg of argv) {
-    if (arg.startsWith('--count=')) {
-      const n = Number(arg.replace('--count=', '').trim());
-      if (!Number.isFinite(n) || n <= 0) {
-        throw new Error(`Invalid --count value: "${arg}"`);
-      }
-      count = Math.floor(n);
-    } else if (arg.startsWith('--pin=')) {
-      const p = arg.replace('--pin=', '').trim();
-      if (!/^\d{4}$/.test(p)) {
-        throw new Error(`Invalid --pin value (must be 4 digits): "${p}"`);
-      }
-      pin = p;
-    }
-  }
-
-  return { count, pin };
-}
-
-/** ---------- Main logic ---------- */
+/* ================= MAIN ================= */
 
 async function requestBulkCardsNoUser(params: {
   count: number;
   pin: string;
 }): Promise<void> {
-  assertConfigured();
-
   const { count, pin } = params;
 
-  // ✅ campaign id provided by user
   const CAMPAIGN_ID = 'KBZ260121860';
+  const QR_URL = 'https://slan.mx/card-activation';
 
-  // Delivery location (fixed)
   const deliveryLocation: BulkOrderCardRequest['delivery_location'] = {
     first_names: 'Prospera',
     last_names: 'Recepcion',
@@ -147,20 +99,18 @@ async function requestBulkCardsNoUser(params: {
     state: 'Quintana Roo',
     exterior_number: '21',
     interior_number: '1',
-    postal_code: '5349',
+    postal_code: '77536',
     mobile: 9983940931,
-    additional_notes:
-      'Bulk order physical cards (no user). Same PIN; will be changed later.',
+    additional_notes: 'Bulk order physical cards',
   };
 
-  const identifiers = buildCardIdentifiers(count);
+  const identifiers = buildIdentifiers(count);
 
   const batch: BulkOrderCardRequest['batch'] = identifiers.map(id => ({
     card_identifier: id,
     pin,
-    front_name: 'PROSPERA',
-    qr: '',
-    campaign_id: CAMPAIGN_ID, // ✅ include campaign
+    qr: QR_URL,
+    campaign_id: CAMPAIGN_ID,
   }));
 
   const bulkOrderData: BulkOrderCardRequest = {
@@ -168,62 +118,25 @@ async function requestBulkCardsNoUser(params: {
     batch,
   };
 
-  const requestUrl = `${NORMALIZED_BACKOFFICE_API_BASE}/debit/v1/bulkOrderCard`;
-
-  logger.info('Sending bulk order to backoffice...', {
-    url: requestUrl,
-    batch_count: batch.length,
-    campaign_id: CAMPAIGN_ID,
-    delivery_location: deliveryLocation,
-    first_batch_item: batch[0],
+  logger.info('🚀 Sending bulk order', {
+    count,
+    example: batch[0],
   });
 
-  const response = await axios.post<BulkOrderCardApiResponse>(
-    requestUrl,
-    bulkOrderData,
-    {
-      headers: {
-        'Authorization-ecommerce': ECOMMERCE_TOKEN,
-        'Content-Type': 'application/json',
-      },
-    }
+  // ✅ Aquí ya loggea TODO la instancia axios
+  const response = await backOfficeInstance.post<BulkOrderCardApiResponse>(
+    '/debit/v1/bulkOrderCard',
+    bulkOrderData
   );
 
-  logger.info('Backoffice response received', { data: response.data });
+  const reference = response.data.payload.reference;
+  const status = response.data.payload.status;
 
-  // If backoffice returns an error field even with 200 OK, handle it.
-  if (response.data.error && response.data.error.trim().length > 0) {
-    throw new Error(
-      `Backoffice returned error: ${response.data.error}. Full response: ${JSON.stringify(
-        response.data,
-        null,
-        2
-      )}`
-    );
-  }
-
-  const referenceBatchFromResponse = response.data.payload.reference;
-  const statusFromPayload = response.data.payload.status ?? 1;
-
-  if (
-    !referenceBatchFromResponse ||
-    referenceBatchFromResponse.trim().length === 0
-  ) {
-    throw new Error(
-      `Backoffice response did not include payload.reference. Response: ${JSON.stringify(
-        response.data,
-        null,
-        2
-      )}`
-    );
-  }
-
-  // Store in DB: 1 bulk + N cards (no userId)
   await db.$transaction(async tx => {
     const bulkBatch = await tx.bulkBatch.create({
       data: {
-        referenceBatch: referenceBatchFromResponse,
-        status: statusFromPayload,
+        referenceBatch: reference,
+        status,
         numCreated: 0,
         numFailed: 0,
         requestedAt: new Date(),
@@ -241,39 +154,26 @@ async function requestBulkCardsNoUser(params: {
       })),
     });
 
-    logger.info('Bulk batch stored', {
-      bulkBatchId: bulkBatch.id,
-      referenceBatch: bulkBatch.referenceBatch,
-      cardsInserted: count,
-      campaign_id: CAMPAIGN_ID,
+    logger.info('✅ Cards stored', {
+      batchId: bulkBatch.id,
+      reference,
+      count,
     });
   });
 }
 
-/** ---------- Entrypoint ---------- */
+/* ================= ENTRYPOINT ================= */
 
 async function main(): Promise<void> {
-  try {
-    const { count, pin } = parseArgs(process.argv.slice(2));
+  const { count, pin } = parseArgs(process.argv.slice(2));
 
-    logger.info('Running bulk card request (no user relation)', { count, pin });
+  logger.info('Starting bulk card request', { count, pin });
 
-    await requestBulkCardsNoUser({ count, pin });
+  await requestBulkCardsNoUser({ count, pin });
 
-    logger.info('Done');
-  } catch (error) {
-    logger.error(
-      'Error executing script:',
-      error instanceof Error
-        ? { message: error.message, stack: error.stack }
-        : { error }
-    );
-    process.exit(1);
-  }
+  logger.info('Done');
 }
 
 if (require.main === module) {
   main();
 }
-
-export { requestBulkCardsNoUser };
