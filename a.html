@@ -1,0 +1,17 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<div id="qrcode"></div>
+
+<script>
+  async function generateQR() {
+    
+    // Generar QR con el string
+    new QRCode(document.getElementById('qrcode'), {
+      text: "eyJlbWFpbCI6Impva2Fyb2NoYThAZ21haWwuY29tIiwiYWxpYXMiOiJqa3JvY2giLCJ0aW1lc3RhbXAiOiIyMDI2LTAxLTE2VDE4OjQ0OjIwLjAzOFoifQ==",  // "usuario@example.com" o "mi-alias"
+      width: 200,
+      height: 200,
+    });
+  }
+  
+  generateQR();
+</script>

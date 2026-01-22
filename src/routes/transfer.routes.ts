@@ -17,7 +17,6 @@ router.post(
   validateRequest(...transferValidator, ...transferTypeQueryValidator),
   TransferController.transfer
 );
-
 // Route to get user QR code
 router.get('/qr', TransferController.getUserQR);
 

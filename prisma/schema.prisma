@@ -182,7 +182,7 @@ model BackofficeCustomerProfile {
 
 model Cards {
   id             Int            @id @default(autoincrement())
-  userId         Int
+  userId         Int?
   bulkBatchId    Int?
   prosperaCardId String?        @unique
   cardType       Cards_cardType
@@ -195,7 +195,7 @@ model Cards {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime
   BulkBatch      BulkBatch?     @relation(fields: [bulkBatchId], references: [id])
-  Users          Users          @relation(fields: [userId], references: [id])
+  Users          Users?         @relation(fields: [userId], references: [id], onDelete: Restrict)
   Transactions   Transactions[]
 
   @@index([userId], map: "Cards_userId_fkey")
