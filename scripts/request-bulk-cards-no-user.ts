@@ -221,7 +221,6 @@ async function requestBulkCardsNoUser(params: {
 
     await tx.cards.createMany({
       data: batch.map(c => ({
-        userId: null,
         bulkBatchId: bulkBatch.id,
         cardType: 'PHYSICAL',
         cardIdentifier: c.card_identifier,
