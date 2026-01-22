@@ -27,4 +27,10 @@ export const config = {
     secretKey: process.env.PAYMENT_SERVICE_SECRET_KEY || '',
     baseUrl: process.env.PAYMENT_SERVICE_BASE_URL || 'https://api.payclip.com',
   },
+  banxico: {
+    queryToken: process.env.BANXICO_QUERY_TOKEN || '',
+    baseUrl:
+      process.env.BANXICO_BASE_URL ||
+      'https://www.banxico.org.mx/SieAPIRest/service/v1',
+  },
 };
