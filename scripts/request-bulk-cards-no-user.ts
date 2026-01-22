@@ -10,6 +10,7 @@
 
 import { db } from '../src/config/prisma';
 import axios from 'axios';
+import { randomBytes } from 'crypto';
 import { buildLogger } from '../src/utils';
 import { config } from '../src/config/config';
 
@@ -81,13 +82,23 @@ function assertConfigured(): void {
   }
 }
 
+function randomBase32(len: number): string {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  const bytes = randomBytes(len);
+  return Array.from(bytes)
+    .map(b => alphabet[b % alphabet.length])
+    .join('');
+}
+
 function buildCardIdentifiers(count: number): string[] {
-  // Unique per request: base timestamp + 0001..NNNN
-  const base = Date.now().toString();
-  return Array.from(
-    { length: count },
-    (_, i) => `${base}${String(i + 1).padStart(4, '0')}`
-  );
+  const prefix = 'PHYSICAL';
+  const ts = Date.now();
+
+  return Array.from({ length: count }, (_, i) => {
+    const seq = i + 1;
+    const suffix = randomBase32(6);
+    return `${prefix}_${ts}_${seq}_${suffix}`;
+  });
 }
 
 function parseArgs(argv: string[]): { count: number; pin: string } {
