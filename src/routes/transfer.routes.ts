@@ -20,5 +20,6 @@ router.post(
 
 // Route to get user QR code
 router.get('/qr', TransferController.getUserQR);
+router.get('/account/me', TransferController.getMyAccountInfo);
 
 export default router;
