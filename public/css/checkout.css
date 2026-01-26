@@ -113,6 +113,14 @@ body {
   scrollbar-color: var(--c-p-normal) #f1f1f1;
 }
 
+#card-error{
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #e74c3c;
+  margin-top: -8px;
+  min-height: 18px; /* para que no “salte” el layout */
+}
+
 /* Estilos Webkit para scrollbar */
 #checkout::-webkit-scrollbar { height: 8px; width: 8px; }
 #checkout::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }

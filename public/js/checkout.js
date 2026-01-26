@@ -10,21 +10,18 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================
   // Helpers: entorno Flutter vs Browser
   // =========================
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
-
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   const isInAppWebView = () => !!window.flutter_inappwebview?.callHandler;
 
-  // flutter_inappwebview recomienda esperar este evento
   let isFlutterReady = false;
   window.addEventListener('flutterInAppWebViewPlatformReady', () => {
     isFlutterReady = true;
   });
 
   async function notifyApp(handlerName, payload) {
-    // Si NO estamos dentro de Flutter, no hay nada que notificar
     if (!isInAppWebView()) return false;
 
-    // Reintenta ~2s esperando "ready"
+    // Espera a “ready” hasta ~2s
     for (let i = 0; i < 40; i++) {
       try {
         if (isFlutterReady && window.flutter_inappwebview?.callHandler) {
@@ -35,7 +32,7 @@ document.addEventListener('DOMContentLoaded', () => {
       await sleep(50);
     }
 
-    // Fallback: intenta aunque el ready no haya llegado
+    // Fallback
     for (let i = 0; i < 10; i++) {
       try {
         if (window.flutter_inappwebview?.callHandler) {
@@ -55,11 +52,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const submitButton = document.querySelector('#submit');
   const form = document.querySelector('#payment-form');
   const formSide = document.querySelector('.form-side');
+  const errorBox = document.querySelector('#card-error');
 
-  // Visuales (pueden no existir en tu HTML actual)
-  const visualBrand = document.querySelector('#brand-display');             // (no existe en tu HTML pegado)
-  const visualLast4 = document.querySelector('.card-number-display');      // sí existe
-  const visualStatus = document.querySelector('#status-display');          // (no existe en tu HTML pegado)
+  // Visuales (opcionales)
+  const visualBrand = document.querySelector('#brand-display');        // si existe
+  const visualLast4 = document.querySelector('.card-number-display'); // sí existe
+  const visualStatus = document.querySelector('#status-display');      // si existe
 
   // Params
   const urlParams = new URLSearchParams(window.location.search);
@@ -69,10 +67,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================
   // UI helpers
   // =========================
-  function setSubmitLoading(isLoading) {
-    if (!submitButton) return;
-    submitButton.disabled = isLoading;
-    submitButton.innerHTML = isLoading ? 'Procesando...' : '<span>Reintentar Pago</span>';
+  function setError(text) {
+    if (!errorBox) return;
+    errorBox.textContent = text || '';
   }
 
   function setSubmitText(text) {
@@ -81,10 +78,22 @@ document.addEventListener('DOMContentLoaded', () => {
     else if (submitButton) submitButton.textContent = text;
   }
 
+  function setSubmitEnabled(enabled) {
+    if (!submitButton) return;
+    submitButton.disabled = !enabled;
+  }
+
+  function setSubmitLoading(isLoading) {
+    if (!submitButton) return;
+    submitButton.disabled = true;
+    submitButton.innerHTML = isLoading
+      ? 'Procesando...'
+      : `<span>Reintentar Pago</span>`;
+  }
+
   function renderResultUI({ ok, title, subtitle, emoji }) {
     if (!formSide) return;
 
-    // UI simple, no depende del CSS
     const color = ok ? '#27ae60' : '#e74c3c';
 
     formSide.innerHTML = `
@@ -112,14 +121,13 @@ document.addEventListener('DOMContentLoaded', () => {
             font-weight:700; cursor:pointer; background:#444; color:#fff;
           ">Cerrar pestaña</button>
 
-          <div style="font-size: 12px; color: rgba(255,255,255,0.65); line-height:1.35;">
+          <div style="font-size: 12px; color: rgba(0,0,0,0.55); line-height:1.35;">
             Si esta pestaña no se cierra automáticamente, puedes volver atrás o cerrarla manualmente.
           </div>
         </div>
       </div>
     `;
 
-    // Si es navegador normal, mostramos acciones
     if (!isInAppWebView()) {
       const actions = document.querySelector('#browser-actions');
       const btnBack = document.querySelector('#btn-back');
@@ -138,7 +146,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   function tryCloseBrowserTab() {
-    // Solo funciona si la ventana fue abierta por script (window.open)
     try { window.close(); } catch (_) {}
   }
 
@@ -147,10 +154,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================
   if (!paymentId) {
     console.error('No se encontró paymentId en la URL');
-    if (submitButton) {
-      submitButton.disabled = true;
-      submitButton.textContent = 'Enlace inválido';
-    }
+    setSubmitEnabled(false);
+    if (submitButton) submitButton.textContent = 'Enlace inválido';
     renderResultUI({
       ok: false,
       title: 'Enlace inválido',
@@ -160,7 +165,6 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
-  // Mostrar monto en el botón si viene
   if (amount) {
     const parsed = Number(amount);
     if (!Number.isNaN(parsed)) {
@@ -194,63 +198,122 @@ document.addEventListener('DOMContentLoaded', () => {
 
   card.mount('checkout');
 
-  // Inicialmente bloquea submit hasta que complete
-  if (submitButton) submitButton.disabled = true;
+  // ✅ Arranca deshabilitado, pero con fallback
+  setSubmitEnabled(false);
+  setError('');
 
   // =========================
-  // Evento change: UI visual
+  // Bind de eventos (compat: on / addEventListener / addListener)
   // =========================
-  card.on('change', event => {
-    // Marca (si existe el elemento)
+  let gotAnyCardEvent = false;
+
+  function bindCardEvent(cb) {
+    if (typeof card?.on === 'function') return card.on('change', cb);
+    if (typeof card?.addEventListener === 'function') return card.addEventListener('change', cb);
+    if (typeof card?.addListener === 'function') return card.addListener('change', cb);
+    // Si el SDK cambió y no hay forma de escuchar cambios, usaremos fallback (botón habilitado)
+  }
+
+  function normalizeEvent(e) {
+    // algunos SDKs envían e.detail
+    return e?.detail ?? e ?? {};
+  }
+
+  function updateButtonFromCardEvent(raw) {
+    gotAnyCardEvent = true;
+    const e = normalizeEvent(raw);
+
+    // DEBUG: mira qué trae realmente tu SDK en producción
+    // console.log('[CLIP change]', e);
+
+    const hasError = !!(e.error && (e.error.message || e.error)) || !!e.errorMessage;
+    const errorMsg =
+      (e.error && (e.error.message || (typeof e.error === 'string' ? e.error : ''))) ||
+      e.errorMessage ||
+      '';
+
+    // ✅ “complete” puede llamarse distinto según versión
+    const isComplete =
+      e.complete === true ||
+      e.isComplete === true ||
+      e.valid === true ||
+      e.isValid === true;
+
+    // fallback suave: si NO hay error y el usuario ya empezó a escribir, dejamos pagar
+    // (si está incompleto, card.cardToken() fallará y mostraremos el error)
+    const userStarted =
+      e.empty === false || e.touched === true || e.brand || e.last4;
+
     if (visualBrand) {
-      visualBrand.textContent = event.brand ? event.brand.toUpperCase() : 'TARJETA';
+      visualBrand.textContent = e.brand ? String(e.brand).toUpperCase() : 'TARJETA';
     }
 
-    // Estado (si existe el elemento)
     if (visualStatus) {
-      if (event.complete) {
-        visualStatus.textContent = 'LISTO';
-        visualStatus.style.color = '#81c784';
-      } else if (event.error) {
+      if (hasError) {
         visualStatus.textContent = 'ERROR';
         visualStatus.style.color = '#e57373';
+      } else if (isComplete) {
+        visualStatus.textContent = 'LISTO';
+        visualStatus.style.color = '#81c784';
       } else {
         visualStatus.textContent = '...';
         visualStatus.style.color = '#fff';
       }
     }
 
-    // Habilitar/deshabilitar botón según complete/error
-    if (submitButton) {
-      if (event.complete) submitButton.disabled = false;
-      else submitButton.disabled = true;
+    if (visualLast4 && e.last4) {
+      visualLast4.textContent = `•••• •••• •••• ${e.last4}`;
     }
 
-    // Últimos 4 (si el SDK los expone)
-    if (visualLast4 && event.last4) {
-      visualLast4.textContent = `•••• •••• •••• ${event.last4}`;
+    if (hasError) {
+      setError(errorMsg || 'Revisa los datos de la tarjeta.');
+      setSubmitEnabled(false);
+      return;
     }
-  });
+
+    setError('');
+    // habilita si está completo, o si ya empezó y no hay error (fallback)
+    setSubmitEnabled(isComplete || !!userStarted);
+  }
+
+  bindCardEvent(updateButtonFromCardEvent);
+
+  // ✅ Watchdog: si por alguna razón nunca llegan eventos en Android/alguna versión,
+  // habilitamos el botón después de un ratito y validamos al submit.
+  setTimeout(() => {
+    if (!gotAnyCardEvent) {
+      setSubmitEnabled(true);
+      setError(''); // opcional: podrías poner “Completa los datos antes de pagar”.
+    }
+  }, 1200);
 
   // =========================
   // Submit: procesar pago
   // =========================
-  form.addEventListener('submit', async event => {
+  form.addEventListener('submit', async (event) => {
     event.preventDefault();
 
     if (!submitButton) return;
 
-    submitButton.disabled = true;
-    submitButton.innerHTML = 'Procesando...';
+    setSubmitLoading(true);
+    setError('');
 
     try {
-      const { id: cardTokenID } = await card.cardToken();
+      const tokenResp = await card.cardToken();
+      const cardTokenID = tokenResp?.id;
 
-      const response = await fetch(`${CONFIG.BACKEND_URL}/payments/process/${paymentId}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ card_token: cardTokenID }),
-      });
+      if (!cardTokenID) {
+        throw new Error('No se pudo tokenizar la tarjeta. Verifica los datos.');
+      }
+
+      const response = await fetch(
+        `${CONFIG.BACKEND_URL}/payments/process/${paymentId}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ card_token: cardTokenID }),
+        }
+      );
 
       const data = await response.json().catch(() => ({}));
 
@@ -258,7 +321,6 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error(data.message || 'Error procesando pago');
       }
 
-      // UI éxito
       renderResultUI({
         ok: true,
         title: '¡Pago Exitoso!',
@@ -266,32 +328,30 @@ document.addEventListener('DOMContentLoaded', () => {
         emoji: '✅',
       });
 
-      // 🔥 Notificar a Flutter (Android WebView)
+      // Notificar a Flutter
       const sent = await notifyApp('paymentDone', { paymentId, result: data });
 
-      // Si NO estamos en Flutter, intentamos cerrar (si aplica)
-      if (!sent) {
-        setTimeout(() => tryCloseBrowserTab(), 1200);
-      }
+      // Si es navegador normal, intenta cerrar (solo funcionará si fue abierto por script)
+      if (!sent) setTimeout(() => tryCloseBrowserTab(), 1200);
 
     } catch (error) {
       console.error(error);
 
-      // UI error (en web y en flutter)
+      const msg = error?.message ? String(error.message) : 'Error procesando pago';
+      setError(msg);
+
       renderResultUI({
         ok: false,
-        title: 'Pago rechazado',
-        subtitle: error?.message ? String(error.message) : 'Error procesando pago',
+        title: 'Pago no completado',
+        subtitle: msg,
         emoji: '❌',
       });
 
-      await notifyApp('paymentFailed', {
-        paymentId,
-        message: error?.message ? String(error.message) : 'Error',
-      });
+      await notifyApp('paymentFailed', { paymentId, message: msg });
 
-      // Si sigues queriendo reintentar sin recargar, puedes reponer el formulario
-      // (por ahora solo dejamos el result UI; si prefieres reintento, dímelo y lo ajusto)
+      // En web: deja reintentar recargando (o puedes reconstruir el form)
+      // Aquí, como ya renderizamos result UI, si quieres “reintentar” sin recargar,
+      // dímelo y te lo dejo con botón que restaura el formulario.
     }
   });
 });
