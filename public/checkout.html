@@ -91,6 +91,25 @@
     const submitButton = document.querySelector('#submit');
     const form = document.querySelector('#payment-form');
 
+    function notifyApp(handlerName, payload) {
+        try {
+          if (window.flutter_inappwebview?.callHandler) {
+            window.flutter_inappwebview.callHandler(handlerName, payload ?? {});
+            return true;
+          }
+        } catch (_) {}
+        return false;
+    }
+
+    function showInlineMessage(type, text) {
+       const color = type === 'success' ? '#4caf50' : '#ff5252';
+       form.innerHTML = `
+         <div class="success-message" style="color:${color}">
+           ${text}
+         </div>
+       `;
+    }
+    
     if (!paymentId) {
       submitButton.disabled = true;
     }
@@ -128,19 +147,23 @@
           throw new Error(data.message || 'Error procesando pago');
         }
 
-        // 🔥 Mensaje de éxito en el HTML
-        form.innerHTML = `
-          <div class="success-message">
-            ✅ Pago realizado con éxito
-          </div>
-        `;
+        // ✅ Mensaje en la web
+        showInlineMessage('success', 'Pago realizado con éxito');
+
+        // ✅ Notifica a Flutter (Android WebView)
+        notifyApp('paymentDone', { paymentId, result: data });
 
         // ⏳ Cierra la pestaña automáticamente
         setTimeout(() => {
-          window.close();
-        }, 1800);
+        if (!notifyApp('paymentDone')) window.close();
+        }, 800);
 
       } catch (error) {
+        showInlineMessage('error', 'Error procesando el pago');
+        notifyApp('paymentFailed', {
+          paymentId,
+          message: (error && error.message) ? error.message : 'Error'
+        });
         submitButton.disabled = false;
         submitButton.textContent = 'Procesar Pago';
         alert("Error procesando el pago");
