@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -65,13 +64,33 @@
       cursor: not-allowed;
     }
 
-    /* ===== MENSAJE DE ÉXITO ===== */
-    .success-message {
+    .message {
+      display: none;
       text-align: center;
-      color: #4caf50;
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 700;
-      padding: 40px 10px;
+      padding: 16px 10px;
+      margin-bottom: 12px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.06);
+    }
+
+    .message.success { color: #4caf50; }
+    .message.error { color: #ff5252; }
+
+    .secondary-btn {
+      margin-top: 10px;
+      background: #2a2a2a;
+      color: #fff;
+    }
+
+    .hint {
+      display: none;
+      margin-top: 10px;
+      font-size: 13px;
+      line-height: 1.35;
+      color: rgba(255,255,255,0.7);
+      text-align: center;
     }
   </style>
 </head>
@@ -79,7 +98,17 @@
 <body>
   <form id="payment-form">
     <div id="checkout"></div>
-    <button id="submit">Procesar Pago</button>
+
+    <div id="msg" class="message"></div>
+
+    <button id="submit" type="submit">Procesar Pago</button>
+
+    <!-- Solo para navegador (cuando no se puede cerrar) -->
+    <button id="closeBtn" type="button" class="secondary-btn" style="display:none;">
+      Cerrar / Volver
+    </button>
+
+    <div id="hint" class="hint"></div>
   </form>
 
   <script>
@@ -88,43 +117,94 @@
 
     const urlParams = new URLSearchParams(window.location.search);
     const paymentId = urlParams.get('paymentId');
-    const submitButton = document.querySelector('#submit');
-    const form = document.querySelector('#payment-form');
 
-    function notifyApp(handlerName, payload) {
+    const form = document.querySelector('#payment-form');
+    const submitButton = document.querySelector('#submit');
+    const msg = document.querySelector('#msg');
+    const closeBtn = document.querySelector('#closeBtn');
+    const hint = document.querySelector('#hint');
+    const checkoutDiv = document.querySelector('#checkout');
+
+    // --- Detección de entorno ---
+    const isInAppWebView = () => !!window.flutter_inappwebview?.callHandler;
+
+    // flutter_inappwebview recomienda esperar este evento antes de callHandler
+    let isFlutterReady = false;
+    window.addEventListener("flutterInAppWebViewPlatformReady", () => {
+      isFlutterReady = true;
+    });
+
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+    async function notifyApp(handlerName, payload) {
+      // Si estamos en WebView Flutter pero aún no está listo, reintentar
+      for (let i = 0; i < 40; i++) { // ~2s
         try {
-          if (window.flutter_inappwebview?.callHandler) {
-            window.flutter_inappwebview.callHandler(handlerName, payload ?? {});
+          if (isInAppWebView() && isFlutterReady) {
+            await window.flutter_inappwebview.callHandler(handlerName, payload ?? {});
             return true;
           }
         } catch (_) {}
-        return false;
+        await sleep(50);
+      }
+
+      // Como fallback: si callHandler existe pero el ready no llegó, intentar igual
+      for (let i = 0; i < 10; i++) {
+        try {
+          if (isInAppWebView()) {
+            await window.flutter_inappwebview.callHandler(handlerName, payload ?? {});
+            return true;
+          }
+        } catch (_) {}
+        await sleep(80);
+      }
+
+      return false;
     }
 
     function showInlineMessage(type, text) {
-       const color = type === 'success' ? '#4caf50' : '#ff5252';
-       form.innerHTML = `
-         <div class="success-message" style="color:${color}">
-           ${text}
-         </div>
-       `;
-    }
-    
-    if (!paymentId) {
-      submitButton.disabled = true;
+      msg.className = 'message ' + (type === 'success' ? 'success' : 'error');
+      msg.textContent = text;
+      msg.style.display = 'block';
     }
 
-    const clip = new ClipSDK(API_KEY);
+    function showBrowserCloseUI(text) {
+      // Si es navegador (desktop/mobile) muestra botón para salir
+      closeBtn.style.display = 'block';
+      hint.style.display = 'block';
+      hint.textContent = text;
+    }
 
-    const card = clip.element.create("Card", {
-      theme: "dark",
-      locale: "es",
+    function tryCloseOrFallback() {
+      // Intento de cierre: solo funciona si fue abierto con window.open()
+      window.close();
+
+      // Si el navegador no deja cerrar, muestra UI
+      setTimeout(() => {
+        showBrowserCloseUI('Si esta página no se cierra automáticamente, puedes volver atrás o cerrar la pestaña.');
+      }, 350);
+    }
+
+    closeBtn.addEventListener('click', () => {
+      // UX: primero intenta cerrar, si no puede, al menos vuelve atrás
+      try { window.close(); } catch (_) {}
+      try { history.back(); } catch (_) {}
     });
 
+    if (!paymentId) {
+      submitButton.disabled = true;
+      showInlineMessage('error', 'Falta paymentId en la URL.');
+      showBrowserCloseUI('No se puede procesar el pago sin paymentId.');
+    }
+
+    // --- Inicializar Clip ---
+    const clip = new ClipSDK(API_KEY);
+    const card = clip.element.create("Card", { theme: "dark", locale: "es" });
     card.mount("checkout");
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
+      if (!paymentId) return;
 
       submitButton.disabled = true;
       submitButton.textContent = 'Procesando...';
@@ -132,44 +212,51 @@
       try {
         const { id: cardTokenID } = await card.cardToken();
 
-        const response = await fetch(
-          `${BACKEND_URL}/payments/process/${paymentId}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ card_token: cardTokenID }),
-          }
-        );
+        const response = await fetch(`${BACKEND_URL}/payments/process/${paymentId}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ card_token: cardTokenID }),
+        });
 
-        const data = await response.json();
-
+        const data = await response.json().catch(() => ({}));
         if (!response.ok) {
           throw new Error(data.message || 'Error procesando pago');
         }
 
-        // ✅ Mensaje en la web
-        showInlineMessage('success', 'Pago realizado con éxito');
+        showInlineMessage('success', '✅ Pago realizado con éxito');
 
-        // ✅ Notifica a Flutter (Android WebView)
-        notifyApp('paymentDone', { paymentId, result: data });
+        // Notifica Flutter si aplica
+        const sent = await notifyApp('paymentDone', { paymentId, result: data });
 
-        // ⏳ Cierra la pestaña automáticamente
-        setTimeout(() => {
-        if (!notifyApp('paymentDone')) window.close();
-        }, 800);
+        // Si NO estamos dentro de Flutter, comportarnos como web
+        if (!sent) {
+          // Opcional: ocultar el checkout en web
+          checkoutDiv.style.display = 'none';
+          setTimeout(tryCloseOrFallback, 800);
+        }
 
       } catch (error) {
-        showInlineMessage('error', 'Error procesando el pago');
-        notifyApp('paymentFailed', {
-          paymentId,
-          message: (error && error.message) ? error.message : 'Error'
-        });
-        submitButton.disabled = false;
-        submitButton.textContent = 'Procesar Pago';
-        alert("Error procesando el pago");
+        const message = (error && error.message) ? error.message : 'Error';
+        showInlineMessage('error', '❌ Error procesando el pago');
+
+        // Notifica Flutter si aplica
+        const sent = await notifyApp('paymentFailed', { paymentId, message });
+
+        // En web, re-habilitamos botón y damos opción al usuario
+        if (!sent) {
+          submitButton.disabled = false;
+          submitButton.textContent = 'Procesar Pago';
+          showBrowserCloseUI('Revisa los datos e inténtalo de nuevo, o cierra esta pestaña.');
+        }
       }
+    });
+
+    // Debug opcional (lo puedes quitar)
+    console.log('env:', {
+      inAppWebView: isInAppWebView(),
+      flutterReady: isFlutterReady,
+      paymentId
     });
   </script>
 </body>
-
 </html>
