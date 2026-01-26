@@ -8,6 +8,7 @@ import {
   AddAliasRequest,
   AddAliasResponse,
 } from '@/schemas/user.schemas';
+import { BadRequestError } from '@/shared/errors';
 import { buildLogger } from '@/utils';
 
 const logger = buildLogger('UserService');
@@ -146,7 +147,7 @@ export class UserService {
     const existingUser = await UserRepository.findByAlias(aliasData.alias);
     if (existingUser) {
       logger.warn(`Alias ${aliasData.alias} already exists`);
-      throw new Error('This alias is already in use');
+      throw new BadRequestError('This alias is already in use');
     }
 
     const updatedUser = await UserRepository.updateUser(userId, {
