@@ -53,4 +53,21 @@ export class TransferController {
 
     return successHandler(res, result, 'QR code retrieved successfully');
   });
+
+  /**
+   * Get user QR code
+   */
+  static getMyAccountInfo = catchErrors(async (req: Request, res: Response) => {
+    const userId = req.user!.userId;
+
+    logger.info('Getting account info for user', { userId });
+
+    const result = {
+      clabe: '01349901093890109382',
+      bankReceptor: 'Banco de Prueba S.A.',
+      beneficiaryName: 'Juan Pérez Gómez',
+    };
+
+    return successHandler(res, result, 'Account info retrieved successfully');
+  });
 }
