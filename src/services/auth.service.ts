@@ -8,7 +8,7 @@ import {
   BackofficeRefreshResponse,
 } from '@/schemas';
 import { buildLogger } from '@/utils';
-import { BackofficeService } from '@/services/backoffice.service';
+import { BackofficeService } from '@/services/customer.backoffice.service';
 import { UserRepository } from '@/repositories/user.repository';
 import { BackofficeRepository } from '@/repositories/backoffice.repository';
 import { JwtUtil } from '@/utils/jwt.utils';

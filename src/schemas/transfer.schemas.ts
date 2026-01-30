@@ -28,3 +28,9 @@ export interface UserQRResponse {
   alias?: string;
   qrCode: string;
 }
+
+export interface AccountInfoResponse {
+  clabe: string;
+  bankReceptor: string;
+  beneficiaryName: string;
+}
