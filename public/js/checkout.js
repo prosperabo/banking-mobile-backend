@@ -10,7 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================
   // Helpers: entorno Flutter vs Browser
   // =========================
-  const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
   const isInAppWebView = () => !!window.flutter_inappwebview?.callHandler;
 
   let isFlutterReady = false;
@@ -25,9 +25,13 @@ document.addEventListener('DOMContentLoaded', () => {
     for (let i = 0; i < 40; i++) {
       try {
         if (isFlutterReady && window.flutter_inappwebview?.callHandler) {
-          await window.flutter_inappwebview.callHandler(handlerName, payload ?? {});
+          await window.flutter_inappwebview.callHandler(
+            handlerName,
+            payload ?? {}
+          );
           return true;
         }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (_) {}
       await sleep(50);
     }
@@ -36,9 +40,13 @@ document.addEventListener('DOMContentLoaded', () => {
     for (let i = 0; i < 10; i++) {
       try {
         if (window.flutter_inappwebview?.callHandler) {
-          await window.flutter_inappwebview.callHandler(handlerName, payload ?? {});
+          await window.flutter_inappwebview.callHandler(
+            handlerName,
+            payload ?? {}
+          );
           return true;
         }
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
       } catch (_) {}
       await sleep(80);
     }
@@ -55,9 +63,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const errorBox = document.querySelector('#card-error');
 
   // Visuales (opcionales)
-  const visualBrand = document.querySelector('#brand-display');        // si existe
+  const visualBrand = document.querySelector('#brand-display'); // si existe
   const visualLast4 = document.querySelector('.card-number-display'); // sí existe
-  const visualStatus = document.querySelector('#status-display');      // si existe
+  const visualStatus = document.querySelector('#status-display'); // si existe
 
   // Params
   const urlParams = new URLSearchParams(window.location.search);
@@ -136,17 +144,26 @@ document.addEventListener('DOMContentLoaded', () => {
       if (actions) actions.style.display = 'flex';
 
       btnBack?.addEventListener('click', () => {
-        try { history.back(); } catch (_) {}
+        try {
+          history.back();
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (_) {}
       });
 
       btnClose?.addEventListener('click', () => {
-        try { window.close(); } catch (_) {}
+        try {
+          window.close();
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        } catch (_) {}
       });
     }
   }
 
   function tryCloseBrowserTab() {
-    try { window.close(); } catch (_) {}
+    try {
+      window.close();
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_) {}
   }
 
   // =========================
@@ -209,8 +226,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function bindCardEvent(cb) {
     if (typeof card?.on === 'function') return card.on('change', cb);
-    if (typeof card?.addEventListener === 'function') return card.addEventListener('change', cb);
-    if (typeof card?.addListener === 'function') return card.addListener('change', cb);
+    if (typeof card?.addEventListener === 'function')
+      return card.addEventListener('change', cb);
+    if (typeof card?.addListener === 'function')
+      return card.addListener('change', cb);
     // Si el SDK cambió y no hay forma de escuchar cambios, usaremos fallback (botón habilitado)
   }
 
@@ -226,9 +245,11 @@ document.addEventListener('DOMContentLoaded', () => {
     // DEBUG: mira qué trae realmente tu SDK en producción
     // console.log('[CLIP change]', e);
 
-    const hasError = !!(e.error && (e.error.message || e.error)) || !!e.errorMessage;
+    const hasError =
+      !!(e.error && (e.error.message || e.error)) || !!e.errorMessage;
     const errorMsg =
-      (e.error && (e.error.message || (typeof e.error === 'string' ? e.error : ''))) ||
+      (e.error &&
+        (e.error.message || (typeof e.error === 'string' ? e.error : ''))) ||
       e.errorMessage ||
       '';
 
@@ -245,7 +266,9 @@ document.addEventListener('DOMContentLoaded', () => {
       e.empty === false || e.touched === true || e.brand || e.last4;
 
     if (visualBrand) {
-      visualBrand.textContent = e.brand ? String(e.brand).toUpperCase() : 'TARJETA';
+      visualBrand.textContent = e.brand
+        ? String(e.brand).toUpperCase()
+        : 'TARJETA';
     }
 
     if (visualStatus) {
@@ -288,9 +311,45 @@ document.addEventListener('DOMContentLoaded', () => {
   }, 1200);
 
   // =========================
+  // ClipBoard: copiar link de pago ACTUAL
+  // =========================
+  const copyBtn = document.querySelector('.copy-btn');
+
+  // Verificamos que el botón exista para evitar errores
+  if (copyBtn) {
+    // PASO CLAVE: Sobrescribimos el 'data-link' con la URL actual del navegador.
+    // Esto asegura que se copie el link con el paymentId y monto exactos que se recibieron.
+    copyBtn.dataset.link = window.location.href;
+
+    copyBtn.addEventListener('click', async () => {
+      // Leemos el link dinámico que acabamos de asignar
+      const link = copyBtn.dataset.link;
+
+      try {
+        await navigator.clipboard.writeText(link);
+
+        // Feedback visual (clases y texto)
+        copyBtn.classList.add('copied');
+        const textElement = copyBtn.querySelector('.copy-text');
+
+        // Guardamos el texto original por si acaso, aunque sabemos que es "Copiar enlace"
+        if (textElement) textElement.textContent = '¡Copiado!';
+
+        setTimeout(() => {
+          copyBtn.classList.remove('copied');
+          if (textElement) textElement.textContent = 'Copiar enlace';
+        }, 2000);
+      } catch (err) {
+        console.error('Error al copiar:', err);
+        // Opcional: Feedback de error si el navegador bloquea el portapapeles
+        // alert('No se pudo copiar automáticamente.');
+      }
+    });
+  }
+  // =========================
   // Submit: procesar pago
   // =========================
-  form.addEventListener('submit', async (event) => {
+  form.addEventListener('submit', async event => {
     event.preventDefault();
 
     if (!submitButton) return;
@@ -334,11 +393,9 @@ document.addEventListener('DOMContentLoaded', () => {
       // Si es navegador normal, intenta cerrar (solo funcionará si fue abierto por script)
       if (!sent) setTimeout(() => tryCloseBrowserTab(), 1200);
 
-    } catch (error) {
-      console.error(error);
-
-      const msg = error?.message ? String(error.message) : 'Error procesando pago';
-      setError(msg);
+      const msg = error?.message
+        ? String(error.message)
+        : 'Error procesando pago';
 
       renderResultUI({
         ok: false,
@@ -352,6 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // En web: deja reintentar recargando (o puedes reconstruir el form)
       // Aquí, como ya renderizamos result UI, si quieres “reintentar” sin recargar,
       // dímelo y te lo dejo con botón que restaura el formulario.
-    }
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    } catch (_) {}
   });
 });

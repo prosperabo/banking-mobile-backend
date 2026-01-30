@@ -65,7 +65,19 @@
             <div class="container-for-checkout">
               <div id="checkout"></div>
             </div>
-
+            <button
+              class="copy-btn"
+              data-link="https://mi-enlace-predefinido.com"
+              aria-label="Copiar enlace"
+              type="button"
+            >
+              <img
+                src="./assets/copy_clipboard.svg"
+                alt=""
+                class="copy-icon"
+              />
+              <span class="copy-text">Copiar enlace</span>
+            </button>
             <button id="submit" type="submit">
               <span>Pagar Ahora</span>
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -73,13 +85,10 @@
                 <polyline points="12 5 19 12 12 19"></polyline>
               </svg>
             </button>
-            
             <div id="card-error" role="alert" aria-live="polite"></div>
-
           </div>
 
           <div class="security-footer">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
               <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
             </svg>
