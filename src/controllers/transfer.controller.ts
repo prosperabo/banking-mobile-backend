@@ -59,15 +59,18 @@ export class TransferController {
    */
   static getMyAccountInfo = catchErrors(async (req: Request, res: Response) => {
     const userId = req.user!.userId;
+    const { customer_oauth_token: customerToken } = req.backoffice!;
 
     logger.info('Getting account info for user', { userId });
 
-    const result = {
-      clabe: '01349901093890109382',
-      bankReceptor: 'Banco de Prueba S.A.',
-      beneficiaryName: 'Juan Pérez Gómez',
-    };
+    const accountInfo = await TransferService.getMyAccountInfo(customerToken);
 
-    return successHandler(res, result, 'Account info retrieved successfully');
+    logger.info('Account info retrieved successfully', { userId });
+
+    return successHandler(
+      res,
+      accountInfo,
+      'Account info retrieved successfully'
+    );
   });
 }

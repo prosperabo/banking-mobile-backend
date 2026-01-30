@@ -7,6 +7,7 @@ import {
   BackofficeRefreshResponse,
 } from '@/schemas';
 import FormData from 'form-data';
+import backOfficeInstance from '@/api/backoffice.instance';
 
 const logger = buildLogger('backoffice-service');
 
@@ -143,5 +144,26 @@ export class BackofficeService {
       });
       return { err: error instanceof Error ? error.message : 'Unknown error' };
     }
+  }
+
+  static async getSpeiClabe(customerToken: string) {
+    logger.info('Getting SPEI CLABE from backoffice', {
+      customerToken,
+    });
+
+    const response = await backOfficeInstance.get(
+      '/user/v1/account/spei-clabe',
+      {
+        headers: {
+          'Authorization-customer': customerToken,
+          'Authorization-ecommerce': config.ecommerceToken,
+        },
+      }
+    );
+
+    logger.info('Successfully retrieved SPEI CLABE from backoffice', {
+      ...response,
+    });
+    return response;
   }
 }

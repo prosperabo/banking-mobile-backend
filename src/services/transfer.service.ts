@@ -2,8 +2,13 @@ import { UserRepository } from '@/repositories/user.repository';
 import { BackofficeRepository } from '@/repositories/backoffice.repository';
 import { TransferBackofficeService } from './transfer.backoffice.service';
 import { buildLogger } from '@/utils';
-import { TransferRequest, UserQRResponse } from '@/schemas/transfer.schemas';
+import {
+  AccountInfoResponse,
+  TransferRequest,
+  UserQRResponse,
+} from '@/schemas/transfer.schemas';
 import { BadRequestError } from '@/shared/errors';
+import { BackofficeService } from './customer.backoffice.service';
 
 const logger = buildLogger('TransferService');
 
@@ -100,6 +105,21 @@ export class TransferService {
       email: user.email,
       alias: user.alias || undefined,
       qrCode: qrCodeString,
+    };
+  }
+
+  static async getMyAccountInfo(
+    customerToken: string
+  ): Promise<AccountInfoResponse> {
+    logger.info(`Getting account info`);
+
+    const response = await BackofficeService.getSpeiClabe(customerToken);
+
+    logger.info(`Account info retrieved successfully`, { ...response });
+    return {
+      clabe: '01349901093890109382',
+      bankReceptor: 'Banco de Prueba S.A.',
+      beneficiaryName: 'Juan Pérez Gómez',
     };
   }
 }
