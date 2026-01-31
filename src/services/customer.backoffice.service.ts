@@ -180,7 +180,6 @@ export class BackofficeService {
       {
         headers: {
           'Authorization-ecommerce': config.ecommerceToken,
-          Client: 'customer',
         },
       }
     );
