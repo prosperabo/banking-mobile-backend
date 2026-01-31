@@ -9,6 +9,7 @@ import {
 } from '@/schemas/transfer.schemas';
 import { BadRequestError } from '@/shared/errors';
 import { BackofficeService } from './customer.backoffice.service';
+import { buildFullName } from '@/utils/buildFullName';
 
 const logger = buildLogger('TransferService');
 
@@ -109,17 +110,28 @@ export class TransferService {
   }
 
   static async getMyAccountInfo(
+    customerId: number,
     customerToken: string
   ): Promise<AccountInfoResponse> {
     logger.info(`Getting account info`);
 
-    const response = await BackofficeService.getSpeiClabe(customerToken);
+    const speiClabe = await BackofficeService.getSpeiClabe(customerToken);
+    const userInfo = await BackofficeService.getUserInfo(customerId);
+    const { first_name, middle_name, last_name, second_last_name } =
+      userInfo.data.rs;
 
-    logger.info(`Account info retrieved successfully`, { ...response });
+    const beneficiaryName = buildFullName({
+      first_name,
+      middle_name,
+      last_name,
+      second_last_name,
+    });
+
+    logger.info(`Account info retrieved successfully`);
     return {
-      clabe: '01349901093890109382',
-      bankReceptor: 'Banco de Prueba S.A.',
-      beneficiaryName: 'Juan Pérez Gómez',
+      clabe: speiClabe,
+      bankReceptor: 'Finco pay',
+      beneficiaryName: beneficiaryName,
     };
   }
 }

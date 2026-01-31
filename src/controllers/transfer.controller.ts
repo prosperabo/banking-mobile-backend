@@ -59,11 +59,14 @@ export class TransferController {
    */
   static getMyAccountInfo = catchErrors(async (req: Request, res: Response) => {
     const userId = req.user!.userId;
-    const { customer_oauth_token: customerToken } = req.backoffice!;
+    const { customer_oauth_token: customerToken, customerId } = req.backoffice!;
 
     logger.info('Getting account info for user', { userId });
 
-    const accountInfo = await TransferService.getMyAccountInfo(customerToken);
+    const accountInfo = await TransferService.getMyAccountInfo(
+      customerId,
+      customerToken
+    );
 
     logger.info('Account info retrieved successfully', { userId });
 

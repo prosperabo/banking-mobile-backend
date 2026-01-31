@@ -5,6 +5,8 @@ import {
   BackofficeLoginResponse,
   BackofficeRefreshRequest,
   BackofficeRefreshResponse,
+  ClabeBackofficeResponse,
+  UserBackofficeResponse,
 } from '@/schemas';
 import FormData from 'form-data';
 import backOfficeInstance from '@/api/backoffice.instance';
@@ -146,12 +148,12 @@ export class BackofficeService {
     }
   }
 
-  static async getSpeiClabe(customerToken: string) {
+  static async getSpeiClabe(customerToken: string): Promise<string> {
     logger.info('Getting SPEI CLABE from backoffice', {
       customerToken,
     });
 
-    const response = await backOfficeInstance.get(
+    const response = await backOfficeInstance.get<ClabeBackofficeResponse>(
       '/user/v1/account/spei-clabe',
       {
         headers: {
@@ -162,9 +164,28 @@ export class BackofficeService {
       }
     );
 
-    logger.info('Successfully retrieved SPEI CLABE from backoffice', {
-      ...response,
+    logger.info('Successfully retrieved SPEI CLABE from backoffice');
+    return response.data.data.rs.spei_clabe;
+  }
+
+  static async getUserInfo(
+    customerId: number
+  ): Promise<UserBackofficeResponse> {
+    logger.info('Getting user info from backoffice', {
+      customerId,
     });
-    return response;
+
+    const response = await backOfficeInstance.get<UserBackofficeResponse>(
+      `/user/v1/account/${customerId}`,
+      {
+        headers: {
+          'Authorization-ecommerce': config.ecommerceToken,
+          Client: 'customer',
+        },
+      }
+    );
+
+    logger.info('Successfully retrieved user info from backoffice');
+    return response.data;
   }
 }
