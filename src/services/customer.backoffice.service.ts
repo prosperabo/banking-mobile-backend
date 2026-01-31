@@ -165,7 +165,7 @@ export class BackofficeService {
     );
 
     logger.info('Successfully retrieved SPEI CLABE from backoffice');
-    return response.data.data.rs.spei_clabe;
+    return response.data.rs.spei_clabe;
   }
 
   static async getUserInfo(

@@ -118,7 +118,7 @@ export class TransferService {
     const speiClabe = await BackofficeService.getSpeiClabe(customerToken);
     const userInfo = await BackofficeService.getUserInfo(customerId);
     const { first_name, middle_name, last_name, second_last_name } =
-      userInfo.data.rs;
+      userInfo.rs;
 
     const beneficiaryName = buildFullName({
       first_name,

@@ -36,41 +36,33 @@ export interface AccountInfoResponse {
 }
 
 export interface ClabeBackofficeResponse {
-  url: string;
-  status: number;
-  data: {
-    rs: {
-      spei_clabe: string;
-    };
+  rs: {
+    spei_clabe: string;
   };
 }
 
 export interface UserBackofficeResponse {
-  url: string;
-  status: number;
-  data: {
-    rs: {
-      account_level: number;
-      address: string;
-      address_detail: string;
-      city: string;
-      country_of_birth: string;
-      curp: string;
-      customer_status: number;
-      date_of_birth: string;
-      email: string;
-      first_name: string;
-      gender: number;
-      id: number;
-      last_name: string;
-      middle_name: string;
-      mobile: number;
-      occupation_id: number;
-      rfc: string;
-      risk_level: number;
-      second_last_name: string;
-      state: number;
-      zipcode: string;
-    };
+  rs: {
+    account_level: number;
+    address: string;
+    address_detail: string;
+    city: string;
+    country_of_birth: string;
+    curp: string;
+    customer_status: number;
+    date_of_birth: string;
+    email: string;
+    first_name: string;
+    gender: number;
+    id: number;
+    last_name: string;
+    middle_name: string;
+    mobile: number;
+    occupation_id: number;
+    rfc: string;
+    risk_level: number;
+    second_last_name: string;
+    state: number;
+    zipcode: string;
   };
 }
