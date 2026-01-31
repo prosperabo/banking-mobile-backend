@@ -1,11 +1,13 @@
 import { Router } from 'express';
 
 import { UserController } from '@/controllers/user.controller';
+import { CampaignController } from '@/controllers/campaign.controller';
 import {
   updateUserValidator,
   changePasswordValidator,
   addAliasValidator,
 } from '@/validators/user.validator';
+import { assignUsersToProgramValidator } from '@/validators/campaign.validator';
 import { validateRequest } from '@/middlewares/validateRequest';
 import { authenticateToken } from '@/middlewares/authenticateToken';
 
@@ -27,6 +29,11 @@ router.put(
   '/alias',
   validateRequest(...addAliasValidator),
   UserController.addAlias
+);
+router.post(
+  '/programs/assign',
+  validateRequest(...assignUsersToProgramValidator),
+  CampaignController.assignUserToProgram
 );
 
 export default router;
