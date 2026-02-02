@@ -6,6 +6,11 @@ import {
   BackofficeLoginResponse,
   BackofficeRefreshRequest,
   BackofficeRefreshResponse,
+  BackofficeCreateAccountData,
+  BackofficeAccountResponse,
+  isBackofficeError,
+  UserCreateData,
+  JwtPayload,
 } from '@/schemas';
 import { buildLogger } from '@/utils';
 import { BackofficeService } from '@/services/customer.backoffice.service';
@@ -13,6 +18,12 @@ import { UserRepository } from '@/repositories/user.repository';
 import { BackofficeRepository } from '@/repositories/backoffice.repository';
 import { JwtUtil } from '@/utils/jwt.utils';
 import { config } from '@/config';
+import {
+  UnauthorizedError,
+  ConflictError,
+  InternalServerError,
+  NotFoundError,
+} from '@/shared/errors';
 // import bcrypt from 'bcrypt';
 
 const logger = buildLogger('auth-service');
@@ -24,13 +35,13 @@ export class AuthService {
     const user = await UserRepository.findByEmail(email);
     if (!user) {
       logger.warn('User not found', { email });
-      throw new Error('Invalid credentials');
+      throw new UnauthorizedError('Invalid credentials');
     }
 
     // Validation in plain text (DB has plain text passwords)
     if (password !== user.password) {
       logger.warn('Invalid password', { userId: user.id });
-      throw new Error('Invalid credentials');
+      throw new UnauthorizedError('Invalid credentials');
     }
 
     // Validation with bcrypt (if passwords were hashed)
@@ -47,7 +58,7 @@ export class AuthService {
       logger.error('BackofficeAuthState not found for user', {
         userId: user.id,
       });
-      throw new Error('Authentication configuration not found');
+      throw new NotFoundError('Authentication configuration not found');
     }
 
     const ecommerceToken = config.ecommerceToken;
@@ -111,7 +122,7 @@ export class AuthService {
       username: user.completeName,
       backoffice: {
         ...connectionResp.response,
-        customerId: authState.externalCustomerId,
+        customerId: authState.externalCustomerId ?? 0,
       },
     });
 
@@ -126,110 +137,160 @@ export class AuthService {
   }
 
   static async register(registerData: RegisterRequest): Promise<LoginResponse> {
-    const { email, password, completeName, phone } = registerData;
+    const { email, password, firstName, lastName, secondLastName, phone } =
+      registerData;
 
     // 1. Check if user already exists
     const existingUser = await UserRepository.findByEmail(email);
     if (existingUser) {
       logger.warn('User already exists', { email });
-      throw new Error('User already exists');
+      throw new ConflictError('User already exists');
     }
 
-    // 2. Create user in Backoffice (123)
-    const backofficeResponse = await BackofficeService.createAccountIn123({
+    // Build complete name from parts
+    const completeName = `${firstName} ${lastName} ${secondLastName}`.trim();
+
+    // 2. Create account in 123 Backoffice
+    const backofficeAccountData: BackofficeCreateAccountData = {
       email,
       password,
       completeName,
       phone,
-    });
+    };
 
-    if (backofficeResponse.err) {
+    const backofficeResponse = await BackofficeService.createAccountIn123(
+      backofficeAccountData
+    );
+
+    if (isBackofficeError(backofficeResponse)) {
       logger.error('Failed to create account in backoffice', {
         error: backofficeResponse.err,
       });
-      throw new Error('Error creating account in banking system');
+      throw new InternalServerError('Error creating account in banking system');
     }
 
-    const backofficeData = backofficeResponse.ss ?? backofficeResponse.rs;
-    if (!backofficeData) {
-      throw new Error('Invalid response from banking system');
-    }
+    const backofficeAccount = backofficeResponse as BackofficeAccountResponse;
 
-    // 3. Create user in local DB
-    const newUser = await UserRepository.create({
+    // 3. Create user in local database with data from request
+    const userCreateData: UserCreateData = {
       email,
-      password, // Storing plain text as per existing pattern
+      password,
+      firstName,
+      lastName,
+      secondLastName,
       completeName,
       phone,
-      gender: 'MASCULINO', // Default or need to ask? Assuming default for now or we need to add it to request.
-      birthDate: new Date(), // Placeholder
-      birthCountry: 'MX',
-      curp: 'AAAA000000HDFXXX00', // Placeholder
-      postalCode: '00000',
-      state: 'CDMX',
-      country: 'Mexico',
-      municipality: 'Cuauhtemoc',
-      street: 'Reforma',
-      colony: 'Centro',
-      externalNumber: '1',
-      internalNumber: '1',
-    });
-
-    // 4. Save Backoffice profile and auth state
-    // We need to match the type expected by Prisma.
-    // upsertProfile expects CreateInput.
-    // BackofficeCustomerProfileCreateInput requires 'Users' relation connection.
-    const profileData = {
-      Users: { connect: { id: newUser.id } },
-      ...backofficeData,
+      gender: registerData.gender,
+      birthDate: registerData.birthDate,
+      nationality: registerData.nationality,
+      countryCode: registerData.countryCode,
+      curp: registerData.curp,
+      rfc: registerData.rfc,
+      postalCode: undefined,
+      state: registerData.state,
+      country: undefined,
+      municipality: registerData.municipality,
+      street: registerData.street,
+      colony: registerData.colony,
+      externalNumber: registerData.externalNumber,
+      internalNumber: registerData.internalNumber,
+      monthlyIncomeRange: registerData.monthlyIncomeRange,
+      isUniversityStudent: registerData.isUniversityStudent,
+      universityRegistration: registerData.universityRegistration,
+      universityProfilePhotoLink: registerData.universityProfilePhotoLink,
+      documentScan: registerData.documentScan,
     };
+
+    const newUser = await UserRepository.createFromRegistration(userCreateData);
+
+    // 4. Create academic information if provided
+    if (registerData.academicInfo && registerData.isUniversityStudent) {
+      await BackofficeRepository.createAcademicInfo(newUser.id, {
+        actualSemester: registerData.academicInfo.actualSemester,
+        academicArea: registerData.academicInfo.academicArea,
+        scholarshipPercentageRange:
+          registerData.academicInfo.scholarshipPercentageRange,
+      });
+    }
+
+    // 5. Save backoffice profile
     await BackofficeRepository.upsertProfile(
       newUser.id,
-      profileData,
-      backofficeData
+      {
+        Users: { connect: { id: newUser.id } },
+        external_customer_id: parseInt(backofficeAccount.id),
+        ewallet_id: parseInt(backofficeAccount.ewallet_id),
+        // Add other backoffice fields as needed
+      },
+      {
+        external_customer_id: parseInt(backofficeAccount.id),
+        ewallet_id: parseInt(backofficeAccount.ewallet_id),
+      }
     );
 
-    // Prepare auth state data
-    const authStateData = {
-      Users: { connect: { id: newUser.id } },
-      clientState: 9,
-      deviceId: 'generated-device-id', // We need generateDeviceId here
-      privateKey: backofficeData.private_key,
-      refreshToken: backofficeData.refresh_token,
-      extraLoginData: JSON.stringify({
-        email: backofficeData.email,
-        mobile: backofficeData.mobile,
-      }),
-      lastCustomerOauthToken: backofficeData.oauth_token,
-      externalCustomerId: backofficeData.id,
-      ewalletId: backofficeData.ewallet_id,
-    };
-
+    // 6. Save authentication state
     await BackofficeRepository.upsertAuthState(
       newUser.id,
-      authStateData,
-      authStateData
+      {
+        Users: { connect: { id: newUser.id } },
+        clientState: 9,
+        deviceId: this.generateDeviceId(),
+        privateKey: backofficeAccount.private_key,
+        refreshToken: backofficeAccount.refresh_token,
+        extraLoginData: JSON.stringify({
+          email: backofficeAccount.email,
+          mobile: backofficeAccount.mobile,
+        }),
+        lastCustomerOauthToken: backofficeAccount.oauth_token,
+        externalCustomerId: parseInt(backofficeAccount.id),
+        ewalletId: parseInt(backofficeAccount.ewallet_id),
+      },
+      {
+        clientState: 9,
+        deviceId: this.generateDeviceId(),
+        privateKey: backofficeAccount.private_key,
+        refreshToken: backofficeAccount.refresh_token,
+        extraLoginData: JSON.stringify({
+          email: backofficeAccount.email,
+          mobile: backofficeAccount.mobile,
+        }),
+        lastCustomerOauthToken: backofficeAccount.oauth_token,
+        externalCustomerId: parseInt(backofficeAccount.id),
+        ewalletId: parseInt(backofficeAccount.ewallet_id),
+      }
     );
 
-    // 5. Generate token
-    const jwt = JwtUtil.generateToken({
+    // 7. Generate JWT token
+    const jwtPayload: JwtPayload = {
       userId: newUser.id,
       email: newUser.email,
       username: newUser.completeName,
       backoffice: {
-        customer_oauth_token: backofficeData.oauth_token,
-        expiration_timestamp: '', // We might need this from response
-        customer_refresh_token: backofficeData.refresh_token,
+        customer_oauth_token: backofficeAccount.oauth_token,
+        expiration_timestamp: '',
+        customer_refresh_token: backofficeAccount.refresh_token,
         refresh_expiration_timestamp: '',
         client_state_ret: 9,
-        customerId: backofficeData.id,
+        customerId: parseInt(backofficeAccount.id),
       },
-    });
+    };
 
-    logger.info('User registered successfully', { userId: newUser.id });
+    const jwt = JwtUtil.generateToken(jwtPayload);
+
+    logger.info('User registered successfully', {
+      userId: newUser.id,
+      backofficeCustomerId: backofficeAccount.id,
+    });
 
     return {
       token: jwt,
     };
+  }
+
+  /**
+   * Generate a unique device ID for authentication
+   */
+  private static generateDeviceId(): string {
+    return `device_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   }
 }

@@ -1,3 +1,8 @@
+/**
+ * @fileoverview Service for 123 Backoffice API integration
+ * @description Handles communication with external backoffice system
+ */
+
 import { buildLogger } from '@/utils';
 import { config } from '@/config';
 import {
@@ -7,8 +12,9 @@ import {
   BackofficeRefreshResponse,
   ClabeBackofficeResponse,
   UserBackofficeResponse,
+  BackofficeCreateAccountData,
+  BackofficeApiResponse,
 } from '@/schemas';
-import FormData from 'form-data';
 import backOfficeInstance from '@/api/backoffice.instance';
 
 const logger = buildLogger('backoffice-service');
@@ -16,6 +22,7 @@ const logger = buildLogger('backoffice-service');
 export class BackofficeService {
   private static readonly BASE_URL = config.backofficeBaseUrl;
   private static readonly OAUTH_ENDPOINT = '/oauth/v1';
+  private static readonly API_KEY = config.backofficeBaseUrl || ''; // Usando backofficeBaseUrl como fallback
 
   static async getCustomerConnectionToken(
     loginData: BackofficeLoginRequest
@@ -31,33 +38,23 @@ export class BackofficeService {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization-ecommerce': loginData.ecommerce_token,
           },
           body: JSON.stringify(loginData),
         }
       );
 
       if (!response.ok) {
-        const errorText = await response.text();
-        logger.error('Backoffice API error', {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorText,
-        });
-        throw new Error(
-          `Backoffice API error: ${response.status} ${response.statusText} :: ${errorText}`
-        );
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
-      logger.info('Successfully obtained customer connection token');
-
+      const data = (await response.json()) as BackofficeLoginResponse;
+      logger.info('Successfully retrieved customer connection token');
       return data;
     } catch (error) {
       logger.error('Error getting customer connection token', {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
-      throw new Error('Error communicating with backoffice');
+      throw new Error('Error connecting to backoffice system');
     }
   }
 
@@ -65,12 +62,10 @@ export class BackofficeService {
     refreshData: BackofficeRefreshRequest
   ): Promise<BackofficeRefreshResponse> {
     try {
-      logger.info('Refreshing customer token from backoffice', {
-        device_id: refreshData.device_id,
-      });
+      logger.info('Refreshing customer token from backoffice');
 
       const response = await fetch(
-        `${this.BASE_URL}${this.OAUTH_ENDPOINT}/refresh-customer-token`,
+        `${this.BASE_URL}${this.OAUTH_ENDPOINT}/refresh-customer-connection-token`,
         {
           method: 'POST',
           headers: {
@@ -81,18 +76,10 @@ export class BackofficeService {
       );
 
       if (!response.ok) {
-        const errorText = await response.text();
-        logger.error('Backoffice refresh API error', {
-          status: response.status,
-          statusText: response.statusText,
-          error: errorText,
-        });
-        throw new Error(
-          `Backoffice refresh API error: ${response.status} ${response.statusText} :: ${errorText}`
-        );
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as BackofficeRefreshResponse;
       logger.info('Successfully refreshed customer token');
       return data;
     } catch (error) {
@@ -102,33 +89,35 @@ export class BackofficeService {
       throw new Error('Error refreshing backoffice token');
     }
   }
-  static async createAccountIn123(userData: any): Promise<any> {
+
+  /**
+   * Creates a new customer account in 123 Backoffice system
+   * @param userData - Account creation data
+   * @returns Promise resolving to API response
+   */
+  static async createAccountIn123(
+    userData: BackofficeCreateAccountData
+  ): Promise<BackofficeApiResponse> {
     try {
       logger.info('Creating account in 123 backoffice', {
         email: userData.email,
       });
 
-      const formData = new FormData();
+      // Using URLSearchParams instead of FormData for better compatibility
+      const formData = new URLSearchParams();
       formData.append('email', userData.email);
       formData.append('password', userData.password);
       formData.append('completeName', userData.completeName);
       formData.append('phone', userData.phone);
-      // Add other required fields or defaults here as per the script logic
-      // For now, mapping basic fields. The script had more complex mapping.
-      // Assuming userData has the necessary structure or we map it here.
 
-      // Based on the script, we need to map a lot of fields.
-      // For simplicity in this step, I will assume userData is already prepared or I will map basic ones.
-      // Let's use a simplified version for now and refine if needed.
-
-      const response = await fetch(
-        `${this.BASE_URL}/api/v1/users/create`, // Adjust endpoint as per script
-        {
-          method: 'POST',
-          body: formData as any,
-          // Fetch automatically sets Content-Type for FormData
-        }
-      );
+      const response = await fetch(`${this.BASE_URL}/api/v1/users/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Authorization: `Bearer ${this.API_KEY}`,
+        },
+        body: formData,
+      });
 
       if (!response.ok) {
         const errorText = await response.text();
@@ -137,7 +126,7 @@ export class BackofficeService {
         );
       }
 
-      const data = await response.json();
+      const data = (await response.json()) as BackofficeApiResponse;
       logger.info('Successfully created account in 123 backoffice');
       return data;
     } catch (error) {

@@ -1,25 +1,37 @@
 import { db } from '@/config/prisma';
-import { Users, BackofficeAuthState, Prisma } from '@prisma/client';
+import type {
+  UserCreateData,
+  UserWithAuthState,
+  User,
+  UserCreate,
+  UserUpdate,
+} from '@/schemas';
 
 export class UserRepository {
-  static async findByEmail(email: string): Promise<Users | null> {
+  /**
+   * Find user by email address
+   */
+  static async findByEmail(email: string): Promise<User | null> {
     return await db.users.findUnique({
       where: { email },
     });
   }
 
-  static async findById(id: number): Promise<Users | null> {
+  /**
+   * Find user by ID
+   */
+  static async findById(id: number): Promise<User | null> {
     return await db.users.findUnique({
       where: { id },
     });
   }
 
-  static async findByEmailWithAuthState(email: string): Promise<
-    | (Users & {
-        BackofficeAuthState: BackofficeAuthState | null;
-      })
-    | null
-  > {
+  /**
+   * Find user by email including backoffice auth state
+   */
+  static async findByEmailWithAuthState(
+    email: string
+  ): Promise<UserWithAuthState | null> {
     return await db.users.findUnique({
       where: { email },
       include: {
@@ -28,20 +40,62 @@ export class UserRepository {
     });
   }
 
-  static async updateUser(id: number, data: Partial<Users>): Promise<Users> {
+  /**
+   * Update user data
+   */
+  static async updateUser(id: number, data: UserUpdate): Promise<User> {
     return await db.users.update({
       where: { id },
       data,
     });
   }
 
-  static async create(data: Prisma.UsersCreateInput): Promise<Users> {
+  /**
+   * Create new user with complete data
+   */
+  static async create(data: UserCreate): Promise<User> {
     return await db.users.create({
       data,
     });
   }
 
-  static async findByAlias(alias: string): Promise<Users | null> {
+  /**
+   * Create user from registration data with defaults
+   */
+  static async createFromRegistration(userData: UserCreateData): Promise<User> {
+    return await db.users.create({
+      data: {
+        email: userData.email,
+        password: userData.password,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        secondLastName: userData.secondLastName,
+        completeName: userData.completeName,
+        phone: userData.phone,
+        gender: userData.gender,
+        birthDate: userData.birthDate,
+        nationality: userData.nationality,
+        countryCode: userData.countryCode,
+        curp: userData.curp,
+        rfc: userData.rfc,
+        postalCode: userData.postalCode,
+        state: userData.state,
+        country: userData.country,
+        municipality: userData.municipality,
+        street: userData.street,
+        colony: userData.colony,
+        externalNumber: userData.externalNumber,
+        internalNumber: userData.internalNumber,
+        monthlyIncomeRange: userData.monthlyIncomeRange,
+        isUniversityStudent: userData.isUniversityStudent,
+        universityRegistration: userData.universityRegistration,
+        universityProfilePhotoLink: userData.universityProfilePhotoLink,
+        documentScan: userData.documentScan,
+      },
+    });
+  }
+
+  static async findByAlias(alias: string): Promise<User | null> {
     return await db.users.findUnique({
       where: { alias },
     });

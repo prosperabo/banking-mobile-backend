@@ -1,11 +1,17 @@
 import { db } from '@/config/prisma';
-import { Prisma } from '@prisma/client';
+import type {
+  BackofficeCustomerProfileCreate,
+  BackofficeCustomerProfileUpdate,
+  BackofficeAuthStateCreate,
+  BackofficeAuthStateUpdate,
+} from '@/schemas';
+import { AcademicInformation_academicArea } from '@prisma/client';
 
 export const BackofficeRepository = {
   async upsertProfile(
     userId: number,
-    createData: Prisma.BackofficeCustomerProfileCreateInput,
-    updateData: Prisma.BackofficeCustomerProfileUpdateInput
+    createData: BackofficeCustomerProfileCreate,
+    updateData: BackofficeCustomerProfileUpdate
   ) {
     return db.backofficeCustomerProfile.upsert({
       where: { userId },
@@ -19,8 +25,8 @@ export const BackofficeRepository = {
 
   async upsertAuthState(
     userId: number,
-    createData: Prisma.BackofficeAuthStateCreateInput,
-    updateData: Prisma.BackofficeAuthStateUpdateInput
+    createData: BackofficeAuthStateCreate,
+    updateData: BackofficeAuthStateUpdate
   ) {
     return db.backofficeAuthState.upsert({
       where: { userId },
@@ -35,6 +41,26 @@ export const BackofficeRepository = {
   async findProfileByUserId(userId: number) {
     return db.backofficeCustomerProfile.findUnique({
       where: { userId },
+    });
+  },
+
+  async createAcademicInfo(
+    userId: number,
+    data: {
+      actualSemester?: number;
+      academicArea?: string;
+      scholarshipPercentageRange?: string;
+    }
+  ) {
+    return db.academicInformation.create({
+      data: {
+        userId,
+        actualSemester: data.actualSemester,
+        academicArea: data.academicArea as
+          | AcademicInformation_academicArea
+          | undefined,
+        scholarshipPercentageRange: data.scholarshipPercentageRange,
+      },
     });
   },
 };
