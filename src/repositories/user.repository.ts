@@ -67,12 +67,17 @@ export class UserRepository {
       data: {
         email: userData.email,
         password: userData.password,
+        firstName: userData.firstName,
+        lastName: userData.lastName,
+        secondLastName: userData.secondLastName,
         completeName: userData.completeName,
         phone: userData.phone,
         gender: userData.gender,
         birthDate: userData.birthDate,
-        birthCountry: userData.birthCountry,
+        nationality: userData.nationality,
+        countryCode: userData.countryCode,
         curp: userData.curp,
+        rfc: userData.rfc,
         postalCode: userData.postalCode,
         state: userData.state,
         country: userData.country,
@@ -81,11 +86,16 @@ export class UserRepository {
         colony: userData.colony,
         externalNumber: userData.externalNumber,
         internalNumber: userData.internalNumber,
+        monthlyIncomeRange: userData.monthlyIncomeRange,
+        isUniversityStudent: userData.isUniversityStudent,
+        universityRegistration: userData.universityRegistration,
+        universityProfilePhotoLink: userData.universityProfilePhotoLink,
+        documentScan: userData.documentScan,
       },
     });
   }
 
-  static async findByAlias(alias: string): Promise<Users | null> {
+  static async findByAlias(alias: string): Promise<User | null> {
     return await db.users.findUnique({
       where: { alias },
     });

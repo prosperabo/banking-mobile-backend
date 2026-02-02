@@ -18,6 +18,12 @@ import { UserRepository } from '@/repositories/user.repository';
 import { BackofficeRepository } from '@/repositories/backoffice.repository';
 import { JwtUtil } from '@/utils/jwt.utils';
 import { config } from '@/config';
+import {
+  UnauthorizedError,
+  ConflictError,
+  InternalServerError,
+  NotFoundError,
+} from '@/shared/errors';
 // import bcrypt from 'bcrypt';
 
 const logger = buildLogger('auth-service');
@@ -29,13 +35,13 @@ export class AuthService {
     const user = await UserRepository.findByEmail(email);
     if (!user) {
       logger.warn('User not found', { email });
-      throw new Error('Invalid credentials');
+      throw new UnauthorizedError('Invalid credentials');
     }
 
     // Validation in plain text (DB has plain text passwords)
     if (password !== user.password) {
       logger.warn('Invalid password', { userId: user.id });
-      throw new Error('Invalid credentials');
+      throw new UnauthorizedError('Invalid credentials');
     }
 
     // Validation with bcrypt (if passwords were hashed)
@@ -52,7 +58,7 @@ export class AuthService {
       logger.error('BackofficeAuthState not found for user', {
         userId: user.id,
       });
-      throw new Error('Authentication configuration not found');
+      throw new NotFoundError('Authentication configuration not found');
     }
 
     const ecommerceToken = config.ecommerceToken;
@@ -131,14 +137,18 @@ export class AuthService {
   }
 
   static async register(registerData: RegisterRequest): Promise<LoginResponse> {
-    const { email, password, completeName, phone } = registerData;
+    const { email, password, firstName, lastName, secondLastName, phone } =
+      registerData;
 
     // 1. Check if user already exists
     const existingUser = await UserRepository.findByEmail(email);
     if (existingUser) {
       logger.warn('User already exists', { email });
-      throw new Error('User already exists');
+      throw new ConflictError('User already exists');
     }
+
+    // Build complete name from parts
+    const completeName = `${firstName} ${lastName} ${secondLastName}`.trim();
 
     // 2. Create account in 123 Backoffice
     const backofficeAccountData: BackofficeCreateAccountData = {
@@ -156,34 +166,54 @@ export class AuthService {
       logger.error('Failed to create account in backoffice', {
         error: backofficeResponse.err,
       });
-      throw new Error('Error creating account in banking system');
+      throw new InternalServerError('Error creating account in banking system');
     }
 
     const backofficeAccount = backofficeResponse as BackofficeAccountResponse;
 
-    // 3. Create user in local database with proper defaults
+    // 3. Create user in local database with data from request
     const userCreateData: UserCreateData = {
       email,
-      password, // Consider hashing in production
+      password,
+      firstName,
+      lastName,
+      secondLastName,
       completeName,
       phone,
-      gender: 'MASCULINO' as const,
-      birthDate: new Date(), // Placeholder - should come from request
-      birthCountry: 'MX',
-      curp: 'TEMP000000HDFXXX00', // Placeholder - should be generated
-      postalCode: '00000',
-      state: 'CDMX',
-      country: 'Mexico',
-      municipality: 'Cuauhtemoc',
-      street: 'Reforma',
-      colony: 'Centro',
-      externalNumber: '1',
-      internalNumber: '1',
+      gender: registerData.gender,
+      birthDate: registerData.birthDate,
+      nationality: registerData.nationality,
+      countryCode: registerData.countryCode,
+      curp: registerData.curp,
+      rfc: registerData.rfc,
+      postalCode: undefined,
+      state: registerData.state,
+      country: undefined,
+      municipality: registerData.municipality,
+      street: registerData.street,
+      colony: registerData.colony,
+      externalNumber: registerData.externalNumber,
+      internalNumber: registerData.internalNumber,
+      monthlyIncomeRange: registerData.monthlyIncomeRange,
+      isUniversityStudent: registerData.isUniversityStudent,
+      universityRegistration: registerData.universityRegistration,
+      universityProfilePhotoLink: registerData.universityProfilePhotoLink,
+      documentScan: registerData.documentScan,
     };
 
     const newUser = await UserRepository.createFromRegistration(userCreateData);
 
-    // 4. Save backoffice profile
+    // 4. Create academic information if provided
+    if (registerData.academicInfo && registerData.isUniversityStudent) {
+      await BackofficeRepository.createAcademicInfo(newUser.id, {
+        actualSemester: registerData.academicInfo.actualSemester,
+        academicArea: registerData.academicInfo.academicArea,
+        scholarshipPercentageRange:
+          registerData.academicInfo.scholarshipPercentageRange,
+      });
+    }
+
+    // 5. Save backoffice profile
     await BackofficeRepository.upsertProfile(
       newUser.id,
       {
@@ -198,7 +228,7 @@ export class AuthService {
       }
     );
 
-    // 5. Save authentication state
+    // 6. Save authentication state
     await BackofficeRepository.upsertAuthState(
       newUser.id,
       {
@@ -230,7 +260,7 @@ export class AuthService {
       }
     );
 
-    // 6. Generate JWT token
+    // 7. Generate JWT token
     const jwtPayload: JwtPayload = {
       userId: newUser.id,
       email: newUser.email,

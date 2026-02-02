@@ -40,39 +40,9 @@ export type BackofficeAuthStateUpdate = Prisma.BackofficeAuthStateUpdateInput;
 
 /**
  * Legacy interfaces for backwards compatibility (to be deprecated)
+ * These are kept for backwards compatibility but should be replaced with Prisma types
  */
-export interface BackofficeProfileCreateData {
-  userId: number;
-  externalCustomerId: string;
-  ewalletId: string;
-}
-
-export interface BackofficeProfileUpdateData {
-  externalCustomerId?: string;
-  ewalletId?: string;
-  updatedAt?: Date;
-}
-
-export interface BackofficeAuthStateCreateData {
-  userId: number;
-  clientState: number;
-  deviceId: string;
-  privateKey: string;
-  refreshToken: string;
-  extraLoginData: string;
-  lastCustomerOauthToken: string;
-  externalCustomerId: string;
-  ewalletId: string;
-}
-
-export interface BackofficeAuthStateUpdateData {
-  clientState?: number;
-  deviceId?: string;
-  privateKey?: string;
-  refreshToken?: string;
-  extraLoginData?: string;
-  lastCustomerOauthToken?: string;
-  externalCustomerId?: string;
-  ewalletId?: string;
-  updatedAt?: Date;
-}
+export type BackofficeProfileCreateData = Prisma.BackofficeCustomerProfileCreateInput;
+export type BackofficeProfileUpdateData = Prisma.BackofficeCustomerProfileUpdateInput;
+export type BackofficeAuthStateCreateData = Prisma.BackofficeAuthStateCreateInput;
+export type BackofficeAuthStateUpdateData = Prisma.BackofficeAuthStateUpdateInput;

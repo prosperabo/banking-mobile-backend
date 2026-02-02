@@ -21,8 +21,32 @@ export interface LoginResponse {
 export interface RegisterRequest {
   email: string;
   password: string;
-  completeName: string;
+  firstName: string;
+  lastName: string;
+  secondLastName: string;
+  curp: string;
+  birthDate: Date;
+  gender: Gender;
+  nationality: string;
+  countryCode: string;
   phone: string;
+  rfc?: string;
+  street: string;
+  externalNumber: string;
+  internalNumber: string;
+  colony: string;
+  municipality: string;
+  state: string;
+  monthlyIncomeRange: string;
+  isUniversityStudent: boolean;
+  universityRegistration?: number;
+  universityProfilePhotoLink?: string;
+  documentScan?: string;
+  academicInfo?: {
+    actualSemester?: number;
+    academicArea?: string;
+    scholarshipPercentageRange?: string;
+  };
 }
 
 /**
@@ -78,20 +102,40 @@ export function isBackofficeError(
 export interface UserCreateData {
   email: string;
   password: string;
+  firstName: string;
+  lastName: string;
+  secondLastName: string;
   completeName: string;
   phone: string;
   gender: Gender;
   birthDate: Date;
-  birthCountry: string;
+  nationality: string;
+  countryCode: string;
   curp: string;
-  postalCode: string;
+  rfc?: string;
+  postalCode?: string;
   state: string;
-  country: string;
+  country?: string;
   municipality: string;
   street: string;
   colony: string;
   externalNumber: string;
   internalNumber: string;
+  monthlyIncomeRange: string;
+  isUniversityStudent: boolean;
+  universityRegistration?: number;
+  universityProfilePhotoLink?: string;
+  documentScan?: string;
+}
+
+/**
+ * Academic information data for registration
+ */
+export interface AcademicInfoCreateData {
+  userId: number;
+  actualSemester?: number;
+  academicArea?: string;
+  scholarshipPercentageRange?: string;
 }
 
 /**

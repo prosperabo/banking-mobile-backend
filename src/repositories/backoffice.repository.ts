@@ -5,6 +5,7 @@ import type {
   BackofficeAuthStateCreate,
   BackofficeAuthStateUpdate,
 } from '@/schemas';
+import { AcademicInformation_academicArea } from '@prisma/client';
 
 export const BackofficeRepository = {
   async upsertProfile(
@@ -40,6 +41,26 @@ export const BackofficeRepository = {
   async findProfileByUserId(userId: number) {
     return db.backofficeCustomerProfile.findUnique({
       where: { userId },
+    });
+  },
+
+  async createAcademicInfo(
+    userId: number,
+    data: {
+      actualSemester?: number;
+      academicArea?: string;
+      scholarshipPercentageRange?: string;
+    }
+  ) {
+    return db.academicInformation.create({
+      data: {
+        userId,
+        actualSemester: data.actualSemester,
+        academicArea: data.academicArea as
+          | AcademicInformation_academicArea
+          | undefined,
+        scholarshipPercentageRange: data.scholarshipPercentageRange,
+      },
     });
   },
 };
