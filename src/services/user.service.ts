@@ -5,7 +5,10 @@ import {
   UpdateUserResponse,
   ChangePasswordRequest,
   ChangePasswordResponse,
+  AddAliasRequest,
+  AddAliasResponse,
 } from '@/schemas/user.schemas';
+import { BadRequestError } from '@/shared/errors';
 import { buildLogger } from '@/utils';
 
 const logger = buildLogger('UserService');
@@ -132,6 +135,31 @@ export class UserService {
     return {
       id: userId,
       message: 'Password changed successfully',
+    };
+  }
+
+  static async addAlias(
+    userId: number,
+    aliasData: AddAliasRequest
+  ): Promise<AddAliasResponse> {
+    logger.info(`Adding alias for user ${userId}`, { alias: aliasData.alias });
+
+    const existingUser = await UserRepository.findByAlias(aliasData.alias);
+    if (existingUser) {
+      logger.warn(`Alias ${aliasData.alias} already exists`);
+      throw new BadRequestError('This alias is already in use');
+    }
+
+    const updatedUser = await UserRepository.updateUser(userId, {
+      alias: aliasData.alias,
+    });
+
+    logger.info(`Alias added successfully for user ${userId}`);
+
+    return {
+      id: userId,
+      alias: updatedUser.alias || '',
+      message: 'Alias added successfully',
     };
   }
 }

@@ -15,4 +15,10 @@ router.get(
   TransactionsController.getUserTransactions
 );
 
+router.get(
+  '/chart',
+  validateRequest(...getTransactionsValidator),
+  TransactionsController.getTransactionChartData
+);
+
 export default router;

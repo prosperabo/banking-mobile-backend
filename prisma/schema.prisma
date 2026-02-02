@@ -12,14 +12,14 @@ model Users {
   email                      String                     @unique
   password                   String
   phone                      String?
-  completeName               String
+  completeName               String?                    @db.VarChar(255)
   gender                     Gender
   birthDate                  DateTime
-  birthCountry               String
+  birthCountry               String?                    @db.VarChar(255)
   curp                       String
-  postalCode                 String
+  postalCode                 String?                    @db.VarChar(255)
   state                      String
-  country                    String
+  country                    String?                    @db.VarChar(255)
   municipality               String
   street                     String
   colony                     String
@@ -46,12 +46,21 @@ model Users {
   universityProfilePhotoLink String?
   rfc                        String?
   createdAt                  DateTime                   @default(now())
+  firstName                  String?                    @db.VarChar(255)
+  lastName                   String?                    @db.VarChar(255)
+  secondLastName             String?                    @db.VarChar(255)
+  nationality                String?                    @db.VarChar(255)
+  countryCode                String?                    @db.VarChar(10)
+  monthlyIncomeRange         String?                    @db.VarChar(255)
+  isUniversityStudent        Boolean                    @default(false)
+  alias                      String?                    @unique(map: "ux_users_alias") @db.VarChar(255)
   AcademicInformation        AcademicInformation?
   BackofficeAuthState        BackofficeAuthState?
   BackofficeCustomerProfile  BackofficeCustomerProfile?
   Cards                      Cards[]
   completedLessons           CompletedLesson[]
   Transactions               Transactions[]
+  payments                   payments[]
 }
 
 model VerifiedEmails {
@@ -173,7 +182,7 @@ model BackofficeCustomerProfile {
 
 model Cards {
   id             Int            @id @default(autoincrement())
-  userId         Int
+  userId         Int?
   bulkBatchId    Int?
   prosperaCardId String?        @unique
   cardType       Cards_cardType
@@ -186,7 +195,7 @@ model Cards {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime
   BulkBatch      BulkBatch?     @relation(fields: [bulkBatchId], references: [id])
-  Users          Users          @relation(fields: [userId], references: [id])
+  Users          Users?         @relation(fields: [userId], references: [id], onDelete: Restrict)
   Transactions   Transactions[]
 
   @@index([userId], map: "Cards_userId_fkey")
@@ -224,12 +233,41 @@ model BulkBatch {
 }
 
 model AcademicInformation {
-  id                    Int                               @id @default(autoincrement())
-  userId                Int                               @unique
-  academicArea          AcademicInformation_academicArea?
-  actualSemester        Int?
-  scholarshipPercentage Int?
-  Users                 Users                             @relation(fields: [userId], references: [id])
+  id                         Int                               @id @default(autoincrement())
+  userId                     Int                               @unique
+  academicArea               AcademicInformation_academicArea?
+  actualSemester             Int?
+  scholarshipPercentage      Int?
+  scholarshipPercentageRange String?                           @db.VarChar(255)
+  Users                      Users                             @relation(fields: [userId], references: [id])
+}
+
+model payments {
+  id                  BigInt          @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id             Int
+  order_id            String?         @db.VarChar(64)
+  provider            String          @db.VarChar(32)
+  provider_payment_id String?         @db.VarChar(100)
+  amount              Decimal         @db.Decimal(10, 2)
+  currency            String          @default("MXN") @db.Char(3)
+  description         String?         @db.VarChar(255)
+  business_fee_rate   Decimal         @default(0.00) @db.Decimal(5, 2)
+  business_fee_amount Decimal         @default(0.00) @db.Decimal(10, 2)
+  net_amount          Decimal         @default(0.00) @db.Decimal(10, 2)
+  status              payments_status @default(PENDING)
+  payment_method      String          @db.VarChar(32)
+  payment_token       String?         @db.VarChar(150)
+  idempotency_key     String          @unique(map: "uk_payments_idempotency") @db.VarChar(100)
+  request_payload     Json?
+  response_payload    Json?
+  created_at          DateTime        @default(now()) @db.DateTime(0)
+  updated_at          DateTime        @default(now()) @db.DateTime(0)
+  Users               Users           @relation(fields: [user_id], references: [id], map: "fk_payments_user")
+
+  @@unique([provider, provider_payment_id], map: "uk_payments_provider_payment")
+  @@index([order_id], map: "idx_payments_order")
+  @@index([provider], map: "idx_payments_provider")
+  @@index([user_id], map: "idx_payments_user")
 }
 
 enum Gender {
@@ -272,4 +310,12 @@ enum AcademicInformation_academicArea {
   ARTES_HUMANIDADES
   EDUCACION
   DERECHO
+}
+
+enum payments_status {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
 }

@@ -1,6 +1,7 @@
 import express, { Application, Request as ExpressRequest } from 'express';
 import morgan from 'morgan';
 import cors from 'cors';
+import path from 'path';
 import { expressErrorHandler } from './shared/handlers';
 import router from './routes';
 import { config } from './config';
@@ -25,6 +26,9 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+// Serve static files from public directory
+app.use('/public', express.static(path.join(__dirname, '../public')));
 
 app.use(`/api/v${version}`, router);
 

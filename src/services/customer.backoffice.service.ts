@@ -10,9 +10,12 @@ import {
   BackofficeLoginResponse,
   BackofficeRefreshRequest,
   BackofficeRefreshResponse,
+  ClabeBackofficeResponse,
+  UserBackofficeResponse,
   BackofficeCreateAccountData,
   BackofficeApiResponse,
 } from '@/schemas';
+import backOfficeInstance from '@/api/backoffice.instance';
 
 const logger = buildLogger('backoffice-service');
 
@@ -132,5 +135,45 @@ export class BackofficeService {
       });
       return { err: error instanceof Error ? error.message : 'Unknown error' };
     }
+  }
+
+  static async getSpeiClabe(customerToken: string): Promise<string> {
+    logger.info('Getting SPEI CLABE from backoffice', {
+      customerToken,
+    });
+
+    const response = await backOfficeInstance.get<ClabeBackofficeResponse>(
+      '/user/v1/account/spei-clabe',
+      {
+        headers: {
+          'Authorization-customer': customerToken,
+          'Authorization-ecommerce': config.ecommerceToken,
+          Client: 'customer',
+        },
+      }
+    );
+
+    logger.info('Successfully retrieved SPEI CLABE from backoffice');
+    return response.data.rs.spei_clabe;
+  }
+
+  static async getUserInfo(
+    customerId: number
+  ): Promise<UserBackofficeResponse> {
+    logger.info('Getting user info from backoffice', {
+      customerId,
+    });
+
+    const response = await backOfficeInstance.get<UserBackofficeResponse>(
+      `/user/v1/account/${customerId}`,
+      {
+        headers: {
+          'Authorization-ecommerce': config.ecommerceToken,
+        },
+      }
+    );
+
+    logger.info('Successfully retrieved user info from backoffice');
+    return response.data;
   }
 }

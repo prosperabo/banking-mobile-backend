@@ -70,3 +70,13 @@ export interface ChangePasswordResponse {
   id: number;
   message: string;
 }
+
+export interface AddAliasRequest {
+  alias: string;
+}
+
+export interface AddAliasResponse {
+  id: number;
+  alias: string;
+  message: string;
+}

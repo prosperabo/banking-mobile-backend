@@ -69,9 +69,11 @@ export class CustomerProfileService {
       gender_string: accountData.gender_string,
       external_customer_id: accountData.id,
       identification_document_back: accountData.identification_document_back,
-      identification_document_back_url: accountData.identification_document_back_url,
+      identification_document_back_url:
+        accountData.identification_document_back_url,
       identification_document_front: accountData.identification_document_front,
-      identification_document_front_url: accountData.identification_document_front_url,
+      identification_document_front_url:
+        accountData.identification_document_front_url,
       identification_document_type: accountData.identification_document_type,
       interior: accountData.interior,
       is_business: accountData.is_business,
@@ -117,9 +119,7 @@ export class CustomerProfileService {
       profileUpdateData
     );
 
-    logger.info(
-      `Backoffice profile saved successfully for userId: ${userId}`
-    );
+    logger.info(`Backoffice profile saved successfully for userId: ${userId}`);
   }
 
   /**
@@ -177,17 +177,21 @@ export class CustomerProfileService {
    * @returns Promise resolving to true if profile exists, false otherwise
    */
   async hasExistingCustomerProfile(userId: number): Promise<boolean> {
-    const existingProfile = await this.profileRepository.findProfileByUserId(userId);
+    const existingProfile =
+      await this.profileRepository.findProfileByUserId(userId);
     return !!existingProfile;
   }
 
   /**
    * Retrieves users for migration based on criteria
+   * @param userId - Optional user ID to filter results to a specific user
    * @returns Promise resolving to an array of users ready for migration
    */
-  async getUsersForMigration(): Promise<UserForMigration[]> {
-    // Get all users first
-    const allUsers = await this.profileRepository.findAllUsers();
+  async getUsersForMigration(
+    userId?: number | null
+  ): Promise<UserForMigration[]> {
+    // Get all users or specific user
+    const allUsers = await this.profileRepository.findAllUsers(userId);
 
     // Filter out users that already have backoffice profiles
     const usersWithoutProfiles: UserForMigration[] = [];
