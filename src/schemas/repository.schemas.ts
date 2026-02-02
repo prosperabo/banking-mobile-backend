@@ -42,7 +42,11 @@ export type BackofficeAuthStateUpdate = Prisma.BackofficeAuthStateUpdateInput;
  * Legacy interfaces for backwards compatibility (to be deprecated)
  * These are kept for backwards compatibility but should be replaced with Prisma types
  */
-export type BackofficeProfileCreateData = Prisma.BackofficeCustomerProfileCreateInput;
-export type BackofficeProfileUpdateData = Prisma.BackofficeCustomerProfileUpdateInput;
-export type BackofficeAuthStateCreateData = Prisma.BackofficeAuthStateCreateInput;
-export type BackofficeAuthStateUpdateData = Prisma.BackofficeAuthStateUpdateInput;
+export type BackofficeProfileCreateData =
+  Prisma.BackofficeCustomerProfileCreateInput;
+export type BackofficeProfileUpdateData =
+  Prisma.BackofficeCustomerProfileUpdateInput;
+export type BackofficeAuthStateCreateData =
+  Prisma.BackofficeAuthStateCreateInput;
+export type BackofficeAuthStateUpdateData =
+  Prisma.BackofficeAuthStateUpdateInput;
