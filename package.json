@@ -13,7 +13,7 @@
     "orm:generate": "npx prisma generate",
     "orm:migrate:dev": "npx prisma migrate dev",
     "orm:migrate:deploy": "npx prisma migrate deploy",
-    "prepare": "husky"
+    "prepare": "node -e \"process.env.HUSKY === '0' && process.exit(0)\" || husky"
   },
   "keywords": [
     "banking",

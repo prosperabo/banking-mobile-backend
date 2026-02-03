@@ -164,5 +164,8 @@ export const loginValidator = [
 ];
 
 export const registerByEmailValidator = [
-  body('email').isEmail().withMessage('Must provide a valid email').normalizeEmail(),
+  body('email')
+    .isEmail()
+    .withMessage('Must provide a valid email')
+    .normalizeEmail(),
 ];
