@@ -349,7 +349,7 @@ export class AuthService {
     );
 
     await CampaignBackofficeService.assignCustomersToProgram({
-      customer_ids: [user.id],
+      customer_ids: [parseInt(String(backofficeAccount.id))],
       program_code: config.campaing.programCode,
     });
 
