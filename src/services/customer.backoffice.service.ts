@@ -66,38 +66,23 @@ export class BackofficeService {
   static async refreshCustomerToken(
     refreshData: BackofficeRefreshRequest
   ): Promise<BackofficeRefreshResponse> {
-    try {
-      logger.info('Refreshing customer token from backoffice');
+    logger.info('Refreshing customer token from backoffice', {
+      device_id: refreshData.device_id,
+      has_refresh_token: !!refreshData.customer_refresh_token,
+    });
 
-      const response = await fetch(
-        `${this.BASE_URL}${this.OAUTH_ENDPOINT}/refresh-customer-connection-token`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(refreshData),
-        }
-      );
+    const response = await backOfficeInstance.post<BackofficeRefreshResponse>(
+      `${this.OAUTH_ENDPOINT}/refresh-customer-token`,
+      refreshData
+    );
 
-      if (!response.ok) {
-        logger.error('Non-ok response refreshing customer token', {
-          ...(await response.json()),
-        });
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+    logger.info('Successfully refreshed customer token', {
+      status: response.status,
+      statusText: response.statusText,
+      data: response.data,
+    });
 
-      logger.info('Successfully refreshed customer token', {
-        ...(await response.json()),
-      });
-      const data = (await response.json()) as BackofficeRefreshResponse;
-      return data;
-    } catch (error) {
-      logger.error('Error refreshing customer token', {
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-      throw new Error('Error refreshing backoffice token');
-    }
+    return response.data;
   }
 
   /**
