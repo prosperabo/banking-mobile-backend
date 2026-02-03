@@ -88,7 +88,7 @@ export class BackofficeService {
       }
 
       const data = (await response.json()) as BackofficeRefreshResponse;
-      logger.info('Successfully refreshed customer token');
+      logger.info('Successfully refreshed customer token', { ...data });
       return data;
     } catch (error) {
       logger.error('Error refreshing customer token', {
