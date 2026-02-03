@@ -46,6 +46,9 @@ export class BackofficeService {
       );
 
       if (!response.ok) {
+        logger.error('Non-ok response refreshing customer token', {
+          ...response,
+        });
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
@@ -78,6 +81,9 @@ export class BackofficeService {
       );
 
       if (!response.ok) {
+        logger.error('Non-ok response refreshing customer token', {
+          ...response,
+        });
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
