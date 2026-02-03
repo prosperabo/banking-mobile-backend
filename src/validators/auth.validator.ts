@@ -162,3 +162,7 @@ export const loginValidator = [
   body('email').isEmail().withMessage('Invalid email'),
   body('password').notEmpty().withMessage('Password required'),
 ];
+
+export const registerByEmailValidator = [
+  body('email').isEmail().withMessage('Must provide a valid email').normalizeEmail(),
+];

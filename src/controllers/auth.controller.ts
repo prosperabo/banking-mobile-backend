@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 
 import { AuthService } from '@/services/auth.service';
-import { LoginRequest, RegisterRequest } from '@/schemas/auth.schemas';
+import { LoginRequest, RegisterByEmailRequest } from '@/schemas/auth.schemas';
 import { catchErrors, successHandler } from '@/shared/handlers';
 import { buildLogger } from '@/utils';
 
@@ -18,13 +18,12 @@ export class AuthController {
     successHandler(res, result, 'Login successful');
   });
 
-  static register = catchErrors(async (req: Request, res: Response) => {
-    logger.info('Register attempt', { body: req.body });
+  static registerByEmail = catchErrors(async (req: Request, res: Response) => {
+    logger.info('Register by email attempt', { body: req.body });
 
-    const registerData: RegisterRequest = req.body;
-    const result = await AuthService.register(registerData);
+    const registerByEmailData: RegisterByEmailRequest = req.body;
+    const result = await AuthService.registerByEmail(registerByEmailData.email);
 
-    logger.info('Register successful');
-    successHandler(res, result, 'Registration successful');
+    successHandler(res, result, 'Registration by email successful');
   });
 }

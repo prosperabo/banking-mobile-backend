@@ -14,8 +14,10 @@ import {
   UserBackofficeResponse,
   BackofficeCreateAccountData,
   BackofficeApiResponse,
+  BackofficeAccountResponse,
 } from '@/schemas';
 import backOfficeInstance from '@/api/backoffice.instance';
+import FormData from 'form-data';
 
 const logger = buildLogger('backoffice-service');
 
@@ -98,43 +100,64 @@ export class BackofficeService {
   static async createAccountIn123(
     userData: BackofficeCreateAccountData
   ): Promise<BackofficeApiResponse> {
-    try {
-      logger.info('Creating account in 123 backoffice', {
-        email: userData.email,
-      });
+    logger.info('Creating account in 123 backoffice', {
+      email: userData.email,
+    });
 
-      // Using URLSearchParams instead of FormData for better compatibility
-      const formData = new URLSearchParams();
-      formData.append('email', userData.email);
-      formData.append('password', userData.password);
-      formData.append('completeName', userData.completeName);
-      formData.append('phone', userData.phone);
+    // Build multipart/form-data using FormData and use shared axios instance
+    const form = new FormData();
 
-      const response = await fetch(`${this.BASE_URL}/api/v1/users/create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: `Bearer ${this.API_KEY}`,
-        },
-        body: formData,
-      });
+    const firstName = userData.firstName;
+    const lastName = userData.lastName;
+    const secondLastName = userData.secondLastName;
+    const genderRaw = userData.gender ?? 'MASCULINO';
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `Backoffice API error: ${response.status} ${response.statusText} :: ${errorText}`
-        );
-      }
+    // Map gender from enum/string to API numeric values: 1=female,2=male,3=other
+    let genderValue = '2';
+    if (String(genderRaw).toUpperCase().includes('FEM')) genderValue = '1';
+    else if (String(genderRaw).toUpperCase().includes('MASC'))
+      genderValue = '2';
+    else genderValue = '3';
 
-      const data = (await response.json()) as BackofficeApiResponse;
-      logger.info('Successfully created account in 123 backoffice');
-      return data;
-    } catch (error) {
-      logger.error('Error creating account in 123 backoffice', {
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-      return { err: error instanceof Error ? error.message : 'Unknown error' };
-    }
+    form.append('device_id', userData.device_id);
+    form.append('email', userData.email);
+    form.append('password', userData.password);
+    if (firstName) form.append('first_name', firstName);
+    if (userData.middleName) form.append('middle_name', userData.middleName);
+    if (lastName) form.append('last_name', lastName);
+    if (secondLastName) form.append('second_last_name', secondLastName);
+    form.append('kyc_level', '1');
+    form.append('gender', genderValue);
+    if (userData.phone) form.append('mobile', String(userData.phone));
+    if (userData.countryCode)
+      form.append('mobile_country_code', String(userData.countryCode));
+    if (userData.rfc) form.append('rfc', String(userData.rfc));
+    if (userData.postalCode)
+      form.append('zipcode', String(userData.postalCode));
+
+    form.append('campaign_id', config.campaing.campaign_id);
+    form.append('credit_line', config.campaing.creditLine);
+
+    const headers = {
+      ...form.getHeaders(),
+    };
+
+    type BackofficeRawResponse = {
+      err?: string;
+      rs?: BackofficeAccountResponse;
+      [key: string]: unknown;
+    };
+
+    const response = await backOfficeInstance.post<BackofficeRawResponse>(
+      '/user/v1/account/create',
+      form,
+      { headers }
+    );
+
+    const responseData = response.data;
+    const result = responseData?.rs ?? responseData;
+    logger.info('Successfully created account in 123 backoffice');
+    return result as BackofficeApiResponse;
   }
 
   static async getSpeiClabe(customerToken: string): Promise<string> {
@@ -165,12 +188,7 @@ export class BackofficeService {
     });
 
     const response = await backOfficeInstance.get<UserBackofficeResponse>(
-      `/user/v1/account/${customerId}`,
-      {
-        headers: {
-          'Authorization-ecommerce': config.ecommerceToken,
-        },
-      }
+      `/user/v1/account/${customerId}`
     );
 
     logger.info('Successfully retrieved user info from backoffice');

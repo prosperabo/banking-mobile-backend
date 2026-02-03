@@ -33,4 +33,9 @@ export const config = {
       process.env.BANXICO_BASE_URL ||
       'https://www.banxico.org.mx/SieAPIRest/service/v1',
   },
+  campaing: {
+    campaign_id: process.env.CAMPAIGN_ID || 'SOF250820595',
+    creditLine: process.env.CREDIT_LINE || '1000000',
+    programCode: process.env.PROGRAM_CODE || 'KBZ260121860',
+  },
 };

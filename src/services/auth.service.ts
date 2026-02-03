@@ -1,30 +1,23 @@
 import {
   LoginRequest,
   LoginResponse,
-  RegisterRequest,
   BackofficeLoginRequest,
   BackofficeLoginResponse,
   BackofficeRefreshRequest,
   BackofficeRefreshResponse,
   BackofficeCreateAccountData,
   BackofficeAccountResponse,
-  isBackofficeError,
-  UserCreateData,
-  JwtPayload,
+  UserWithAuthState,
 } from '@/schemas';
 import { buildLogger } from '@/utils';
 import { BackofficeService } from '@/services/customer.backoffice.service';
 import { UserRepository } from '@/repositories/user.repository';
 import { BackofficeRepository } from '@/repositories/backoffice.repository';
 import { JwtUtil } from '@/utils/jwt.utils';
+import { hashPassword } from '@/utils/hash.utils';
 import { config } from '@/config';
-import {
-  UnauthorizedError,
-  ConflictError,
-  InternalServerError,
-  NotFoundError,
-} from '@/shared/errors';
-// import bcrypt from 'bcrypt';
+import { UnauthorizedError, NotFoundError } from '@/shared/errors';
+import { CampaignBackofficeService } from './campaign.backoffice.service';
 
 const logger = buildLogger('auth-service');
 
@@ -136,155 +129,235 @@ export class AuthService {
     };
   }
 
-  static async register(registerData: RegisterRequest): Promise<LoginResponse> {
-    const { email, password, firstName, lastName, secondLastName, phone } =
-      registerData;
+  static async registerByEmail(
+    email: string
+  ): Promise<{ email: string; created: boolean }> {
+    // Find user by email (including backoffice state)
+    const userWithAuthState =
+      await UserRepository.findByEmailWithAuthState(email);
 
-    // 1. Check if user already exists
-    const existingUser = await UserRepository.findByEmail(email);
-    if (existingUser) {
-      logger.warn('User already exists', { email });
-      throw new ConflictError('User already exists');
+    if (!userWithAuthState) {
+      logger.warn('User not found for registerByEmail', { email });
+      throw new NotFoundError('User not found. Complete registration first.');
     }
 
-    // Build complete name from parts
-    const completeName = `${firstName} ${lastName} ${secondLastName}`.trim();
+    const user: UserWithAuthState = userWithAuthState;
 
-    // 2. Create account in 123 Backoffice
+    // If already has backoffice profile or auth state, nothing to create
+    if (userWithAuthState.BackofficeAuthState) {
+      logger.info('User already provisioned in backoffice', {
+        userId: user.id,
+      });
+      return { email: user.email, created: false };
+    }
+
+    // Ensure password is hashed before sending to backoffice (API expects a password hash)
+    let passwordToSend = user.password;
+    // existing plain-text password — hash for Backoffice request only, do NOT persist
+    const hashed = await hashPassword(user.password);
+    passwordToSend = hashed;
+    logger.info(
+      'Using hashed password for backoffice request only (not persisted)',
+      { userId: user.id }
+    );
+
+    const deviceId = this.generateDeviceId();
+
+    // Build backoffice account payload from separate fields
     const backofficeAccountData: BackofficeCreateAccountData = {
-      email,
-      password,
-      completeName,
-      phone,
+      device_id: deviceId,
+      email: user.email,
+      password: passwordToSend,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      secondLastName: user.secondLastName,
+      gender: user.gender,
+      phone: user.phone,
+      countryCode: user.countryCode,
+      rfc: user.rfc,
+      postalCode: user.postalCode,
     };
 
     const backofficeResponse = await BackofficeService.createAccountIn123(
       backofficeAccountData
     );
 
-    if (isBackofficeError(backofficeResponse)) {
-      logger.error('Failed to create account in backoffice', {
-        error: backofficeResponse.err,
-      });
-      throw new InternalServerError('Error creating account in banking system');
-    }
-
     const backofficeAccount = backofficeResponse as BackofficeAccountResponse;
 
-    // 3. Create user in local database with data from request
-    const userCreateData: UserCreateData = {
-      email,
-      password,
-      firstName,
-      lastName,
-      secondLastName,
-      completeName,
-      phone,
-      gender: registerData.gender,
-      birthDate: registerData.birthDate,
-      nationality: registerData.nationality,
-      countryCode: registerData.countryCode,
-      curp: registerData.curp,
-      rfc: registerData.rfc,
-      postalCode: undefined,
-      state: registerData.state,
-      country: undefined,
-      municipality: registerData.municipality,
-      street: registerData.street,
-      colony: registerData.colony,
-      externalNumber: registerData.externalNumber,
-      internalNumber: registerData.internalNumber,
-      monthlyIncomeRange: registerData.monthlyIncomeRange,
-      isUniversityStudent: registerData.isUniversityStudent,
-      universityRegistration: registerData.universityRegistration,
-      universityProfilePhotoLink: registerData.universityProfilePhotoLink,
-      documentScan: registerData.documentScan,
-    };
-
-    const newUser = await UserRepository.createFromRegistration(userCreateData);
-
-    // 4. Create academic information if provided
-    if (registerData.academicInfo && registerData.isUniversityStudent) {
-      await BackofficeRepository.createAcademicInfo(newUser.id, {
-        actualSemester: registerData.academicInfo.actualSemester,
-        academicArea: registerData.academicInfo.academicArea,
-        scholarshipPercentageRange:
-          registerData.academicInfo.scholarshipPercentageRange,
-      });
-    }
-
-    // 5. Save backoffice profile
+    // Persist backoffice customer profile
     await BackofficeRepository.upsertProfile(
-      newUser.id,
+      user.id,
       {
-        Users: { connect: { id: newUser.id } },
-        external_customer_id: parseInt(backofficeAccount.id),
-        ewallet_id: parseInt(backofficeAccount.ewallet_id),
-        // Add other backoffice fields as needed
+        Users: { connect: { id: user.id } },
+        external_customer_id: parseInt(String(backofficeAccount.id)),
+        ewallet_id: parseInt(String(backofficeAccount.ewallet_id)),
+        oauth_token: backofficeAccount.oauth_token,
+        private_key: backofficeAccount.private_key,
+        refresh_token: backofficeAccount.refresh_token,
+        email: backofficeAccount.email,
+        first_name: backofficeAccount.first_name,
+        last_name: backofficeAccount.last_name,
+        second_last_name: backofficeAccount.second_last_name,
+        mobile: String(backofficeAccount.mobile),
+        gender: backofficeAccount.gender,
+        gender_string: backofficeAccount.gender_string,
+        rfc: backofficeAccount.rfc,
+        zipcode: backofficeAccount.zipcode,
+        ewallet_status: backofficeAccount.ewallet_status,
+        account_level: backofficeAccount.account_level,
+        account_status: backofficeAccount.account_status,
+        account_status_string: backofficeAccount.account_status_string,
+        address: backofficeAccount.address,
+        address_document_back: backofficeAccount.address_document_back,
+        address_document_back_url: backofficeAccount.address_document_back_url,
+        address_document_front: backofficeAccount.address_document_front,
+        address_document_front_url:
+          backofficeAccount.address_document_front_url,
+        address_document_type: backofficeAccount.address_document_type,
+        are_account_resources_of_user:
+          backofficeAccount.are_account_resources_of_user,
+        business_name: backofficeAccount.business_name,
+        business_purpose: backofficeAccount.business_purpose,
+        ciabe: backofficeAccount.clabe,
+        city: backofficeAccount.city,
+        colony: backofficeAccount.colony,
+        constitution_date: backofficeAccount.constitution_date,
+        correspondence_address: backofficeAccount.correspondence_address,
+        country_of_birth: backofficeAccount.country_of_birth,
+        date_of_birth: backofficeAccount.date_of_birth,
+        ecommerce_id: backofficeAccount.ecommerce_id,
+        exterior: backofficeAccount.exterior,
+        identification_document_back:
+          backofficeAccount.identification_document_back,
+        identification_document_back_url:
+          backofficeAccount.identification_document_back_url,
+        identification_document_front:
+          backofficeAccount.identification_document_front,
+        identification_document_front_url:
+          backofficeAccount.identification_document_front_url,
+        identification_document_type:
+          backofficeAccount.identification_document_type,
+        interior: backofficeAccount.interior,
+        is_business: backofficeAccount.is_business,
+        mobile_country_code: backofficeAccount.mobile_country_code,
+        nationality_id: backofficeAccount.nationality_id,
+        occupation_id: backofficeAccount.occupation_id,
+        person_type: backofficeAccount.person_type,
+        risk_level: backofficeAccount.risk_level,
+        society_type: backofficeAccount.society_type,
+        selfie: backofficeAccount.selfie,
+        selfie_url: backofficeAccount.selfie_url,
+        state_id: backofficeAccount.state_id,
+        street: backofficeAccount.street,
+        telephone: backofficeAccount.telephone,
       },
       {
-        external_customer_id: parseInt(backofficeAccount.id),
-        ewallet_id: parseInt(backofficeAccount.ewallet_id),
+        external_customer_id: parseInt(String(backofficeAccount.id)),
+        ewallet_id: parseInt(String(backofficeAccount.ewallet_id)),
+        oauth_token: backofficeAccount.oauth_token,
+        private_key: backofficeAccount.private_key,
+        refresh_token: backofficeAccount.refresh_token,
+        email: backofficeAccount.email,
+        first_name: backofficeAccount.first_name,
+        last_name: backofficeAccount.last_name,
+        second_last_name: backofficeAccount.second_last_name,
+        mobile: String(backofficeAccount.mobile),
+        gender: backofficeAccount.gender,
+        gender_string: backofficeAccount.gender_string,
+        rfc: backofficeAccount.rfc,
+        zipcode: backofficeAccount.zipcode,
+        ewallet_status: backofficeAccount.ewallet_status,
+        account_level: backofficeAccount.account_level,
+        account_status: backofficeAccount.account_status,
+        account_status_string: backofficeAccount.account_status_string,
+        address: backofficeAccount.address,
+        address_document_back: backofficeAccount.address_document_back,
+        address_document_back_url: backofficeAccount.address_document_back_url,
+        address_document_front: backofficeAccount.address_document_front,
+        address_document_front_url:
+          backofficeAccount.address_document_front_url,
+        address_document_type: backofficeAccount.address_document_type,
+        are_account_resources_of_user:
+          backofficeAccount.are_account_resources_of_user,
+        business_name: backofficeAccount.business_name,
+        business_purpose: backofficeAccount.business_purpose,
+        ciabe: backofficeAccount.clabe,
+        city: backofficeAccount.city,
+        colony: backofficeAccount.colony,
+        constitution_date: backofficeAccount.constitution_date,
+        correspondence_address: backofficeAccount.correspondence_address,
+        country_of_birth: backofficeAccount.country_of_birth,
+        date_of_birth: backofficeAccount.date_of_birth,
+        ecommerce_id: backofficeAccount.ecommerce_id,
+        exterior: backofficeAccount.exterior,
+        identification_document_back:
+          backofficeAccount.identification_document_back,
+        identification_document_back_url:
+          backofficeAccount.identification_document_back_url,
+        identification_document_front:
+          backofficeAccount.identification_document_front,
+        identification_document_front_url:
+          backofficeAccount.identification_document_front_url,
+        identification_document_type:
+          backofficeAccount.identification_document_type,
+        interior: backofficeAccount.interior,
+        is_business: backofficeAccount.is_business,
+        mobile_country_code: backofficeAccount.mobile_country_code,
+        nationality_id: backofficeAccount.nationality_id,
+        occupation_id: backofficeAccount.occupation_id,
+        person_type: backofficeAccount.person_type,
+        risk_level: backofficeAccount.risk_level,
+        society_type: backofficeAccount.society_type,
+        selfie: backofficeAccount.selfie,
+        selfie_url: backofficeAccount.selfie_url,
+        state_id: backofficeAccount.state_id,
+        street: backofficeAccount.street,
+        telephone: backofficeAccount.telephone,
       }
     );
 
-    // 6. Save authentication state
+    // Persist auth state
     await BackofficeRepository.upsertAuthState(
-      newUser.id,
+      user.id,
       {
-        Users: { connect: { id: newUser.id } },
+        Users: { connect: { id: user.id } },
         clientState: 9,
-        deviceId: this.generateDeviceId(),
+        deviceId: deviceId,
         privateKey: backofficeAccount.private_key,
         refreshToken: backofficeAccount.refresh_token,
         extraLoginData: JSON.stringify({
           email: backofficeAccount.email,
-          mobile: backofficeAccount.mobile,
+          mobile: String(backofficeAccount.mobile),
         }),
         lastCustomerOauthToken: backofficeAccount.oauth_token,
-        externalCustomerId: parseInt(backofficeAccount.id),
-        ewalletId: parseInt(backofficeAccount.ewallet_id),
+        externalCustomerId: parseInt(String(backofficeAccount.id)),
+        ewalletId: parseInt(String(backofficeAccount.ewallet_id)),
       },
       {
         clientState: 9,
-        deviceId: this.generateDeviceId(),
+        deviceId: deviceId,
         privateKey: backofficeAccount.private_key,
         refreshToken: backofficeAccount.refresh_token,
         extraLoginData: JSON.stringify({
           email: backofficeAccount.email,
-          mobile: backofficeAccount.mobile,
+          mobile: String(backofficeAccount.mobile),
         }),
         lastCustomerOauthToken: backofficeAccount.oauth_token,
-        externalCustomerId: parseInt(backofficeAccount.id),
-        ewalletId: parseInt(backofficeAccount.ewallet_id),
+        externalCustomerId: parseInt(String(backofficeAccount.id)),
+        ewalletId: parseInt(String(backofficeAccount.ewallet_id)),
       }
     );
 
-    // 7. Generate JWT token
-    const jwtPayload: JwtPayload = {
-      userId: newUser.id,
-      email: newUser.email,
-      username: newUser.completeName,
-      backoffice: {
-        customer_oauth_token: backofficeAccount.oauth_token,
-        expiration_timestamp: '',
-        customer_refresh_token: backofficeAccount.refresh_token,
-        refresh_expiration_timestamp: '',
-        client_state_ret: 9,
-        customerId: parseInt(backofficeAccount.id),
-      },
-    };
-
-    const jwt = JwtUtil.generateToken(jwtPayload);
-
-    logger.info('User registered successfully', {
-      userId: newUser.id,
-      backofficeCustomerId: backofficeAccount.id,
+    await CampaignBackofficeService.assignCustomersToProgram({
+      customer_ids: [user.id],
+      program_code: config.campaing.programCode,
     });
 
-    return {
-      token: jwt,
-    };
+    logger.info('Backoffice account created and saved for user', {
+      userId: user.id,
+    });
+
+    return { email: user.email, created: true };
   }
 
   /**

@@ -49,14 +49,26 @@ export interface RegisterRequest {
   };
 }
 
+export interface RegisterByEmailRequest {
+  email: string;
+}
+
 /**
  * Data required for creating account in 123 Backoffice
  */
 export interface BackofficeCreateAccountData {
+  device_id: string;
   email: string;
   password: string;
-  completeName: string;
   phone: string;
+  firstName?: string;
+  middleName?: string;
+  lastName?: string;
+  secondLastName?: string;
+  gender?: string | number;
+  rfc?: string;
+  postalCode?: string;
+  countryCode?: string;
 }
 
 /**
@@ -65,11 +77,58 @@ export interface BackofficeCreateAccountData {
 export interface BackofficeAccountResponse {
   id: string;
   email: string;
-  mobile: string;
+  mobile: number;
+  first_name: string;
+  last_name: string;
+  second_last_name: string;
+  zipcode: string;
   oauth_token: string;
   refresh_token: string;
   private_key: string;
-  ewallet_id: string;
+  ewallet_id: number;
+  ewallet_status: number;
+  gender: number;
+  rfc: string;
+  gender_string: string;
+  account_level?: number;
+  account_status?: number;
+  account_status_string?: string;
+  address?: string;
+  address_document_back?: string;
+  address_document_back_url?: string;
+  address_document_front?: string;
+  address_document_front_url?: string;
+  address_document_type?: number;
+  are_account_resources_of_user?: boolean;
+  business_name?: string;
+  business_purpose?: string;
+  clabe?: string;
+  city?: string;
+  colony?: string;
+  constitution_date?: string;
+  correspondence_address?: string;
+  country_of_birth?: string;
+  date_of_birth?: string;
+  ecommerce_id?: number;
+  exterior?: string;
+  identification_document_back?: string;
+  identification_document_back_url?: string;
+  identification_document_front?: string;
+  identification_document_front_url?: string;
+  identification_document_type?: number;
+  interior?: string;
+  is_business?: boolean;
+  mobile_country_code?: string;
+  nationality_id?: number;
+  occupation_id?: number;
+  person_type?: number;
+  risk_level?: number;
+  society_type?: number;
+  selfie?: string;
+  selfie_url?: string;
+  state_id?: number;
+  street?: string;
+  telephone?: string;
   [key: string]: unknown;
 }
 
