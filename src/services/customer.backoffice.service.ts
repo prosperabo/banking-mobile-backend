@@ -87,8 +87,10 @@ export class BackofficeService {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
+      logger.info('Successfully refreshed customer token', {
+        ...(await response.json()),
+      });
       const data = (await response.json()) as BackofficeRefreshResponse;
-      logger.info('Successfully refreshed customer token', { ...data });
       return data;
     } catch (error) {
       logger.error('Error refreshing customer token', {
