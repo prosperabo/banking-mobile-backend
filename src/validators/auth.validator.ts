@@ -167,5 +167,8 @@ export const registerByEmailValidator = [
   body('email')
     .isEmail()
     .withMessage('Must provide a valid email')
-    .normalizeEmail(),
+    .normalizeEmail({
+      gmail_remove_dots: false,
+      gmail_remove_subaddress: false,
+    }),
 ];
