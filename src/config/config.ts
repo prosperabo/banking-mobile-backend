@@ -35,7 +35,7 @@ export const config = {
   },
   campaing: {
     campaign_id: process.env.CAMPAIGN_ID || 'SOF250820595',
-    creditLine: process.env.CREDIT_LINE || '1000000',
+    creditLine: process.env.CREDIT_LINE || '0',
     programCode: process.env.PROGRAM_CODE || 'KBZ260121860',
   },
 };

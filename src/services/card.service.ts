@@ -269,7 +269,8 @@ export class CardService {
     const cardInfo = cardInfoResponse.payload.cards[0];
 
     const totalLimit = parseFloat(cardInfo.credit_limit);
-    const currentBalance = parseFloat(cardInfo.current_balance);
+    const currentBalance =
+      parseFloat(cardInfo.credit_limit) - parseFloat(cardInfo.credit_line);
     const usedLimit = totalLimit - currentBalance;
 
     const now = new Date();
