@@ -21,7 +21,7 @@ import {
 } from '@/schemas/card.schemas';
 import { BackofficeRepository } from '@/repositories/backoffice.repository';
 import { UserRepository } from '@/repositories/user.repository';
-import { db } from '@/config/prisma';
+import { BulkBatchRepository } from '@/repositories/bulkBatch.repository';
 import backOfficeInstance from '@/api/backoffice.instance';
 import { config } from '@/config';
 
@@ -526,14 +526,12 @@ export class CardService {
     }
 
     // Create bulk batch record
-    const bulkBatch = await db.bulkBatch.create({
-      data: {
-        referenceBatch: String(referenceBatch),
-        status: payload.status || 1,
-        numCreated: 0,
-        numFailed: 0,
-        requestedAt: new Date(),
-      },
+    const bulkBatch = await BulkBatchRepository.create({
+      referenceBatch: String(referenceBatch),
+      status: payload.status || 1,
+      numCreated: 0,
+      numFailed: 0,
+      requestedAt: new Date(),
     });
 
     // Create card record (without prosperaCardId to start as PENDING)
