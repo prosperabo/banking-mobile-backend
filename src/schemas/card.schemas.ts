@@ -175,11 +175,11 @@ export type ShowCvvResponse = ApiResponse<ShowCvvResponsePayload>;
 
 // Card status enums for frontend
 export enum CardUserStatus {
-  PENDING = 'PENDING',         // Tarjeta solicitada, no entregada (INACTIVE + prosperaCardId null)
-  DELIVERED = 'DELIVERED',     // Tarjeta entregada, lista para activar (INACTIVE + prosperaCardId exists)
-  ACTIVE = 'ACTIVE',           // Tarjeta activada por el usuario (ACTIVE)
-  BLOCKED = 'BLOCKED',         // Tarjeta bloqueada temporalmente
-  EXPIRED = 'EXPIRED',         // Tarjeta expirada
+  PENDING = 'PENDING', // Tarjeta solicitada, no entregada (INACTIVE + prosperaCardId null)
+  DELIVERED = 'DELIVERED', // Tarjeta entregada, lista para activar (INACTIVE + prosperaCardId exists)
+  ACTIVE = 'ACTIVE', // Tarjeta activada por el usuario (ACTIVE)
+  BLOCKED = 'BLOCKED', // Tarjeta bloqueada temporalmente
+  EXPIRED = 'EXPIRED', // Tarjeta expirada
 }
 
 // Physical card request schemas

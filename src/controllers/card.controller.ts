@@ -209,10 +209,7 @@ export class CardController {
         requestData,
       });
 
-      const result = await CardService.requestPhysicalCard(
-        userId,
-        requestData
-      );
+      const result = await CardService.requestPhysicalCard(userId, requestData);
 
       logger.info('Physical card requested successfully', { userId, result });
       return successHandler(
