@@ -1,3 +1,5 @@
+import { randomBytes } from 'crypto';
+
 export const formatMaskedNumber = (
   cardNumber?: string,
   withSpaces: boolean = true
@@ -24,4 +26,18 @@ export const generateUpdateDigit = (): string => {
   // Generate a random 3-digit string between 100 and 999
   const value = Math.floor(Math.random() * 900) + 100;
   return String(value);
+};
+
+export const generatePhysicalCardIdentifier = (): string => {
+  const ts = Date.now();
+  const suffix = randomBase32(6);
+  return `PHYSICAL_${ts}_${suffix}`;
+};
+
+const randomBase32 = (len: number): string => {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+  const bytes = randomBytes(len);
+  return Array.from(bytes)
+    .map(b => alphabet[b % alphabet.length])
+    .join('');
 };

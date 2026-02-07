@@ -13,4 +13,16 @@ export class BulkBatchRepository {
       },
     });
   }
+
+  static async create(data: {
+    referenceBatch: string;
+    status: number;
+    numCreated: number;
+    numFailed: number;
+    requestedAt: Date;
+  }) {
+    return db.bulkBatch.create({
+      data,
+    });
+  }
 }

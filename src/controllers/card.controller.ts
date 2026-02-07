@@ -7,6 +7,7 @@ import {
   CreateLinkedCardRequest,
   StopCardRequest,
   UnstopCardRequest,
+  RequestPhysicalCardRequest,
 } from '@/schemas/card.schemas';
 import { buildLogger } from '@/utils';
 
@@ -186,4 +187,36 @@ export class CardController {
     logger.info('Card CVV updated successfully', { cardId, result });
     return successHandler(res, result, 'Card CVV updated successfully');
   });
+
+  static getCardStatus = catchErrors(async (req: Request, res: Response) => {
+    const userId = req.user!.userId;
+
+    logger.info('Getting card status for user', { userId });
+
+    const result = await CardService.getCardStatus(userId);
+
+    logger.info('Card status retrieved successfully', { userId, result });
+    return successHandler(res, result, 'Card status retrieved successfully');
+  });
+
+  static requestPhysicalCard = catchErrors(
+    async (req: Request, res: Response) => {
+      const userId = req.user!.userId;
+      const requestData: RequestPhysicalCardRequest = req.body;
+
+      logger.info('Requesting physical card for user', {
+        userId,
+        requestData,
+      });
+
+      const result = await CardService.requestPhysicalCard(userId, requestData);
+
+      logger.info('Physical card requested successfully', { userId, result });
+      return successHandler(
+        res,
+        result,
+        'Physical card requested successfully'
+      );
+    }
+  );
 }

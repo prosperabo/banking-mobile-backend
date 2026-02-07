@@ -2,6 +2,7 @@ import { CardRepository } from '@/repositories/card.repository';
 import {
   formatMaskedNumber,
   generateVirtualCardIdentifier,
+  generatePhysicalCardIdentifier,
 } from '@/utils/card.utils';
 import { ActivateCardResponse } from '@/schemas/card.schemas';
 import { buildLogger } from '@/utils';
@@ -13,8 +14,16 @@ import {
   UserCardInfoResponse,
   UpdateCVVResponsePayload,
   ShowCvvResponsePayload,
+  CardStatusResponse,
+  RequestPhysicalCardRequest,
+  RequestPhysicalCardResponse,
+  CardUserStatus,
 } from '@/schemas/card.schemas';
 import { BackofficeRepository } from '@/repositories/backoffice.repository';
+import { UserRepository } from '@/repositories/user.repository';
+import { BulkBatchRepository } from '@/repositories/bulkBatch.repository';
+import backOfficeInstance from '@/api/backoffice.instance';
+import { config } from '@/config';
 
 const logger = buildLogger('CardService');
 
@@ -78,6 +87,8 @@ export class CardService {
       false
     );
 
+    // Update card: set prosperaCardId (if not set) and change status to ACTIVE
+    // This transitions the card from DELIVERED → ACTIVE
     await CardRepository.updateCard(cardId, {
       prosperaCardId: activatedResponse.payload.card_id.toString(),
       status: 'ACTIVE',
@@ -410,5 +421,152 @@ export class CardService {
     }
 
     return handler();
+  }
+
+  /**
+   * Get card status for a user
+   */
+  static async getCardStatus(userId: number): Promise<CardStatusResponse> {
+    logger.info(`Getting card status for user ${userId}`);
+    const status = await CardRepository.getCardStatusByUser(userId);
+    logger.info('Card status retrieved successfully', { userId, status });
+    return status;
+  }
+
+  /**
+   * Request a physical card for a user
+   */
+  static async requestPhysicalCard(
+    userId: number,
+    requestData: RequestPhysicalCardRequest
+  ): Promise<RequestPhysicalCardResponse> {
+    logger.info(`Requesting physical card for user ${userId}`, { requestData });
+
+    // Get user data
+    const user = await UserRepository.findById(userId);
+    if (!user) {
+      logger.error(`User ${userId} not found`);
+      throw new Error('User not found');
+    }
+
+    // Check if user already has a physical card requested or active
+    const existingPhysicalCards =
+      await CardRepository.findExistingPhysicalCard(userId);
+
+    if (existingPhysicalCards) {
+      logger.warn(`User ${userId} already has a physical card`);
+      throw new Error('You already have a physical card requested or active');
+    }
+
+    // Generate unique card identifier
+    const cardIdentifier = generatePhysicalCardIdentifier();
+    const pin = user.pin || '1234';
+
+    // Prepare delivery location from billing address
+    const deliveryLocation = {
+      first_names: requestData.billingAddress.firstName,
+      last_names: requestData.billingAddress.lastName,
+      street: requestData.billingAddress.street,
+      exterior_number: requestData.billingAddress.exteriorNumber,
+      interior_number: requestData.billingAddress.interiorNumber || '1',
+      neighborhood: requestData.billingAddress.neighborhood,
+      city: requestData.billingAddress.city,
+      state: requestData.billingAddress.state,
+      postal_code: requestData.billingAddress.postalCode,
+      mobile: Number(requestData.billingAddress.phone),
+      additional_notes:
+        requestData.billingAddress.additionalNotes ||
+        (requestData.pickupLocation
+          ? `Pickup location: ${requestData.pickupLocation}`
+          : 'Physical card requested via mobile app'),
+    };
+
+    // Prepare batch data for backoffice
+    const bulkOrderData = {
+      delivery_location: deliveryLocation,
+      batch: [
+        {
+          card_identifier: cardIdentifier,
+          front_name:
+            `${requestData.billingAddress.firstName} ${requestData.billingAddress.lastName}`.trim(),
+          qr: `https://prospera.undostres.com.mx/user/${userId}`,
+          pin,
+        },
+      ],
+    };
+
+    logger.info('Sending bulk order request to backoffice', { bulkOrderData });
+
+    // Send request to backoffice
+    const response = await backOfficeInstance.post<{
+      payload: {
+        reference_batch?: string;
+        reference?: string;
+        referenceBatch?: string;
+        status: number;
+      };
+      message: string;
+      status: number;
+    }>('/debit/v1/bulkOrderCard', bulkOrderData, {
+      headers: {
+        'Authorization-ecommerce': config.ecommerceToken,
+      },
+    });
+
+    logger.info('Backoffice response received', { response: response.data });
+
+    const payload = response.data.payload;
+    const referenceBatch =
+      payload?.reference_batch || payload?.reference || payload?.referenceBatch;
+
+    if (!referenceBatch) {
+      logger.error('No reference batch in response', {
+        response: response.data,
+      });
+      throw new Error('Failed to get reference batch from backoffice');
+    }
+
+    // Create bulk batch record
+    const bulkBatch = await BulkBatchRepository.create({
+      referenceBatch: String(referenceBatch),
+      status: payload.status || 1,
+      numCreated: 0,
+      numFailed: 0,
+      requestedAt: new Date(),
+    });
+
+    // Create card record (without prosperaCardId to start as PENDING)
+    const card = await CardRepository.createCard({
+      userId,
+      bulkBatchId: bulkBatch.id,
+      cardType: 'PHYSICAL',
+      cardIdentifier,
+      status: 'INACTIVE',
+      encryptedPin: pin,
+      // prosperaCardId: null - Not set yet, card is in PENDING state
+    });
+
+    logger.info(`Physical card created successfully for user ${userId}`, {
+      cardId: card.id,
+      cardIdentifier,
+    });
+
+    // Get updated card status
+    const cardStatus = await this.getCardStatus(userId);
+
+    return {
+      success: true,
+      message: 'Physical card requested successfully',
+      cardId: card.id,
+      cardIdentifier: card.cardIdentifier,
+      status: CardUserStatus.PENDING,
+      pickupLocation: requestData.pickupLocation,
+      cardStatus: {
+        hasActiveCards: cardStatus.hasActiveCards,
+        hasRequestedCards: cardStatus.hasRequestedCards,
+        summary: cardStatus.summary,
+        cards: cardStatus.cards,
+      },
+    };
   }
 }

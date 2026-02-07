@@ -51,6 +51,103 @@ const createVirtualCardValidator = [
     .withMessage('Campaign ID must not exceed 100 characters'),
 ];
 
+const requestPhysicalCardValidator = [
+  // Billing address validations
+  body('billingAddress.firstName')
+    .notEmpty()
+    .withMessage('First name is required')
+    .isString()
+    .withMessage('First name must be a string')
+    .isLength({ min: 1, max: 100 })
+    .withMessage('First name must not exceed 100 characters'),
+
+  body('billingAddress.lastName')
+    .notEmpty()
+    .withMessage('Last name is required')
+    .isString()
+    .withMessage('Last name must be a string')
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Last name must not exceed 100 characters'),
+
+  body('billingAddress.street')
+    .notEmpty()
+    .withMessage('Street is required')
+    .isString()
+    .withMessage('Street must be a string')
+    .isLength({ min: 1, max: 255 })
+    .withMessage('Street must not exceed 255 characters'),
+
+  body('billingAddress.exteriorNumber')
+    .notEmpty()
+    .withMessage('Exterior number is required')
+    .isString()
+    .withMessage('Exterior number must be a string')
+    .isLength({ min: 1, max: 20 })
+    .withMessage('Exterior number must not exceed 20 characters'),
+
+  body('billingAddress.interiorNumber')
+    .optional()
+    .isString()
+    .withMessage('Interior number must be a string')
+    .isLength({ max: 20 })
+    .withMessage('Interior number must not exceed 20 characters'),
+
+  body('billingAddress.neighborhood')
+    .notEmpty()
+    .withMessage('Neighborhood (colonia) is required')
+    .isString()
+    .withMessage('Neighborhood must be a string')
+    .isLength({ min: 1, max: 255 })
+    .withMessage('Neighborhood must not exceed 255 characters'),
+
+  body('billingAddress.city')
+    .notEmpty()
+    .withMessage('City is required')
+    .isString()
+    .withMessage('City must be a string')
+    .isLength({ min: 1, max: 100 })
+    .withMessage('City must not exceed 100 characters'),
+
+  body('billingAddress.state')
+    .notEmpty()
+    .withMessage('State is required')
+    .isString()
+    .withMessage('State must be a string')
+    .isLength({ min: 1, max: 100 })
+    .withMessage('State must not exceed 100 characters'),
+
+  body('billingAddress.postalCode')
+    .notEmpty()
+    .withMessage('Postal code is required')
+    .isString()
+    .withMessage('Postal code must be a string')
+    .matches(/^\d{5}$/)
+    .withMessage('Postal code must be exactly 5 digits'),
+
+  body('billingAddress.phone')
+    .notEmpty()
+    .withMessage('Phone is required')
+    .isString()
+    .withMessage('Phone must be a string')
+    .matches(/^\d{10}$/)
+    .withMessage('Phone must be exactly 10 digits'),
+
+  body('billingAddress.additionalNotes')
+    .optional()
+    .isString()
+    .withMessage('Additional notes must be a string')
+    .isLength({ max: 500 })
+    .withMessage('Additional notes must not exceed 500 characters'),
+
+  // Pickup location validation
+  body('pickupLocation')
+    .optional()
+    .isString()
+    .withMessage('Pickup location must be a string')
+    .isLength({ max: 255 })
+    .withMessage('Pickup location must not exceed 255 characters'),
+];
+
 export {
   activateCardValidator,
   createVirtualCardValidator,
@@ -58,4 +155,5 @@ export {
   unstopCardValidator,
   cardIdParamValidator,
   cardPinQueryValidator,
+  requestPhysicalCardValidator,
 };

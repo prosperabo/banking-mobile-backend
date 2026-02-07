@@ -172,3 +172,78 @@ export interface ShowCvvResponsePayload {
 }
 
 export type ShowCvvResponse = ApiResponse<ShowCvvResponsePayload>;
+
+// Card status enums for frontend
+export enum CardUserStatus {
+  PENDING = 'PENDING', // Tarjeta solicitada, no entregada (INACTIVE + prosperaCardId null)
+  DELIVERED = 'DELIVERED', // Tarjeta entregada, lista para activar (INACTIVE + prosperaCardId exists)
+  ACTIVE = 'ACTIVE', // Tarjeta activada por el usuario (ACTIVE)
+  BLOCKED = 'BLOCKED', // Tarjeta bloqueada temporalmente
+  EXPIRED = 'EXPIRED', // Tarjeta expirada
+}
+
+// Physical card request schemas
+export interface RequestPhysicalCardRequest {
+  // Billing address
+  billingAddress: {
+    firstName: string;
+    lastName: string;
+    street: string;
+    exteriorNumber: string;
+    interiorNumber?: string;
+    neighborhood: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    phone: string;
+    additionalNotes?: string;
+  };
+  // Punto Slan - Pickup location
+  pickupLocation?: string;
+}
+
+export interface CardStatusByType {
+  active: number;
+  inactive: number;
+  blocked: number;
+  expired: number;
+  total: number;
+}
+
+export interface CardStatusDetail {
+  id: number;
+  type: 'PHYSICAL' | 'VIRTUAL';
+  status: CardUserStatus;
+  maskedNumber?: string;
+  cardIdentifier: string;
+  createdAt: string;
+}
+
+export interface CardStatusResponse {
+  hasCards: boolean;
+  hasActiveCards: boolean;
+  hasRequestedCards: boolean;
+  summary: {
+    physical: CardStatusByType;
+    virtual: CardStatusByType;
+  };
+  cards: CardStatusDetail[];
+}
+
+export interface RequestPhysicalCardResponse {
+  success: boolean;
+  message: string;
+  cardId: number;
+  cardIdentifier: string;
+  status: CardUserStatus;
+  pickupLocation?: string;
+  cardStatus: {
+    hasActiveCards: boolean;
+    hasRequestedCards: boolean;
+    summary: {
+      physical: CardStatusByType;
+      virtual: CardStatusByType;
+    };
+    cards: CardStatusDetail[];
+  };
+}

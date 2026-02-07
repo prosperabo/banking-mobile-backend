@@ -9,6 +9,7 @@ import {
   unstopCardValidator,
   cardIdParamValidator,
   cardPinQueryValidator,
+  requestPhysicalCardValidator,
 } from '@/validators/card.validator';
 import {
   validateRequest,
@@ -19,6 +20,9 @@ import {
 const router = Router();
 
 router.use(authenticateToken);
+
+// Route to get card status (summary)
+router.get('/status', CardController.getCardStatus);
 
 // Route to get all cards
 router.get('/', CardController.getUserCards);
@@ -31,6 +35,13 @@ router.post(
   '/virtual',
   validateRequest(...createVirtualCardValidator),
   CardController.createVirtualCard
+);
+
+// Route to request a physical card
+router.post(
+  '/physical/request',
+  validateRequest(...requestPhysicalCardValidator),
+  CardController.requestPhysicalCard
 );
 
 // Route to activate a card
