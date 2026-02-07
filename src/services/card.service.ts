@@ -2,6 +2,7 @@ import { CardRepository } from '@/repositories/card.repository';
 import {
   formatMaskedNumber,
   generateVirtualCardIdentifier,
+  generatePhysicalCardIdentifier,
 } from '@/utils/card.utils';
 import { ActivateCardResponse } from '@/schemas/card.schemas';
 import { buildLogger } from '@/utils';
@@ -21,7 +22,6 @@ import {
 import { BackofficeRepository } from '@/repositories/backoffice.repository';
 import { UserRepository } from '@/repositories/user.repository';
 import { db } from '@/config/prisma';
-import { randomBytes } from 'crypto';
 import backOfficeInstance from '@/api/backoffice.instance';
 import { config } from '@/config';
 
@@ -449,15 +449,8 @@ export class CardService {
     }
 
     // Check if user already has a physical card requested or active
-    const existingPhysicalCards = await db.cards.findFirst({
-      where: {
-        userId,
-        cardType: 'PHYSICAL',
-        status: {
-          in: ['ACTIVE', 'INACTIVE'],
-        },
-      },
-    });
+    const existingPhysicalCards =
+      await CardRepository.findExistingPhysicalCard(userId);
 
     if (existingPhysicalCards) {
       logger.warn(`User ${userId} already has a physical card`);
@@ -465,7 +458,7 @@ export class CardService {
     }
 
     // Generate unique card identifier
-    const cardIdentifier = this.generatePhysicalCardIdentifier();
+    const cardIdentifier = generatePhysicalCardIdentifier();
     const pin = user.pin || '1234';
 
     // Prepare delivery location from billing address
@@ -480,9 +473,10 @@ export class CardService {
       state: requestData.billingAddress.state,
       postal_code: requestData.billingAddress.postalCode,
       mobile: Number(requestData.billingAddress.phone),
-      additional_notes: requestData.billingAddress.additionalNotes || 
-        (requestData.pickupLocation 
-          ? `Pickup location: ${requestData.pickupLocation}` 
+      additional_notes:
+        requestData.billingAddress.additionalNotes ||
+        (requestData.pickupLocation
+          ? `Pickup location: ${requestData.pickupLocation}`
           : 'Physical card requested via mobile app'),
     };
 
@@ -492,7 +486,8 @@ export class CardService {
       batch: [
         {
           card_identifier: cardIdentifier,
-          front_name: `${requestData.billingAddress.firstName} ${requestData.billingAddress.lastName}`.trim(),
+          front_name:
+            `${requestData.billingAddress.firstName} ${requestData.billingAddress.lastName}`.trim(),
           qr: `https://prospera.undostres.com.mx/user/${userId}`,
           pin,
         },
@@ -521,12 +516,12 @@ export class CardService {
 
     const payload = response.data.payload;
     const referenceBatch =
-      payload?.reference_batch ||
-      payload?.reference ||
-      payload?.referenceBatch;
+      payload?.reference_batch || payload?.reference || payload?.referenceBatch;
 
     if (!referenceBatch) {
-      logger.error('No reference batch in response', { response: response.data });
+      logger.error('No reference batch in response', {
+        response: response.data,
+      });
       throw new Error('Failed to get reference batch from backoffice');
     }
 
@@ -574,25 +569,5 @@ export class CardService {
         cards: cardStatus.cards,
       },
     };
-  }
-
-  /**
-   * Generate unique physical card identifier
-   */
-  private static generatePhysicalCardIdentifier(): string {
-    const ts = Date.now();
-    const suffix = this.randomBase32(6);
-    return `PHYSICAL_${ts}_${suffix}`;
-  }
-
-  /**
-   * Generate random Base32 string
-   */
-  private static randomBase32(len: number): string {
-    const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
-    const bytes = randomBytes(len);
-    return Array.from(bytes)
-      .map(b => alphabet[b % alphabet.length])
-      .join('');
   }
 }

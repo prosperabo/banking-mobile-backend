@@ -92,7 +92,7 @@ export const CardRepository = {
 
       // Map database status to user-friendly status
       let userStatus: CardUserStatus;
-      
+
       if (card.status === 'ACTIVE') {
         target.active++;
         userStatus = CardUserStatus.ACTIVE;
@@ -100,7 +100,9 @@ export const CardRepository = {
         target.inactive++;
         // Diferenciar entre solicitada (sin prosperaCardId) y entregada (con prosperaCardId)
         // prosperaCardId se asigna cuando la tarjeta física llega y está lista para activar
-        userStatus = card.prosperaCardId ? CardUserStatus.DELIVERED : CardUserStatus.PENDING;
+        userStatus = card.prosperaCardId
+          ? CardUserStatus.DELIVERED
+          : CardUserStatus.PENDING;
       } else if (card.status === 'BLOCKED') {
         target.blocked++;
         userStatus = CardUserStatus.BLOCKED;
@@ -133,5 +135,29 @@ export const CardRepository = {
       },
       cards: cardDetails,
     };
+  },
+
+  async findExistingPhysicalCard(userId: number) {
+    return db.cards.findFirst({
+      where: {
+        userId,
+        cardType: 'PHYSICAL',
+        status: {
+          in: ['ACTIVE', 'INACTIVE'],
+        },
+      },
+    });
+  },
+
+  async updateCardByIdentifier(cardIdentifier: string, data: Partial<Cards>) {
+    return db.cards.updateMany({
+      where: {
+        cardIdentifier,
+      },
+      data: {
+        ...data,
+        updatedAt: new Date(),
+      },
+    });
   },
 };
