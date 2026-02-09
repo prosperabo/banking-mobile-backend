@@ -15,6 +15,7 @@ const router = Router();
 
 router.use(authenticateToken);
 router.get('/', UserController.getUser);
+router.get('/shipping-address', UserController.getShippingAddress);
 router.put(
   '/',
   validateRequest(...updateUserValidator),

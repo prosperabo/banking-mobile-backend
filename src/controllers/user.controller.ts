@@ -58,4 +58,17 @@ export class UserController {
     logger.info('Alias added successfully', { userId });
     successHandler(res, result, 'Alias added successfully');
   });
+
+  static getShippingAddress = catchErrors(
+    async (req: Request, res: Response) => {
+      const userId = req.user!.userId;
+
+      logger.info('Getting shipping address for user', { userId });
+
+      const result = await UserService.getShippingAddress(userId);
+
+      logger.info('Shipping address retrieved successfully', { userId });
+      successHandler(res, result, 'Shipping address retrieved successfully');
+    }
+  );
 }
