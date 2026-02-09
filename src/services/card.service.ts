@@ -478,7 +478,7 @@ export class CardService {
         city: 'Cancún',
         state: 'Quintana Roo',
         postal_code: '77536',
-        mobile: user.phone ? Number(user.phone) : 0,
+        mobile: user.phone ? Number(user.phone) : 9983940931,
         additional_notes: requestData.pickupLocation
           ? `Pickup location: ${requestData.pickupLocation}`
           : 'Delivery to Slan point',
@@ -526,6 +526,7 @@ export class CardService {
 
     const bulkOrderData = {
       delivery_location: deliveryLocation,
+      campaign_id: config.campaing.programCode,
       batch: [
         {
           card_identifier: cardIdentifier,
