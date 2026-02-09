@@ -95,4 +95,7 @@ router.get(
   CardController.showCardCvv
 );
 
+// Route to get slan points
+router.get('/slan-points', CardController.getSlanPoints);
+
 export default router;

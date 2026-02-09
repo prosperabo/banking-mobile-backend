@@ -52,34 +52,45 @@ const createVirtualCardValidator = [
 ];
 
 const requestPhysicalCardValidator = [
-  // Billing address validations
-  body('billingAddress.firstName')
+  // Delivery type validation
+  body('deliveryType')
     .notEmpty()
-    .withMessage('First name is required')
+    .withMessage('Delivery type is required')
+    .isIn(['home', 'slan'])
+    .withMessage('Delivery type must be either "home" or "slan"'),
+
+  // Billing address validations - required only for 'home' delivery
+  body('billingAddress.firstName')
+    .if(body('deliveryType').equals('home'))
+    .notEmpty()
+    .withMessage('First name is required for home delivery')
     .isString()
     .withMessage('First name must be a string')
     .isLength({ min: 1, max: 100 })
     .withMessage('First name must not exceed 100 characters'),
 
   body('billingAddress.lastName')
+    .if(body('deliveryType').equals('home'))
     .notEmpty()
-    .withMessage('Last name is required')
+    .withMessage('Last name is required for home delivery')
     .isString()
     .withMessage('Last name must be a string')
     .isLength({ min: 1, max: 100 })
     .withMessage('Last name must not exceed 100 characters'),
 
   body('billingAddress.street')
+    .if(body('deliveryType').equals('home'))
     .notEmpty()
-    .withMessage('Street is required')
+    .withMessage('Street is required for home delivery')
     .isString()
     .withMessage('Street must be a string')
     .isLength({ min: 1, max: 255 })
     .withMessage('Street must not exceed 255 characters'),
 
   body('billingAddress.exteriorNumber')
+    .if(body('deliveryType').equals('home'))
     .notEmpty()
-    .withMessage('Exterior number is required')
+    .withMessage('Exterior number is required for home delivery')
     .isString()
     .withMessage('Exterior number must be a string')
     .isLength({ min: 1, max: 20 })
@@ -93,40 +104,45 @@ const requestPhysicalCardValidator = [
     .withMessage('Interior number must not exceed 20 characters'),
 
   body('billingAddress.neighborhood')
+    .if(body('deliveryType').equals('home'))
     .notEmpty()
-    .withMessage('Neighborhood (colonia) is required')
+    .withMessage('Neighborhood (colonia) is required for home delivery')
     .isString()
     .withMessage('Neighborhood must be a string')
     .isLength({ min: 1, max: 255 })
     .withMessage('Neighborhood must not exceed 255 characters'),
 
   body('billingAddress.city')
+    .if(body('deliveryType').equals('home'))
     .notEmpty()
-    .withMessage('City is required')
+    .withMessage('City is required for home delivery')
     .isString()
     .withMessage('City must be a string')
     .isLength({ min: 1, max: 100 })
     .withMessage('City must not exceed 100 characters'),
 
   body('billingAddress.state')
+    .if(body('deliveryType').equals('home'))
     .notEmpty()
-    .withMessage('State is required')
+    .withMessage('State is required for home delivery')
     .isString()
     .withMessage('State must be a string')
     .isLength({ min: 1, max: 100 })
     .withMessage('State must not exceed 100 characters'),
 
   body('billingAddress.postalCode')
+    .if(body('deliveryType').equals('home'))
     .notEmpty()
-    .withMessage('Postal code is required')
+    .withMessage('Postal code is required for home delivery')
     .isString()
     .withMessage('Postal code must be a string')
     .matches(/^\d{5}$/)
     .withMessage('Postal code must be exactly 5 digits'),
 
   body('billingAddress.phone')
+    .if(body('deliveryType').equals('home'))
     .notEmpty()
-    .withMessage('Phone is required')
+    .withMessage('Phone is required for home delivery')
     .isString()
     .withMessage('Phone must be a string')
     .matches(/^\d{10}$/)

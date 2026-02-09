@@ -184,8 +184,10 @@ export enum CardUserStatus {
 
 // Physical card request schemas
 export interface RequestPhysicalCardRequest {
-  // Billing address
-  billingAddress: {
+  // Delivery type: 'home' or 'slan'
+  deliveryType: 'home' | 'slan';
+  // Billing address (required for 'home', optional for 'slan')
+  billingAddress?: {
     firstName: string;
     lastName: string;
     street: string;
