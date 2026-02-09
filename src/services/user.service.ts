@@ -7,6 +7,7 @@ import {
   ChangePasswordResponse,
   AddAliasRequest,
   AddAliasResponse,
+  ShippingAddressResponse,
 } from '@/schemas/user.schemas';
 import { BadRequestError } from '@/shared/errors';
 import { buildLogger } from '@/utils';
@@ -166,6 +167,29 @@ export class UserService {
       id: userId,
       alias: updatedUser.alias || '',
       message: 'Alias added successfully',
+    };
+  }
+
+  static async getShippingAddress(
+    userId: number
+  ): Promise<ShippingAddressResponse> {
+    logger.info(`Fetching shipping address for user ${userId}`);
+
+    const user = await UserRepository.findById(userId);
+    if (!user) {
+      logger.error(`User ${userId} not found`);
+      throw new Error('User not found');
+    }
+
+    return {
+      postalCode: user.postalCode,
+      state: user.state,
+      country: user.country,
+      municipality: user.municipality,
+      street: user.street,
+      colony: user.colony,
+      externalNumber: user.externalNumber,
+      internalNumber: user.internalNumber,
     };
   }
 }

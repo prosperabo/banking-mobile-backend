@@ -80,3 +80,14 @@ export interface AddAliasResponse {
   alias: string;
   message: string;
 }
+
+export interface ShippingAddressResponse {
+  postalCode: string;
+  state: string;
+  country: string;
+  municipality: string;
+  street: string;
+  colony: string;
+  externalNumber: string;
+  internalNumber: string;
+}
