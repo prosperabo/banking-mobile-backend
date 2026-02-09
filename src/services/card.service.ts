@@ -462,34 +462,71 @@ export class CardService {
     const cardIdentifier = generatePhysicalCardIdentifier();
     const pin = user.pin || '1234';
 
-    // Prepare delivery location from billing address
-    const deliveryLocation = {
-      first_names: requestData.billingAddress.firstName,
-      last_names: requestData.billingAddress.lastName,
-      street: requestData.billingAddress.street,
-      exterior_number: requestData.billingAddress.exteriorNumber,
-      interior_number: requestData.billingAddress.interiorNumber || '1',
-      neighborhood: requestData.billingAddress.neighborhood,
-      city: requestData.billingAddress.city,
-      state: requestData.billingAddress.state,
-      postal_code: requestData.billingAddress.postalCode,
-      mobile: Number(requestData.billingAddress.phone),
-      additional_notes:
-        requestData.billingAddress.additionalNotes ||
-        (requestData.pickupLocation
+    // Prepare delivery location based on delivery type
+    const deliveryTypeHandlers = {
+      slan: () => ({
+        first_names: user.firstName || 'Cliente',
+        last_names: user.lastName || 'Prospera',
+        street: 'Alcatraz M61 L1, jardines del sur 5',
+        exterior_number: '5',
+        interior_number: '21',
+        neighborhood: 'Jardines del sur 5',
+        city: 'Cancún',
+        state: 'Quintana Roo',
+        postal_code: '77536',
+        mobile: user.phone ? Number(user.phone) : 0,
+        additional_notes: requestData.pickupLocation
           ? `Pickup location: ${requestData.pickupLocation}`
-          : 'Physical card requested via mobile app'),
+          : 'Delivery to Slan point',
+      }),
+      home: () => {
+        if (!requestData.billingAddress) {
+          logger.error('Billing address is required for home delivery');
+          throw new Error('Billing address is required for home delivery');
+        }
+
+        return {
+          first_names: requestData.billingAddress.firstName,
+          last_names: requestData.billingAddress.lastName,
+          street: requestData.billingAddress.street,
+          exterior_number: requestData.billingAddress.exteriorNumber,
+          interior_number: requestData.billingAddress.interiorNumber || '1',
+          neighborhood: requestData.billingAddress.neighborhood,
+          city: requestData.billingAddress.city,
+          state: requestData.billingAddress.state,
+          postal_code: requestData.billingAddress.postalCode,
+          mobile: Number(requestData.billingAddress.phone),
+          additional_notes:
+            requestData.billingAddress.additionalNotes ||
+            (requestData.pickupLocation
+              ? `Pickup location: ${requestData.pickupLocation}`
+              : 'Physical card requested via mobile app'),
+        };
+      },
     };
 
+    const handler = deliveryTypeHandlers[requestData.deliveryType];
+    if (!handler) {
+      logger.error(`Unsupported delivery type: ${requestData.deliveryType}`);
+      throw new Error('Unsupported delivery type');
+    }
+
+    const deliveryLocation = handler();
+
     // Prepare batch data for backoffice
+    // Uncommentd when we use this var
+    // const frontName =
+    //   requestData.deliveryType === 'slan'
+    //     ? `${user.firstName || 'Cliente'} ${user.lastName || 'Prospera'}`.trim()
+    //     : `${requestData.billingAddress!.firstName} ${requestData.billingAddress!.lastName}`.trim();
+
     const bulkOrderData = {
       delivery_location: deliveryLocation,
       batch: [
         {
           card_identifier: cardIdentifier,
-          front_name:
-            `${requestData.billingAddress.firstName} ${requestData.billingAddress.lastName}`.trim(),
-          qr: `https://prospera.undostres.com.mx/user/${userId}`,
+          // front_name: frontName,
+          qr: 'https://slan.mx/card-activation',
           pin,
         },
       ],

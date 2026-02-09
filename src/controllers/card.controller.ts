@@ -219,4 +219,17 @@ export class CardController {
       );
     }
   );
+
+  static getSlanPoints = catchErrors(async (req: Request, res: Response) => {
+    logger.info('Getting slan points');
+
+    const slanPoints = ['Universidad Anáhuac'];
+
+    logger.info('Slan points retrieved successfully');
+    return successHandler(
+      res,
+      slanPoints,
+      'Slan points retrieved successfully'
+    );
+  });
 }
