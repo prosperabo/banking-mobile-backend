@@ -202,14 +202,20 @@ export class CardController {
   static requestPhysicalCard = catchErrors(
     async (req: Request, res: Response) => {
       const userId = req.user!.userId;
+      const deliveryType = req.query.deliveryType as 'home' | 'slan';
       const requestData: RequestPhysicalCardRequest = req.body;
 
       logger.info('Requesting physical card for user', {
         userId,
+        deliveryType,
         requestData,
       });
 
-      const result = await CardService.requestPhysicalCard(userId, requestData);
+      const result = await CardService.requestPhysicalCard(
+        userId,
+        deliveryType,
+        requestData
+      );
 
       logger.info('Physical card requested successfully', { userId, result });
       return successHandler(

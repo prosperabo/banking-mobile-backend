@@ -438,9 +438,13 @@ export class CardService {
    */
   static async requestPhysicalCard(
     userId: number,
+    deliveryType: 'home' | 'slan',
     requestData: RequestPhysicalCardRequest
   ): Promise<RequestPhysicalCardResponse> {
-    logger.info(`Requesting physical card for user ${userId}`, { requestData });
+    logger.info(`Requesting physical card for user ${userId}`, {
+      deliveryType,
+      requestData,
+    });
 
     // Get user data
     const user = await UserRepository.findById(userId);
@@ -505,9 +509,9 @@ export class CardService {
       },
     };
 
-    const handler = deliveryTypeHandlers[requestData.deliveryType];
+    const handler = deliveryTypeHandlers[deliveryType];
     if (!handler) {
-      logger.error(`Unsupported delivery type: ${requestData.deliveryType}`);
+      logger.error(`Unsupported delivery type: ${deliveryType}`);
       throw new Error('Unsupported delivery type');
     }
 
@@ -516,7 +520,7 @@ export class CardService {
     // Prepare batch data for backoffice
     // Uncommentd when we use this var
     // const frontName =
-    //   requestData.deliveryType === 'slan'
+    //   deliveryType === 'slan'
     //     ? `${user.firstName || 'Cliente'} ${user.lastName || 'Prospera'}`.trim()
     //     : `${requestData.billingAddress!.firstName} ${requestData.billingAddress!.lastName}`.trim();
 

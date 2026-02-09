@@ -52,8 +52,8 @@ const createVirtualCardValidator = [
 ];
 
 const requestPhysicalCardValidator = [
-  // Delivery type validation
-  body('deliveryType')
+  // Delivery type validation - now as query param
+  query('deliveryType')
     .notEmpty()
     .withMessage('Delivery type is required')
     .isIn(['home', 'slan'])
@@ -61,7 +61,7 @@ const requestPhysicalCardValidator = [
 
   // Billing address validations - required only for 'home' delivery
   body('billingAddress.firstName')
-    .if(body('deliveryType').equals('home'))
+    .if(query('deliveryType').equals('home'))
     .notEmpty()
     .withMessage('First name is required for home delivery')
     .isString()
@@ -70,7 +70,7 @@ const requestPhysicalCardValidator = [
     .withMessage('First name must not exceed 100 characters'),
 
   body('billingAddress.lastName')
-    .if(body('deliveryType').equals('home'))
+    .if(query('deliveryType').equals('home'))
     .notEmpty()
     .withMessage('Last name is required for home delivery')
     .isString()
@@ -79,7 +79,7 @@ const requestPhysicalCardValidator = [
     .withMessage('Last name must not exceed 100 characters'),
 
   body('billingAddress.street')
-    .if(body('deliveryType').equals('home'))
+    .if(query('deliveryType').equals('home'))
     .notEmpty()
     .withMessage('Street is required for home delivery')
     .isString()
@@ -88,7 +88,7 @@ const requestPhysicalCardValidator = [
     .withMessage('Street must not exceed 255 characters'),
 
   body('billingAddress.exteriorNumber')
-    .if(body('deliveryType').equals('home'))
+    .if(query('deliveryType').equals('home'))
     .notEmpty()
     .withMessage('Exterior number is required for home delivery')
     .isString()
@@ -104,7 +104,7 @@ const requestPhysicalCardValidator = [
     .withMessage('Interior number must not exceed 20 characters'),
 
   body('billingAddress.neighborhood')
-    .if(body('deliveryType').equals('home'))
+    .if(query('deliveryType').equals('home'))
     .notEmpty()
     .withMessage('Neighborhood (colonia) is required for home delivery')
     .isString()
@@ -113,7 +113,7 @@ const requestPhysicalCardValidator = [
     .withMessage('Neighborhood must not exceed 255 characters'),
 
   body('billingAddress.city')
-    .if(body('deliveryType').equals('home'))
+    .if(query('deliveryType').equals('home'))
     .notEmpty()
     .withMessage('City is required for home delivery')
     .isString()
@@ -122,7 +122,7 @@ const requestPhysicalCardValidator = [
     .withMessage('City must not exceed 100 characters'),
 
   body('billingAddress.state')
-    .if(body('deliveryType').equals('home'))
+    .if(query('deliveryType').equals('home'))
     .notEmpty()
     .withMessage('State is required for home delivery')
     .isString()
@@ -131,7 +131,7 @@ const requestPhysicalCardValidator = [
     .withMessage('State must not exceed 100 characters'),
 
   body('billingAddress.postalCode')
-    .if(body('deliveryType').equals('home'))
+    .if(query('deliveryType').equals('home'))
     .notEmpty()
     .withMessage('Postal code is required for home delivery')
     .isString()
@@ -140,7 +140,7 @@ const requestPhysicalCardValidator = [
     .withMessage('Postal code must be exactly 5 digits'),
 
   body('billingAddress.phone')
-    .if(body('deliveryType').equals('home'))
+    .if(query('deliveryType').equals('home'))
     .notEmpty()
     .withMessage('Phone is required for home delivery')
     .isString()
