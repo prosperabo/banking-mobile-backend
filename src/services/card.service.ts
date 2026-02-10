@@ -526,7 +526,7 @@ export class CardService {
 
     const bulkOrderData = {
       delivery_location: deliveryLocation,
-      campaign_id: config.campaing.programCode,
+      campaign_id: config.campaing.campaign_id,
       batch: [
         {
           card_identifier: cardIdentifier,
