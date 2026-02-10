@@ -1,6 +1,9 @@
 import { db } from '@/config/prisma';
 import { Cards } from '@prisma/client';
 import { CardUserStatus } from '@/schemas/card.schemas';
+import { buildLogger } from '@/utils';
+
+const logger = buildLogger('CardRepository');
 
 export const CardRepository = {
   async getUserCards(userId: number) {
@@ -70,6 +73,8 @@ export const CardRepository = {
       },
     });
 
+    logger.debug('Cards retrieved', { cards });
+
     const physical = {
       active: 0,
       inactive: 0,
@@ -103,6 +108,10 @@ export const CardRepository = {
         userStatus = card.prosperaCardId
           ? CardUserStatus.DELIVERED
           : CardUserStatus.PENDING;
+      } else if (card.status === 'PENDING') {
+        // ✅ Nuevo: cuando la DB ya trae PENDING explícito
+        target.inactive++; // o si quieres, crea un contador pending separado
+        userStatus = CardUserStatus.PENDING;
       } else if (card.status === 'BLOCKED') {
         target.blocked++;
         userStatus = CardUserStatus.BLOCKED;
