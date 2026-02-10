@@ -531,7 +531,7 @@ export class CardService {
           card_identifier: cardIdentifier,
           // front_name: frontName,
           qr: 'https://slan.mx/card-activation',
-          campaign_id: config.campaing.campaign_id,
+          campaign_id: config.campaing.programCode,
           pin,
         },
       ],
@@ -583,7 +583,7 @@ export class CardService {
       bulkBatchId: bulkBatch.id,
       cardType: 'PHYSICAL',
       cardIdentifier,
-      status: 'INACTIVE',
+      status: 'PENDING',
       encryptedPin: pin,
       // prosperaCardId: null - Not set yet, card is in PENDING state
     });

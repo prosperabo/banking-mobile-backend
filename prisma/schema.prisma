@@ -288,13 +288,6 @@ enum Transactions_type {
   BALANCE_INQUIRY
 }
 
-enum Cards_status {
-  ACTIVE
-  BLOCKED
-  INACTIVE
-  EXPIRED
-}
-
 enum Transactions_status {
   PENDING
   COMPLETED
@@ -318,4 +311,12 @@ enum payments_status {
   COMPLETED
   FAILED
   CANCELLED
+}
+
+enum Cards_status {
+  ACTIVE
+  BLOCKED
+  INACTIVE
+  EXPIRED
+  PENDING
 }

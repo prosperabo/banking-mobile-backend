@@ -38,7 +38,7 @@ export const CardRepository = {
     cardIdentifier: string;
     cardType: 'VIRTUAL' | 'PHYSICAL';
     prosperaCardId?: string;
-    status: 'ACTIVE' | 'BLOCKED' | 'INACTIVE' | 'EXPIRED';
+    status: 'ACTIVE' | 'BLOCKED' | 'INACTIVE' | 'EXPIRED' | 'PENDING';
     maskedNumber?: string;
     expiryDate?: string;
     cvv?: string;
