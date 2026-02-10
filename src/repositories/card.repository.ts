@@ -113,7 +113,7 @@ export const CardRepository = {
 
       return {
         id: card.id,
-        type: card.cardType,
+        cardType: card.cardType,
         status: userStatus,
         maskedNumber: card.maskedNumber || undefined,
         cardIdentifier: card.cardIdentifier,

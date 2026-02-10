@@ -212,7 +212,7 @@ export interface CardStatusByType {
 
 export interface CardStatusDetail {
   id: number;
-  type: 'PHYSICAL' | 'VIRTUAL';
+  cardType: 'PHYSICAL' | 'VIRTUAL';
   status: CardUserStatus;
   maskedNumber?: string;
   cardIdentifier: string;
