@@ -1,5 +1,5 @@
 import { db } from '@/config/prisma';
-import { Cards } from '@prisma/client';
+import { Cards, Cards_status, Cards_cardType } from '@prisma/client';
 import { CardUserStatus } from '@/schemas/card.schemas';
 import { buildLogger } from '@/utils';
 
@@ -39,9 +39,9 @@ export const CardRepository = {
   async createCard(data: {
     userId: number;
     cardIdentifier: string;
-    cardType: 'VIRTUAL' | 'PHYSICAL';
+    cardType: Cards_cardType;
     prosperaCardId?: string;
-    status: 'ACTIVE' | 'BLOCKED' | 'INACTIVE' | 'EXPIRED' | 'PENDING';
+    status: Cards_status;
     maskedNumber?: string;
     expiryDate?: string;
     cvv?: string;
@@ -50,7 +50,16 @@ export const CardRepository = {
   }) {
     return db.cards.create({
       data: {
-        ...data,
+        userId: data.userId,
+        cardIdentifier: data.cardIdentifier,
+        cardType: data.cardType,
+        status: data.status,
+        prosperaCardId: data.prosperaCardId,
+        maskedNumber: data.maskedNumber,
+        expiryDate: data.expiryDate,
+        cvv: data.cvv,
+        bulkBatchId: data.bulkBatchId,
+        encryptedPin: data.encryptedPin,
         updatedAt: new Date(),
       },
     });
@@ -98,26 +107,42 @@ export const CardRepository = {
       // Map database status to user-friendly status
       let userStatus: CardUserStatus;
 
-      if (card.status === 'ACTIVE') {
-        target.active++;
-        userStatus = CardUserStatus.ACTIVE;
-      } else if (card.status === 'INACTIVE') {
-        target.inactive++;
-        // Diferenciar entre solicitada (sin prosperaCardId) y entregada (con prosperaCardId)
-        // prosperaCardId se asigna cuando la tarjeta física llega y está lista para activar
-        userStatus = card.prosperaCardId
-          ? CardUserStatus.DELIVERED
-          : CardUserStatus.PENDING;
-      } else if (card.status === 'PENDING') {
-        // ✅ Nuevo: cuando la DB ya trae PENDING explícito
-        target.inactive++; // o si quieres, crea un contador pending separado
-        userStatus = CardUserStatus.PENDING;
-      } else if (card.status === 'BLOCKED') {
-        target.blocked++;
-        userStatus = CardUserStatus.BLOCKED;
-      } else {
-        target.expired++;
-        userStatus = CardUserStatus.EXPIRED;
+      switch (card.status) {
+        case Cards_status.ACTIVE:
+          target.active++;
+          userStatus = CardUserStatus.ACTIVE;
+          break;
+        case Cards_status.INACTIVE:
+          target.inactive++;
+          // Diferenciar entre solicitada (sin prosperaCardId) y entregada (con prosperaCardId)
+          // prosperaCardId se asigna cuando la tarjeta física llega y está lista para activar
+          userStatus = card.prosperaCardId
+            ? CardUserStatus.DELIVERED
+            : CardUserStatus.PENDING;
+          break;
+        case Cards_status.PENDING: {
+          // Check if card is PENDING and older than 5 days
+          const now = new Date();
+          const cardAge = now.getTime() - card.createdAt.getTime();
+          const fiveDaysInMs = 5 * 24 * 60 * 60 * 1000;
+
+          if (cardAge > fiveDaysInMs) {
+            target.inactive++;
+            userStatus = CardUserStatus.INACTIVE;
+          } else {
+            target.inactive++;
+            userStatus = CardUserStatus.PENDING;
+          }
+          break;
+        }
+        case Cards_status.BLOCKED:
+          target.blocked++;
+          userStatus = CardUserStatus.BLOCKED;
+          break;
+        case Cards_status.EXPIRED:
+          target.expired++;
+          userStatus = CardUserStatus.EXPIRED;
+          break;
       }
 
       return {
@@ -150,9 +175,9 @@ export const CardRepository = {
     return db.cards.findFirst({
       where: {
         userId,
-        cardType: 'PHYSICAL',
+        cardType: Cards_cardType.PHYSICAL,
         status: {
-          in: ['ACTIVE', 'INACTIVE'],
+          in: [Cards_status.ACTIVE, Cards_status.INACTIVE],
         },
       },
     });

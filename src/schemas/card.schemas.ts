@@ -180,6 +180,7 @@ export enum CardUserStatus {
   ACTIVE = 'ACTIVE', // Tarjeta activada por el usuario (ACTIVE)
   BLOCKED = 'BLOCKED', // Tarjeta bloqueada temporalmente
   EXPIRED = 'EXPIRED', // Tarjeta expirada
+  INACTIVE = 'INACTIVE',
 }
 
 // Physical card request schemas
