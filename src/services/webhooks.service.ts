@@ -16,20 +16,22 @@ export class WebhooksService {
 
     // If the notification includes card details, update individual cards
     if (data.cards && data.cards.length > 0) {
-      logger.info(`Updating ${data.cards.length} cards to DELIVERED state`);
+      logger.info(`Updating ${data.cards.length} cards with prosperaCardId`);
 
       for (const cardData of data.cards) {
         if (cardData.card_id) {
-          // Update card with prosperaCardId to mark as DELIVERED
+          // Update card with prosperaCardId
           await CardRepository.updateCardByIdentifier(
             cardData.card_identifier,
             {
               prosperaCardId: cardData.card_id.toString(),
-              // Keep status as INACTIVE - it will show as DELIVERED because prosperaCardId exists
+              // Keep status as INACTIVE
             }
           );
 
-          logger.info(`Card ${cardData.card_identifier} marked as DELIVERED`);
+          logger.info(
+            `Card ${cardData.card_identifier} updated with prosperaCardId`
+          );
         }
       }
     }

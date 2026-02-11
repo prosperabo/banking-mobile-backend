@@ -88,7 +88,6 @@ export class CardService {
     );
 
     // Update card: set prosperaCardId (if not set) and change status to ACTIVE
-    // This transitions the card from DELIVERED → ACTIVE
     await CardRepository.updateCard(cardId, {
       prosperaCardId: activatedResponse.payload.card_id.toString(),
       status: 'ACTIVE',
