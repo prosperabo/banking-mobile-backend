@@ -114,10 +114,8 @@ export const CardRepository = {
           break;
         case Cards_status.INACTIVE:
           target.inactive++;
-          // Diferenciar entre solicitada (sin prosperaCardId) y entregada (con prosperaCardId)
-          // prosperaCardId se asigna cuando la tarjeta física llega y está lista para activar
           userStatus = card.prosperaCardId
-            ? CardUserStatus.DELIVERED
+            ? CardUserStatus.INACTIVE
             : CardUserStatus.PENDING;
           break;
         case Cards_status.PENDING: {
