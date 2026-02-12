@@ -8,6 +8,9 @@ import {
   BackofficeCreateAccountData,
   BackofficeAccountResponse,
   UserWithAuthState,
+  LoginByEmailPasswordRequest,
+  BackofficeJwtData,
+  AuthState,
 } from '@/schemas';
 import { buildLogger } from '@/utils';
 import { BackofficeService } from '@/services/customer.backoffice.service';
@@ -18,11 +21,33 @@ import { hashPassword } from '@/utils/hash.utils';
 import { config } from '@/config';
 import { UnauthorizedError, NotFoundError } from '@/shared/errors';
 import { CampaignBackofficeService } from './campaign.backoffice.service';
+import {
+  BiometricVerifyRequest,
+  LoginMethod,
+} from '@/schemas/biometric.schemas';
+import { BiometricAuthService } from './auth.biometric.service';
 
-const logger = buildLogger('auth-service');
+const logger = buildLogger('AuthService');
 
 export class AuthService {
-  static async login(loginData: LoginRequest): Promise<LoginResponse> {
+  static async login(
+    method: LoginMethod,
+    loginData: LoginRequest
+  ): Promise<LoginResponse> {
+    switch (method) {
+      case 'biometric':
+        return this.loginByBiometric(loginData as BiometricVerifyRequest);
+      case 'password':
+      default:
+        return this.loginByEmailPassword(
+          loginData as LoginByEmailPasswordRequest
+        );
+    }
+  }
+
+  static async loginByEmailPassword(
+    loginData: LoginByEmailPasswordRequest
+  ): Promise<LoginResponse> {
     const { email, password } = loginData;
 
     const user = await UserRepository.findByEmail(email);
@@ -31,101 +56,120 @@ export class AuthService {
       throw new UnauthorizedError('Invalid credentials');
     }
 
-    // Validation in plain text (DB has plain text passwords)
+    // MVP: passwords en plain text
     if (password !== user.password) {
       logger.warn('Invalid password', { userId: user.id });
       throw new UnauthorizedError('Invalid credentials');
     }
 
-    // Validation with bcrypt (if passwords were hashed)
-    // const isValidPassword = await bcrypt.compare(password, user.password);
-    // if (!isValidPassword) {
-    //   logger.warn('Invalid password', { userId: user.id });
-    //   throw new Error('Invalid credentials');
-    // }
+    return this.buildJwtToken(user.email, user.id);
+  }
 
+  static async loginByBiometric(
+    biometricData: BiometricVerifyRequest
+  ): Promise<LoginResponse> {
+    const { userId } =
+      await BiometricAuthService.verifyChallenge(biometricData);
+
+    const user = await UserRepository.findById(userId);
+    if (!user) throw new NotFoundError('User not found');
+
+    return this.buildJwtToken(user.email, user.id);
+  }
+
+  private static async buildJwtToken(
+    userEmail: string,
+    userId: number
+  ): Promise<LoginResponse> {
     const userWithAuthState =
-      await UserRepository.findByEmailWithAuthState(email);
-    const authState = userWithAuthState?.BackofficeAuthState;
+      await UserRepository.findByEmailWithAuthState(userEmail);
+    if (!userWithAuthState) {
+      logger.warn('User not found for token build', { userEmail, userId });
+      throw new NotFoundError('User not found');
+    }
+
+    const authState = userWithAuthState.BackofficeAuthState;
     if (!authState) {
-      logger.error('BackofficeAuthState not found for user', {
-        userId: user.id,
-      });
+      logger.error('BackofficeAuthState not found for user', { userId });
       throw new NotFoundError('Authentication configuration not found');
     }
 
+    const backofficeData = await this.getBackofficeJwtData(
+      userWithAuthState,
+      authState,
+      userId
+    );
+
+    const jwt = JwtUtil.generateToken({
+      userId: userWithAuthState.id,
+      email: userWithAuthState.email,
+      username: userWithAuthState.completeName,
+      backoffice: backofficeData,
+    });
+
+    return { token: jwt };
+  }
+
+  private static async getBackofficeJwtData(
+    user: UserWithAuthState,
+    authState: AuthState,
+    fallbackUserId: number
+  ): Promise<BackofficeJwtData> {
     const ecommerceToken = config.ecommerceToken;
     const deviceId = authState.deviceId;
 
     let connectionResp: BackofficeLoginResponse | undefined;
+
     try {
       const req: BackofficeLoginRequest = {
         client_state: 9,
-        customer_id: authState.externalCustomerId ?? user.id,
+        customer_id: authState.externalCustomerId ?? fallbackUserId,
         customer_private_key: authState.privateKey,
         customer_refresh_token: authState.refreshToken,
         device_id: deviceId,
         ecommerce_token: ecommerceToken,
         extra_login_data: '{"idAuth":1,"detail":"detail of login"}',
       };
+
       connectionResp = await BackofficeService.getCustomerConnectionToken(req);
     } catch {
       logger.error('Failed to obtain backoffice token');
     }
 
-    if (!connectionResp || !connectionResp.response?.customer_oauth_token) {
-      const refreshReq: BackofficeRefreshRequest = {
-        customer_refresh_token: authState.refreshToken,
-        device_id: deviceId,
-        ecommerce_token: ecommerceToken,
-        extra_login_data: '{"idAuth":1,"detail":"detail of login"}',
-      };
-      const refreshResp: BackofficeRefreshResponse =
-        await BackofficeService.refreshCustomerToken(refreshReq);
-
-      const backofficeData = {
-        customer_oauth_token: refreshResp.response.oauth_token,
-        expiration_timestamp: refreshResp.response.expiration_timestamp,
-        customer_refresh_token: authState.refreshToken,
-        refresh_expiration_timestamp: '',
-        client_state_ret: 9,
-        customerId: authState.externalCustomerId,
-      };
-
-      const jwt = JwtUtil.generateToken({
-        userId: user.id,
-        email: user.email,
-        username: user.completeName,
-        backoffice: backofficeData,
-      });
-
-      logger.info('User logged in via refresh successfully', {
+    if (connectionResp?.response?.customer_oauth_token) {
+      logger.info('User logged in successfully (new connection)', {
         userId: user.id,
         email: user.email,
       });
 
       return {
-        token: jwt,
+        ...connectionResp.response,
+        customerId: authState.externalCustomerId ?? 0,
       };
     }
 
-    const jwt = JwtUtil.generateToken({
-      userId: user.id,
-      email: user.email,
-      username: user.completeName,
-      backoffice: {
-        ...connectionResp.response,
-        customerId: authState.externalCustomerId ?? 0,
-      },
-    });
+    const refreshReq: BackofficeRefreshRequest = {
+      customer_refresh_token: authState.refreshToken,
+      device_id: deviceId,
+      ecommerce_token: ecommerceToken,
+      extra_login_data: '{"idAuth":1,"detail":"detail of login"}',
+    };
 
-    logger.info('User logged in successfully (new connection)', {
+    const refreshResp: BackofficeRefreshResponse =
+      await BackofficeService.refreshCustomerToken(refreshReq);
+
+    logger.info('User logged in via refresh successfully', {
       userId: user.id,
       email: user.email,
     });
 
     return {
-      token: jwt,
+      customer_oauth_token: refreshResp.response.oauth_token,
+      expiration_timestamp: refreshResp.response.expiration_timestamp,
+      customer_refresh_token: authState.refreshToken,
+      refresh_expiration_timestamp: '',
+      client_state_ret: 9,
+      customerId: authState.externalCustomerId ?? 0,
     };
   }
 

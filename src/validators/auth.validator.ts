@@ -1,4 +1,4 @@
-import { body } from 'express-validator';
+import { body, query } from 'express-validator';
 
 export const registerValidator = [
   body('email')
@@ -158,9 +158,21 @@ export const registerValidator = [
     .trim(),
 ];
 
-export const loginValidator = [
+export const loginMethodValidator = [
+  query('method')
+    .optional()
+    .isIn(['password', 'biometric'])
+    .withMessage('method must be password or biometric'),
+];
+
+export const loginPasswordValidator = [
   body('email').isEmail().withMessage('Invalid email'),
   body('password').notEmpty().withMessage('Password required'),
+];
+
+// for biometric on /auth/login just use deviceId
+export const loginBiometricValidator = [
+  body('deviceId').isString().isLength({ min: 10, max: 64 }),
 ];
 
 export const registerByEmailValidator = [

@@ -6,3 +6,4 @@ export * from './payment.schemas';
 export * from './exchangeRate.schemas';
 export * from './transfer.schemas';
 export * from './repository.schemas';
+export * from './biometric.schemas';

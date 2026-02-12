@@ -1,13 +1,17 @@
 import type { Gender } from '@prisma/client';
+import { BiometricVerifyRequest } from './biometric.schemas';
+import { UserWithAuthState } from './repository.schemas';
+import { BackofficeLoginResponse } from './backoffice.schemas';
 
 /**
  * Request payload for user login
  */
-export interface LoginRequest {
+export interface LoginByEmailPasswordRequest {
   email: string;
   password: string;
 }
 
+export type LoginRequest = LoginByEmailPasswordRequest | BiometricVerifyRequest;
 /**
  * Response payload for successful authentication
  */
@@ -213,3 +217,16 @@ export interface JwtPayload {
     customerId: number;
   };
 }
+
+export type AuthState = NonNullable<UserWithAuthState['BackofficeAuthState']>;
+
+export type BackofficeJwtData =
+  | (BackofficeLoginResponse['response'] & { customerId: number })
+  | {
+      customer_oauth_token: string;
+      expiration_timestamp: string;
+      customer_refresh_token: string;
+      refresh_expiration_timestamp: string;
+      client_state_ret: number;
+      customerId: number;
+    };
