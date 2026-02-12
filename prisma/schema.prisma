@@ -59,6 +59,7 @@ model Users {
   BackofficeCustomerProfile  BackofficeCustomerProfile?
   Cards                      Cards[]
   completedLessons           CompletedLesson[]
+  DeviceCredentials          DeviceCredentials[]
   Transactions               Transactions[]
   payments                   payments[]
 }
@@ -268,6 +269,33 @@ model payments {
   @@index([order_id], map: "idx_payments_order")
   @@index([provider], map: "idx_payments_provider")
   @@index([user_id], map: "idx_payments_user")
+}
+
+model DeviceCredentials {
+  id              BigInt            @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id         Int
+  device_id       String            @unique(map: "uq_device_credentials_device_id") @db.VarChar(64)
+  public_key_json Json
+  algorithm       String            @default("ES256") @db.VarChar(16)
+  revoked_at      DateTime?         @db.DateTime(0)
+  created_at      DateTime          @default(now()) @db.DateTime(0)
+  last_used_at    DateTime?         @db.DateTime(0)
+  Users           Users             @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_device_credentials_user")
+  LoginChallenges LoginChallenges[]
+
+  @@index([user_id], map: "idx_device_credentials_user_id")
+}
+
+model LoginChallenges {
+  id                String            @id @db.Char(26)
+  device_id         String            @db.VarChar(64)
+  challenge         String            @db.VarChar(128)
+  expires_at        DateTime          @db.DateTime(0)
+  used_at           DateTime?         @db.DateTime(0)
+  created_at        DateTime          @default(now()) @db.DateTime(0)
+  DeviceCredentials DeviceCredentials @relation(fields: [device_id], references: [device_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_login_challenges_device")
+
+  @@index([device_id, expires_at], map: "idx_login_challenges_device_expires")
 }
 
 enum Gender {
