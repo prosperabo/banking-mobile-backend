@@ -24,6 +24,7 @@ import { UserRepository } from '@/repositories/user.repository';
 import { BulkBatchRepository } from '@/repositories/bulkBatch.repository';
 import backOfficeInstance from '@/api/backoffice.instance';
 import { config } from '@/config';
+import { BadRequestError } from '@/shared/errors';
 
 const logger = buildLogger('CardService');
 
@@ -610,5 +611,30 @@ export class CardService {
         cards: cardStatus.cards,
       },
     };
+  }
+
+  /**
+   * Assign a card to the current user by card identifier
+   */
+  static async assignCard(userId: number, cardIdentifier: string) {
+    logger.info('Assigning card to user', { userId, cardIdentifier });
+
+    const card = await CardRepository.getCardByIdentifier(cardIdentifier);
+    if (!card) {
+      logger.warn('Card identifier not found', { cardIdentifier });
+      throw new BadRequestError('Card not found');
+    }
+
+    if (card.userId) {
+      logger.warn('Card already assigned', {
+        cardIdentifier,
+        assignedUserId: card.userId,
+      });
+      throw new BadRequestError('Card already assigned');
+    }
+
+    await CardRepository.updateCardByIdentifier(cardIdentifier, { userId });
+
+    logger.info('Card assigned successfully', { userId, cardIdentifier });
   }
 }

@@ -51,6 +51,16 @@ const createVirtualCardValidator = [
     .withMessage('Campaign ID must not exceed 100 characters'),
 ];
 
+const assignCardValidator = [
+  body('cardIdentifier')
+    .notEmpty()
+    .withMessage('Card identifier is required')
+    .isString()
+    .withMessage('Card identifier must be a string')
+    .isLength({ min: 3, max: 255 })
+    .withMessage('Card identifier must be between 3 and 255 characters'),
+];
+
 const requestPhysicalCardValidator = [
   // Delivery type validation - now as query param
   query('deliveryType')
@@ -167,6 +177,7 @@ const requestPhysicalCardValidator = [
 export {
   activateCardValidator,
   createVirtualCardValidator,
+  assignCardValidator,
   stopCardValidator,
   unstopCardValidator,
   cardIdParamValidator,
