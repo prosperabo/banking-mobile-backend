@@ -29,6 +29,12 @@ export const CardRepository = {
     });
   },
 
+  async getCardByIdentifier(cardIdentifier: string) {
+    return db.cards.findUnique({
+      where: { cardIdentifier },
+    });
+  },
+
   async updateCard(cardId: number, data: Partial<Cards>) {
     return db.cards.update({
       where: { id: cardId },

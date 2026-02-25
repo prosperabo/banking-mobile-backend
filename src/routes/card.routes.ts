@@ -4,6 +4,7 @@ import { authenticateToken } from '@/middlewares/authenticateToken';
 import { CardController } from '@/controllers/card.controller';
 import {
   activateCardValidator,
+  assignCardValidator,
   createVirtualCardValidator,
   stopCardValidator,
   unstopCardValidator,
@@ -29,6 +30,13 @@ router.get('/', CardController.getUserCards);
 
 // Route to get complete card info
 router.get('/debit', CardController.getCardDebitInfo);
+
+// Route to assign card to current user
+router.post(
+  '/assign-cards',
+  validateRequest(...assignCardValidator),
+  CardController.assignCards
+);
 
 // Route to create a virtual card
 router.post(

@@ -154,6 +154,10 @@ export interface CreateLinkedCardRequest {
   campaign_id?: string;
 }
 
+export interface AssignCardRequest {
+  cardIdentifier: string;
+}
+
 export interface UpdateCVVParams {
   card_id: number;
 }

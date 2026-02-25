@@ -4,6 +4,7 @@ import { CardService } from '@/services/card.service';
 import { catchErrors, successHandler } from '@/shared/handlers';
 import {
   ActivateCardRequest,
+  AssignCardRequest,
   CreateLinkedCardRequest,
   StopCardRequest,
   UnstopCardRequest,
@@ -237,5 +238,18 @@ export class CardController {
       slanPoints,
       'Slan points retrieved successfully'
     );
+  });
+
+  static assignCards = catchErrors(async (req: Request, res: Response) => {
+    const userId = req.user!.userId;
+    const { cardIdentifier }: AssignCardRequest = req.body;
+
+    logger.info('Assigning card to user', { userId, cardIdentifier });
+
+    await CardService.assignCard(userId, cardIdentifier);
+
+    logger.info('Card assigned successfully', { userId, cardIdentifier });
+
+    return successHandler(res, null, 'Card assigned successfully');
   });
 }
