@@ -4,6 +4,7 @@ import { TransferBackofficeService } from './transfer.backoffice.service';
 import { buildLogger } from '@/utils';
 import {
   AccountInfoResponse,
+  SpeiCashoutRequest,
   TransferRequest,
   UserQRResponse,
 } from '@/schemas/transfer.schemas';
@@ -133,5 +134,36 @@ export class TransferService {
       bankReceptor: 'Finco pay',
       beneficiaryName: beneficiaryName,
     };
+  }
+
+  /**
+   * SPEI cashout: withdraw funds to a destination CLABE
+   */
+  static async speiCashout(
+    userId: number,
+    cashoutData: SpeiCashoutRequest,
+    customerToken: string
+  ) {
+    logger.info('Processing SPEI cashout', {
+      userId,
+      clabe: cashoutData.clabe,
+      amount: cashoutData.amount,
+    });
+
+    const response = await TransferBackofficeService.speiCashout(
+      {
+        clabe: cashoutData.clabe,
+        amount: cashoutData.amount,
+        description: cashoutData.description,
+      },
+      customerToken
+    );
+
+    logger.info('SPEI cashout completed successfully', {
+      userId,
+      transactionId: response.payload.transactionId,
+    });
+
+    return response.payload.transactionId;
   }
 }

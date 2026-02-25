@@ -2,6 +2,8 @@ import backOfficeInstance from '@/api/backoffice.instance';
 import { buildLogger } from '@/utils';
 import { config } from '@/config';
 import {
+  SpeiCashoutBackofficeRequest,
+  SpeiCashoutBackofficeResponse,
   TransferBackofficeRequest,
   TransferBackofficeResponse,
 } from '@/schemas/transfer.schemas';
@@ -31,6 +33,33 @@ export class TransferBackofficeService {
     );
 
     logger.info('Transfer completed successfully. Response:', {
+      response: response.data,
+    });
+    return response.data;
+  }
+
+  static async speiCashout(
+    params: SpeiCashoutBackofficeRequest,
+    customerToken: string
+  ): Promise<SpeiCashoutBackofficeResponse> {
+    logger.info('Processing SPEI cashout with params:', {
+      clabe: params.clabe,
+      amount: params.amount,
+    });
+
+    const response =
+      await backOfficeInstance.post<SpeiCashoutBackofficeResponse>(
+        '/wallet/v1/spei-cashout',
+        params,
+        {
+          headers: {
+            'Authorization-customer': customerToken,
+            'Authorization-ecommerce': config.ecommerceToken,
+          },
+        }
+      );
+
+    logger.info('SPEI cashout completed successfully. Response:', {
       response: response.data,
     });
     return response.data;

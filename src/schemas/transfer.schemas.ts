@@ -8,8 +8,18 @@ export interface TransferBackofficeRequest {
   description?: Record<string, unknown>;
 }
 
+export interface SpeiCashoutBackofficeRequest {
+  clabe: string;
+  amount: number;
+  description?: string;
+}
+
 export interface TransferPayload {
   transactionId: string;
+}
+
+export interface SpeiCashoutPayload {
+  transactionId: number;
 }
 
 // API endpoint request type
@@ -19,8 +29,15 @@ export interface TransferRequest {
   description?: Record<string, unknown>;
 }
 
+export interface SpeiCashoutRequest {
+  clabe: string;
+  amount: number;
+  description?: string;
+}
+
 // API endpoint response type using ApiResponse wrapper
 export type TransferBackofficeResponse = ApiResponse<TransferPayload>;
+export type SpeiCashoutBackofficeResponse = ApiResponse<SpeiCashoutPayload>;
 
 export interface UserQRResponse {
   id: number;

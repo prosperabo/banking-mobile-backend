@@ -2,7 +2,10 @@ import { Request, Response } from 'express';
 import { TransferService } from '@/services/transfer.service';
 import { catchErrors, successHandler } from '@/shared/handlers';
 import { buildLogger } from '@/utils';
-import { TransferRequest } from '@/schemas/transfer.schemas';
+import {
+  SpeiCashoutRequest,
+  TransferRequest,
+} from '@/schemas/transfer.schemas';
 
 const logger = buildLogger('TransferController');
 
@@ -75,5 +78,33 @@ export class TransferController {
       accountInfo,
       'Account info retrieved successfully'
     );
+  });
+
+  /**
+   * SPEI cashout
+   */
+  static speiCashout = catchErrors(async (req: Request, res: Response) => {
+    const userId = req.user!.userId;
+    const { customer_oauth_token: customerToken } = req.backoffice!;
+    const cashoutData: SpeiCashoutRequest = req.body;
+
+    logger.info('Processing SPEI cashout', {
+      userId,
+      clabe: cashoutData.clabe,
+      amount: cashoutData.amount,
+    });
+
+    const transactionId = await TransferService.speiCashout(
+      userId,
+      cashoutData,
+      customerToken
+    );
+
+    logger.info('SPEI cashout completed successfully', {
+      userId,
+      transactionId,
+    });
+
+    return successHandler(res, { transactionId }, 'SPEI cashout successful');
   });
 }

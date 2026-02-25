@@ -3,6 +3,7 @@ import { authenticateToken } from '@/middlewares/authenticateToken';
 import { TransferController } from '@/controllers/transfer.controller';
 import { validateRequest } from '@/middlewares';
 import {
+  speiCashoutValidator,
   transferTypeQueryValidator,
   transferValidator,
 } from '@/validators/transfer.validator';
@@ -16,6 +17,13 @@ router.post(
   '/',
   validateRequest(...transferValidator, ...transferTypeQueryValidator),
   TransferController.transfer
+);
+
+// Route to withdraw funds to a CLABE via SPEI
+router.post(
+  '/spei-cashout',
+  validateRequest(...speiCashoutValidator),
+  TransferController.speiCashout
 );
 
 // Route to get user QR code
