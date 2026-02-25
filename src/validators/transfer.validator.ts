@@ -16,6 +16,28 @@ export const transferValidator = [
     .isObject()
     .withMessage('Description must be a valid JSON object'),
 ];
+
+export const speiCashoutValidator = [
+  body('clabe')
+    .notEmpty()
+    .withMessage('CLABE is required')
+    .isLength({ min: 18, max: 18 })
+    .withMessage('CLABE must be 18 digits')
+    .matches(/^\d{18}$/)
+    .withMessage('CLABE must contain only digits'),
+  body('amount')
+    .notEmpty()
+    .withMessage('Amount is required')
+    .isFloat({ min: 0 })
+    .withMessage('Amount must be a non-negative number'),
+  body('description')
+    .optional()
+    .isString()
+    .withMessage('Description must be a string')
+    .isLength({ max: 255 })
+    .withMessage('Description must not exceed 255 characters'),
+];
+
 export const transferTypeQueryValidator = [
   query('transferType')
     .notEmpty()
