@@ -33,6 +33,19 @@ export const config = {
       process.env.BANXICO_BASE_URL ||
       'https://www.banxico.org.mx/SieAPIRest/service/v1',
   },
+  sip: {
+    baseUrl: process.env.SIP_BASE_URL || '',
+    apiKey: process.env.SIP_APIKEY || '',
+    username: process.env.SIP_USERNAME || '',
+    password: process.env.SIP_PASSWORD || '',
+    apiKeyServicio: process.env.SIP_APIKEY_SERVICIO || '',
+    publicCallbackUrl: process.env.SIP_PUBLIC_CALLBACK_URL || '',
+    callbackBasicUser: process.env.SIP_CALLBACK_BASIC_USER || '',
+    callbackBasicPass: process.env.SIP_CALLBACK_BASIC_PASS || '',
+    timeoutMs: Number(process.env.SIP_TIMEOUT_MS) || 15000,
+    tokenCacheTtlSeconds:
+      Number(process.env.SIP_TOKEN_CACHE_TTL_SECONDS) || 3300,
+  },
   campaing: {
     campaign_id: process.env.CAMPAIGN_ID || 'SOF250820595',
     creditLine: process.env.CREDIT_LINE || '0',
