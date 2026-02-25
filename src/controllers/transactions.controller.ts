@@ -13,13 +13,13 @@ export class TransactionsController {
       const { customer_oauth_token: customerToken, customerId } =
         req.backoffice!;
       const {
-        limit = 100,
-        offset = 0,
+        limit = '100',
+        offset = '0',
         from,
         to,
-        desc = true,
+        desc = 'true',
         transaction_id: transactionId,
-        only_installment_charges: onlyInstallmentCharges = false,
+        only_installment_charges: onlyInstallmentCharges = 'false',
       } = req.query;
 
       logger.info('Fetching user transactions', {
