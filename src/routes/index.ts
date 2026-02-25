@@ -9,6 +9,7 @@ import inspirationRouter from './inspiration.routes';
 import paymentRouter from './payment.routes';
 import transferRouter from './transfer.routes';
 import exchangeRateRouter from './exchangeRate.routes';
+import bmscPaymentRouter from './bmsc.payment.routes';
 
 const router = Router();
 
@@ -20,6 +21,7 @@ router.use('/user', userRouter);
 router.use('/transactions', transactionsRouter);
 router.use('/inspiration', inspirationRouter);
 router.use('/payments', paymentRouter);
+router.use('/bmsc/payments', bmscPaymentRouter);
 router.use('/transfers', transferRouter);
 router.use('/exchange-rate', exchangeRateRouter);
 

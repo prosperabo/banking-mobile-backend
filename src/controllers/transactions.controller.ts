@@ -14,7 +14,7 @@ export class TransactionsController {
         req.backoffice!;
       const {
         limit = 100,
-        offset,
+        offset = 0,
         from,
         to,
         desc = true,
