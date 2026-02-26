@@ -37,6 +37,7 @@ sipInstance.interceptors.request.use(request => {
   logger.info('SIP outgoing request', {
     method: request.method,
     url: request.url,
+    data: request.data,
   });
   return request;
 });
