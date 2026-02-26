@@ -27,7 +27,17 @@ sipAuthInstance.interceptors.request.use(request => {
 });
 
 sipAuthInstance.interceptors.response.use(
-  response => response,
+  response => {
+    logger.info('SIP response', {
+      status: response.status,
+      url: response.config.url,
+      data:
+        typeof response.data === 'object' && response.data !== null
+          ? { ...response.data, objeto: 'offuscated' }
+          : { objeto: 'offuscated' },
+    });
+    return response;
+  },
   error => {
     logger.error('SIP auth error', {
       status: error.response?.status,

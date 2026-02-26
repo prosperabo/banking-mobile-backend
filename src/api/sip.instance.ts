@@ -46,15 +46,13 @@ sipInstance.interceptors.response.use(
     logger.info('SIP response', {
       status: response.status,
       url: response.config.url,
-      data: response,
+      data: response.data,
     });
     return response;
   },
   error => {
     const status: number | undefined = error.response?.status;
-    const responseData = error.response?.data as
-      | { message?: string }
-      | undefined;
+    const responseData = error.response?.data;
 
     logger.error('SIP request error', {
       status,
@@ -62,10 +60,8 @@ sipInstance.interceptors.response.use(
       data: responseData,
     });
 
-    if (status && errorMap.has(status)) {
+    if (status && errorMap.has(status))
       return Promise.reject(errorMap.get(status));
-    }
-
     return Promise.reject(
       new InternalServerError(error.message ?? 'SIP unknown error')
     );
