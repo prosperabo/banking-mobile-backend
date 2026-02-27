@@ -23,7 +23,10 @@ export const sipCallbackValidator = [
   body('moneda').optional().isString().withMessage('moneda debe ser string'),
   body('idQr').optional().isString(),
   body('numeroOrdenOriginante').optional().isString(),
-  body('fechaproceso').optional().isString(),
+  body('fechaproceso')
+    .optional()
+    .isNumeric()
+    .withMessage('fechaproceso debe ser un timestamp numérico'),
   body('cuentaCliente').optional().isString(),
   body('nombreCliente').optional().isString(),
   body('documentoCliente').optional().isString(),
