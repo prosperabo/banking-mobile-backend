@@ -8,7 +8,7 @@ const logger = buildLogger('validateRequest');
 
 export const validateRequest = (...schemas: ValidationChain[]) => {
   return async (req: Request, res: Response, next: NextFunction) => {
-    logger.info('Validando request', {
+    logger.info('Validating request', {
       method: req.method,
       url: req.originalUrl,
     });
@@ -26,12 +26,12 @@ export const validateRequest = (...schemas: ValidationChain[]) => {
       });
       return res.status(StatusCodes.BAD_REQUEST).json({
         success: false,
-        message: 'Datos de entrada inválidos',
+        message: 'Invalid input data',
         errors: errors.array(),
       });
     }
 
-    logger.info('Validación exitosa', {
+    logger.info('Validation successful', {
       method: req.method,
       url: req.originalUrl,
     });
