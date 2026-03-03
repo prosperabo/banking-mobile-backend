@@ -11,10 +11,15 @@ export type BanxicoOportunoResponse = {
   };
 };
 
+export type BinanceTickerResponse = {
+  symbol: string;
+  price: string;
+};
+
 export type ExchangeRateTodayResponse = {
-  provider: 'BANXICO';
-  seriesId: 'SF43718';
-  date: string; // dd/MM/yyyy (como Banxico)
-  rate: number; // MXN por 1 USD
+  provider: 'BANXICO' | 'BINANCE';
+  seriesId: string;
+  date: string; // dd/MM/yyyy
+  rate: number; // target por 1 base (segun par)
   title?: string;
 };

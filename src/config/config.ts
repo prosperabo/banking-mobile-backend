@@ -46,6 +46,9 @@ export const config = {
     tokenCacheTtlSeconds:
       Number(process.env.SIP_TOKEN_CACHE_TTL_SECONDS) || 3300,
   },
+  binance: {
+    baseUrl: process.env.BINANCE_BASE_URL || 'https://api.binance.com',
+  },
   campaing: {
     campaign_id: process.env.CAMPAIGN_ID || 'SOF250820595',
     creditLine: process.env.CREDIT_LINE || '0',
