@@ -13,4 +13,11 @@ export class ExchangeRateController {
     const result = await ExchangeRateService.getUsdMxnFixToday();
     successHandler(res, result, 'Exchange rate retrieved successfully');
   });
+
+  static getBobMxnToday = catchErrors(async (_req: Request, res: Response) => {
+    logger.info('GET /exchange-rate/bob-mxn/today');
+
+    const result = await ExchangeRateService.getBobMxnToday();
+    successHandler(res, result, 'Exchange rate retrieved successfully');
+  });
 }
