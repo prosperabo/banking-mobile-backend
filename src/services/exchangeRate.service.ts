@@ -56,7 +56,7 @@ export class ExchangeRateService {
   static async getBobMxnToday(): Promise<ExchangeRateTodayResponse> {
     logger.info('Fetching BOB/MXN exchange rate from CriptoYa');
 
-    const volume = 100;
+    const volume = 1;
     const bobPath = `/api/${this.CRIPTOYA_EXCHANGE}/${this.CRIPTOYA_COIN}/BOB/${volume}`;
     const mxnPath = `/api/${this.CRIPTOYA_EXCHANGE}/${this.CRIPTOYA_COIN}/MXN/${volume}`;
 
