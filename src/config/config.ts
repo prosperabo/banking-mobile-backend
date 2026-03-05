@@ -49,6 +49,9 @@ export const config = {
   binance: {
     baseUrl: process.env.BINANCE_BASE_URL || 'https://api.binance.com',
   },
+  criptoya: {
+    baseUrl: process.env.CRIPTOYA_BASE_URL || 'https://criptoya.com',
+  },
   campaing: {
     campaign_id: process.env.CAMPAIGN_ID || 'SOF250820595',
     creditLine: process.env.CREDIT_LINE || '0',
