@@ -18,6 +18,7 @@ export const exchangeRateUtils = {
   ): number {
     const bobUsdtWithFee = this.applyFee(bobUsdt, bobUsdtFee);
     const usdtMxnWithFee = this.applyFee(usdtMxn, usdtMxnFee);
-    return bobUsdtWithFee * usdtMxnWithFee;
+    // 1 BOB = (1 / bobPerUsdt) USDT × mxnPerUsdt MXN
+    return (1 / bobUsdtWithFee) * usdtMxnWithFee;
   },
 };
