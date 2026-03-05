@@ -1,10 +1,10 @@
 import { banxicoInstance } from '@/api/banxico.instance';
-import binanceInstance from '@/api/binance.instance';
+import criptoyaInstance from '@/api/criptoya.instance';
 import { buildLogger, exchangeRateUtils } from '@/utils';
 import { BadRequestError } from '@/shared/errors';
 import {
   BanxicoOportunoResponse,
-  BinanceTickerResponse,
+  CriptoyaQuoteResponse,
   ExchangeRateTodayResponse,
 } from '@/schemas';
 
@@ -14,8 +14,8 @@ export class ExchangeRateService {
   // Serie Banxico: SF43718 = FIX (Pesos por dólar)
   private static readonly USD_MXN_FIX_SERIES = 'SF43718';
   private static readonly USD_MXN_FEE_RATE = 0.05;
-  private static readonly BOB_USDT_BINANCE_SYMBOL = 'BOBUSDT';
-  private static readonly USDT_MXN_BINANCE_SYMBOL = 'USDTMXN';
+  private static readonly CRIPTOYA_EXCHANGE = 'binancep2p';
+  private static readonly CRIPTOYA_COIN = 'USDT';
   private static readonly BOB_USDT_FEE_RATE = 0.012;
   private static readonly USDT_MXN_FEE_RATE = 0.033;
 
@@ -54,45 +54,41 @@ export class ExchangeRateService {
   }
 
   static async getBobMxnToday(): Promise<ExchangeRateTodayResponse> {
-    logger.info('Fetching BOB/MXN exchange rate from Binance');
+    logger.info('Fetching BOB/MXN exchange rate from CriptoYa');
 
-    const [{ data: bobUsdt }, { data: usdtMxn }] = await Promise.all([
-      binanceInstance.get<BinanceTickerResponse>('/api/v3/ticker/price', {
-        params: { symbol: this.BOB_USDT_BINANCE_SYMBOL },
-      }),
-      binanceInstance.get<BinanceTickerResponse>('/api/v3/ticker/price', {
-        params: { symbol: this.USDT_MXN_BINANCE_SYMBOL },
-      }),
+    const volume = 100;
+    const bobPath = `/api/${this.CRIPTOYA_EXCHANGE}/${this.CRIPTOYA_COIN}/BOB/${volume}`;
+    const mxnPath = `/api/${this.CRIPTOYA_EXCHANGE}/${this.CRIPTOYA_COIN}/MXN/${volume}`;
+
+    const [{ data: bobQuote }, { data: mxnQuote }] = await Promise.all([
+      criptoyaInstance.get<CriptoyaQuoteResponse>(bobPath),
+      criptoyaInstance.get<CriptoyaQuoteResponse>(mxnPath),
     ]);
 
-    const bobUsdtPrice = Number(bobUsdt?.price);
-    if (!Number.isFinite(bobUsdtPrice) || bobUsdtPrice <= 0) {
-      throw new BadRequestError(
-        `Invalid Binance price value: ${bobUsdt?.price}`
-      );
+    const bobAsk = Number(bobQuote?.ask);
+    if (!Number.isFinite(bobAsk) || bobAsk <= 0) {
+      throw new BadRequestError(`Invalid CriptoYa ask value: ${bobQuote?.ask}`);
     }
 
-    const usdtMxnPrice = Number(usdtMxn?.price);
-    if (!Number.isFinite(usdtMxnPrice) || usdtMxnPrice <= 0) {
-      throw new BadRequestError(
-        `Invalid Binance price value: ${usdtMxn?.price}`
-      );
+    const mxnBid = Number(mxnQuote?.bid);
+    if (!Number.isFinite(mxnBid) || mxnBid <= 0) {
+      throw new BadRequestError(`Invalid CriptoYa bid value: ${mxnQuote?.bid}`);
     }
 
-    // BOBUSDT = USDT per 1 BOB, USDTMXN = MXN per 1 USDT
+    // BOB -> USDT uses ask (fiat to buy crypto), USDT -> MXN uses bid (sell crypto)
     const rate = exchangeRateUtils.buildBobMxnRate(
-      bobUsdtPrice,
-      usdtMxnPrice,
+      bobAsk,
+      mxnBid,
       this.BOB_USDT_FEE_RATE,
       this.USDT_MXN_FEE_RATE
     );
 
     return {
-      provider: 'BINANCE',
-      seriesId: `${this.BOB_USDT_BINANCE_SYMBOL},${this.USDT_MXN_BINANCE_SYMBOL}`,
+      provider: 'CRIPTOYA',
+      seriesId: `${this.CRIPTOYA_EXCHANGE}:${this.CRIPTOYA_COIN}/BOB,${this.CRIPTOYA_EXCHANGE}:${this.CRIPTOYA_COIN}/MXN`,
       date: exchangeRateUtils.formatDate(new Date()),
       rate,
-      title: 'Binance BOBUSDT + USDTMXN spot price (fee applied)',
+      title: 'CriptoYa BOB/USDT (ask) + USDT/MXN (bid) (fee applied)',
     };
   }
 }
