@@ -22,6 +22,7 @@ import {
 import { BackofficeRepository } from '@/repositories/backoffice.repository';
 import { UserRepository } from '@/repositories/user.repository';
 import { BulkBatchRepository } from '@/repositories/bulkBatch.repository';
+import { CardPickupRepository } from '@/repositories/cardPickup.repository';
 import backOfficeInstance from '@/api/backoffice.instance';
 import { config } from '@/config';
 import { BadRequestError } from '@/shared/errors';
@@ -586,6 +587,16 @@ export class CardService {
       status: 'PENDING',
       encryptedPin: pin,
       // prosperaCardId: null - Not set yet, card is in PENDING state
+    });
+
+    await CardPickupRepository.create({
+      userId,
+      cardId: card.id,
+      pickupLocation:
+        deliveryType === 'slan'
+          ? 'Universidad Anáhuac'
+          : requestData.pickupLocation || '',
+      isSlanPoint: deliveryType === 'slan',
     });
 
     logger.info(`Physical card created successfully for user ${userId}`, {
