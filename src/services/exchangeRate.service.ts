@@ -1,5 +1,6 @@
 import { banxicoInstance } from '@/api/banxico.instance';
 import criptoyaInstance from '@/api/criptoya.instance';
+import { config } from '@/config';
 import { buildLogger, exchangeRateUtils } from '@/utils';
 import { BadRequestError } from '@/shared/errors';
 import {
@@ -10,14 +11,16 @@ import {
 
 const logger = buildLogger('exchange-rate-service');
 
+const { exchangeRate } = config;
+
 export class ExchangeRateService {
   // Serie Banxico: SF43718 = FIX (Pesos por dólar)
   private static readonly USD_MXN_FIX_SERIES = 'SF43718';
-  private static readonly USD_MXN_FEE_RATE = 0.05;
+  private static readonly USD_MXN_FEE_RATE = exchangeRate.usdMxnFeeRate;
   private static readonly CRIPTOYA_EXCHANGE = 'binancep2p';
   private static readonly CRIPTOYA_COIN = 'USDT';
-  private static readonly BOB_USDT_FEE_RATE = 0.012;
-  private static readonly USDT_MXN_FEE_RATE = 0.033;
+  private static readonly BOB_USDT_FEE_RATE = exchangeRate.bobUsdtFeeRate;
+  private static readonly USDT_MXN_FEE_RATE = exchangeRate.usdtMxnFeeRate;
 
   static async getUsdMxnFixToday(): Promise<ExchangeRateTodayResponse> {
     logger.info('Fetching USD/MXN FIX exchange rate (oportuno)');

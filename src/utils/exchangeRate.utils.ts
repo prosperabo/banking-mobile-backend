@@ -7,7 +7,7 @@ export const exchangeRateUtils = {
   },
 
   applyFee(rate: number, feeRate: number): number {
-    return rate * (1 + feeRate);
+    return rate * (1 - feeRate);
   },
 
   buildBobMxnRate(
