@@ -57,4 +57,9 @@ export const config = {
     creditLine: process.env.CREDIT_LINE || '0',
     programCode: process.env.PROGRAM_CODE || 'KBZ260121860',
   },
+  exchangeRate: {
+    usdMxnFeeRate: Number(process.env.USD_MXN_FEE_RATE) || 0.052,
+    bobUsdtFeeRate: Number(process.env.BOB_USDT_FEE_RATE) || 0.012,
+    usdtMxnFeeRate: Number(process.env.USDT_MXN_FEE_RATE) || 0.033,
+  },
 };
