@@ -22,6 +22,7 @@ import {
 import { BackofficeRepository } from '@/repositories/backoffice.repository';
 import { UserRepository } from '@/repositories/user.repository';
 import { BulkBatchRepository } from '@/repositories/bulkBatch.repository';
+import { CardPickupRepository } from '@/repositories/cardPickup.repository';
 import backOfficeInstance from '@/api/backoffice.instance';
 import { config } from '@/config';
 import { BadRequestError } from '@/shared/errors';
@@ -462,6 +463,103 @@ export class CardService {
       throw new Error('You already have a physical card requested or active');
     }
 
+    // Try to assign an existing unassigned physical card from inventory
+    const availableCards = await CardRepository.findAvailablePhysicalCards();
+    if (availableCards.length > 0) {
+      const randomIndex = Math.floor(Math.random() * availableCards.length);
+      const selected = availableCards[randomIndex];
+
+      await CardRepository.updateCard(selected.id, { userId });
+
+      // Prepare delivery location based on delivery type
+      const deliveryTypeHandlers = {
+        slan: () => ({
+          first_names: user.firstName || 'Cliente',
+          last_names: user.lastName || 'Prospera',
+          street: 'Alcatraz M61 L1, jardines del sur 5',
+          exterior_number: '5',
+          interior_number: '21',
+          neighborhood: 'Jardines del sur 5',
+          city: 'Cancún',
+          state: 'Quintana Roo',
+          postal_code: '77536',
+          mobile: user.phone ? Number(user.phone) : 9983940931,
+          additional_notes: requestData.pickupLocation
+            ? `Pickup location: ${requestData.pickupLocation}`
+            : 'Delivery to Slan point',
+        }),
+        home: () => {
+          if (!requestData.billingAddress) {
+            logger.error('Billing address is required for home delivery');
+            throw new Error('Billing address is required for home delivery');
+          }
+
+          return {
+            first_names: requestData.billingAddress.firstName,
+            last_names: requestData.billingAddress.lastName,
+            street: requestData.billingAddress.street,
+            exterior_number: requestData.billingAddress.exteriorNumber,
+            interior_number: requestData.billingAddress.interiorNumber || '1',
+            neighborhood: requestData.billingAddress.neighborhood,
+            city: requestData.billingAddress.city,
+            state: requestData.billingAddress.state,
+            postal_code: requestData.billingAddress.postalCode,
+            mobile: Number(requestData.billingAddress.phone),
+            additional_notes:
+              requestData.billingAddress.additionalNotes ||
+              (requestData.pickupLocation
+                ? `Pickup location: ${requestData.pickupLocation}`
+                : 'Physical card requested via mobile app'),
+          };
+        },
+      };
+
+      const handler = deliveryTypeHandlers[deliveryType];
+      if (!handler) {
+        logger.error(`Unsupported delivery type: ${deliveryType}`);
+        throw new Error('Unsupported delivery type');
+      }
+
+      const deliveryLocation = handler();
+
+      const additionalNotes =
+        deliveryType === 'slan'
+          ? 'Universidad Anáhuac'
+          : deliveryLocation.additional_notes || '';
+
+      await CardPickupRepository.create({
+        userId,
+        cardId: selected.id,
+        mobile: String(deliveryLocation.mobile),
+        street: deliveryLocation.street,
+        exteriorNumber: deliveryLocation.exterior_number,
+        interiorNumber: deliveryLocation.interior_number,
+        neighborhood: deliveryLocation.neighborhood,
+        city: deliveryLocation.city,
+        state: deliveryLocation.state,
+        postalCode: deliveryLocation.postal_code,
+        additionalNotes,
+        isSlanPoint: deliveryType === 'slan',
+      });
+
+      const cardStatus = await this.getCardStatus(userId);
+
+      return {
+        success: true,
+        message: 'Physical card requested successfully',
+        cardId: selected.id,
+        cardIdentifier: selected.cardIdentifier,
+        status: CardUserStatus.PENDING,
+        pickupLocation: requestData.pickupLocation,
+        cardStatus: {
+          hasActiveCards: cardStatus.hasActiveCards,
+          hasRequestedCards: cardStatus.hasRequestedCards,
+          summary: cardStatus.summary,
+          cards: cardStatus.cards,
+        },
+      };
+    }
+
     // Generate unique card identifier
     const cardIdentifier = generatePhysicalCardIdentifier();
     const pin = user.pin || '1234';
@@ -586,6 +684,26 @@ export class CardService {
       status: 'PENDING',
       encryptedPin: pin,
       // prosperaCardId: null - Not set yet, card is in PENDING state
+    });
+
+    const additionalNotes =
+      deliveryType === 'slan'
+        ? 'Universidad Anáhuac'
+        : deliveryLocation.additional_notes || '';
+
+    await CardPickupRepository.create({
+      userId,
+      cardId: card.id,
+      mobile: String(deliveryLocation.mobile),
+      street: deliveryLocation.street,
+      exteriorNumber: deliveryLocation.exterior_number,
+      interiorNumber: deliveryLocation.interior_number,
+      neighborhood: deliveryLocation.neighborhood,
+      city: deliveryLocation.city,
+      state: deliveryLocation.state,
+      postalCode: deliveryLocation.postal_code,
+      additionalNotes,
+      isSlanPoint: deliveryType === 'slan',
     });
 
     logger.info(`Physical card created successfully for user ${userId}`, {

@@ -187,6 +187,23 @@ export const CardRepository = {
     });
   },
 
+  async findAvailablePhysicalCards() {
+    return db.cards.findMany({
+      where: {
+        userId: null,
+        cardType: Cards_cardType.PHYSICAL,
+        status: {
+          in: [Cards_status.PENDING, Cards_status.INACTIVE],
+        },
+      },
+      select: {
+        id: true,
+        cardIdentifier: true,
+        status: true,
+      },
+    });
+  },
+
   async updateCardByIdentifier(cardIdentifier: string, data: Partial<Cards>) {
     return db.cards.updateMany({
       where: {

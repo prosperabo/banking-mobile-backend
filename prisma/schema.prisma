@@ -57,6 +57,7 @@ model Users {
   AcademicInformation        AcademicInformation?
   BackofficeAuthState        BackofficeAuthState?
   BackofficeCustomerProfile  BackofficeCustomerProfile?
+  CardPickup                 CardPickup[]
   Cards                      Cards[]
   completedLessons           CompletedLesson[]
   DeviceCredentials          DeviceCredentials[]
@@ -195,6 +196,7 @@ model Cards {
   cvv            String?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime
+  CardPickup     CardPickup[]
   BulkBatch      BulkBatch?     @relation(fields: [bulkBatchId], references: [id])
   Users          Users?         @relation(fields: [userId], references: [id], onDelete: Restrict)
   Transactions   Transactions[]
@@ -296,6 +298,30 @@ model LoginChallenges {
   DeviceCredentials DeviceCredentials @relation(fields: [device_id], references: [device_id], onDelete: Cascade, onUpdate: NoAction, map: "fk_login_challenges_device")
 
   @@index([device_id, expires_at], map: "idx_login_challenges_device_expires")
+}
+
+model CardPickup {
+  id              Int      @id @default(autoincrement())
+  userId          Int?
+  cardId          Int
+  mobile          String
+  street          String
+  exteriorNumber  String
+  interiorNumber  String
+  neighborhood    String
+  city            String
+  state           String
+  postalCode      String
+  additionalNotes String
+  isSlanPoint     Boolean  @default(false)
+  assignedAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now())
+  Cards           Cards    @relation(fields: [cardId], references: [id])
+  Users           Users?   @relation(fields: [userId], references: [id])
+
+  @@index([cardId])
+  @@index([userId])
 }
 
 enum Gender {
