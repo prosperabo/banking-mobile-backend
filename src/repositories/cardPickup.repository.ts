@@ -4,7 +4,15 @@ export const CardPickupRepository = {
   async create(data: {
     userId?: number;
     cardId: number;
-    pickupLocation: string;
+    mobile: string;
+    street: string;
+    exteriorNumber: string;
+    interiorNumber: string;
+    neighborhood: string;
+    city: string;
+    state: string;
+    postalCode: string;
+    additionalNotes: string;
     isSlanPoint: boolean;
   }) {
     return db.cardPickup.create({ data });

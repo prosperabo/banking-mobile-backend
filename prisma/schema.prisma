@@ -301,15 +301,24 @@ model LoginChallenges {
 }
 
 model CardPickup {
-  id             Int      @id @default(autoincrement())
-  userId         Int?
-  cardId         Int
-  pickupLocation String
-  isSlanPoint    Boolean  @default(false)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @default(now())
-  Cards          Cards    @relation(fields: [cardId], references: [id])
-  Users          Users?   @relation(fields: [userId], references: [id])
+  id              Int      @id @default(autoincrement())
+  userId          Int?
+  cardId          Int
+  mobile          String
+  street          String
+  exteriorNumber  String
+  interiorNumber  String
+  neighborhood    String
+  city            String
+  state           String
+  postalCode      String
+  additionalNotes String
+  isSlanPoint     Boolean  @default(false)
+  assignedAt      DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now())
+  Cards           Cards    @relation(fields: [cardId], references: [id])
+  Users           Users?   @relation(fields: [userId], references: [id])
 
   @@index([cardId])
   @@index([userId])
