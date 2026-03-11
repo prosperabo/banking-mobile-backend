@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticateToken } from '@/middlewares/authenticateToken';
 import { TransferController } from '@/controllers/transfer.controller';
-import { validateRequest } from '@/middlewares';
+import { validateRequest, validateTransferCardPin } from '@/middlewares';
 import {
   speiCashoutValidator,
   transferTypeQueryValidator,
@@ -16,6 +16,7 @@ router.use(authenticateToken);
 router.post(
   '/',
   validateRequest(...transferValidator, ...transferTypeQueryValidator),
+  validateTransferCardPin(),
   TransferController.transfer
 );
 
@@ -23,6 +24,7 @@ router.post(
 router.post(
   '/spei-cashout',
   validateRequest(...speiCashoutValidator),
+  validateTransferCardPin(),
   TransferController.speiCashout
 );
 
