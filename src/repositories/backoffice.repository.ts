@@ -38,9 +38,29 @@ export const BackofficeRepository = {
     });
   },
 
+  async updateAuthState(userId: number, data: BackofficeAuthStateUpdate) {
+    return db.backofficeAuthState.update({
+      where: { userId },
+      data: {
+        ...data,
+        updatedAt: new Date(),
+      },
+    });
+  },
+
   async findProfileByUserId(userId: number) {
     return db.backofficeCustomerProfile.findUnique({
       where: { userId },
+    });
+  },
+
+  async updateProfile(userId: number, data: BackofficeCustomerProfileUpdate) {
+    return db.backofficeCustomerProfile.update({
+      where: { userId },
+      data: {
+        ...data,
+        updatedAt: new Date(),
+      },
     });
   },
 

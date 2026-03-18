@@ -7,6 +7,7 @@
     "start": "node dist/src/index.js",
     "dev": "ts-node-dev --respawn --transpile-only -r tsconfig-paths/register src/index.ts",
     "build": "tsc && copyfiles \"public/**\" dist/",
+    "test:auth-flow": "node scripts/verify-auth-flow-guard.js",
     "lint": "eslint \"src/**/*.ts\" --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "orm:init": "npx prisma init",
