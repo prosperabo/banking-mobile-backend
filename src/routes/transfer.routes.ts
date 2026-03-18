@@ -31,5 +31,6 @@ router.post(
 // Route to get user QR code
 router.get('/qr', TransferController.getUserQR);
 router.get('/account/me', TransferController.getMyAccountInfo);
+router.get('/spei-cashout/fee', TransferController.getSpeiCashoutFee);
 
 export default router;

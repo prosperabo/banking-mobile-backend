@@ -107,4 +107,21 @@ export class TransferController {
 
     return successHandler(res, { transactionId }, 'SPEI cashout successful');
   });
+
+  /**
+   * Get SPEI cashout fee
+   */
+  static getSpeiCashoutFee = catchErrors(
+    async (_req: Request, res: Response) => {
+      logger.info('Getting SPEI cashout fee');
+
+      const fee = TransferService.getSpeiCashoutFee();
+
+      return successHandler(
+        res,
+        { fee },
+        'SPEI cashout fee retrieved successfully'
+      );
+    }
+  );
 }

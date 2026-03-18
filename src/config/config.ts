@@ -62,4 +62,7 @@ export const config = {
     bobUsdtFeeRate: Number(process.env.BOB_USDT_FEE_RATE) || 0.012,
     usdtMxnFeeRate: Number(process.env.USDT_MXN_FEE_RATE) || 0.033,
   },
+  spei: {
+    cashoutFee: Number(process.env.SPEI_CASHOUT_FEE) || 0,
+  },
 };

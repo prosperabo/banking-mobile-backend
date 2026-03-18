@@ -2,6 +2,7 @@ import { UserRepository } from '@/repositories/user.repository';
 import { BackofficeRepository } from '@/repositories/backoffice.repository';
 import { TransferBackofficeService } from './transfer.backoffice.service';
 import { buildLogger } from '@/utils';
+import { config } from '@/config';
 import {
   AccountInfoResponse,
   SpeiCashoutRequest,
@@ -165,5 +166,12 @@ export class TransferService {
     });
 
     return response.payload.transactionId;
+  }
+
+  /**
+   * Get SPEI cashout fee
+   */
+  static getSpeiCashoutFee(): number {
+    return config.spei.cashoutFee;
   }
 }
