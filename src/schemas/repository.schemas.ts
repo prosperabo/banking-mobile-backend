@@ -7,6 +7,7 @@ import type {
   Users,
   BackofficeAuthState as PrismaBackofficeAuthState,
   BackofficeCustomerProfile as PrismaBackofficeCustomerProfile,
+  TransferReceipt as PrismaTransferReceipt,
   Prisma,
 } from '@prisma/client';
 
@@ -16,6 +17,7 @@ import type {
 export type User = Users;
 export type BackofficeAuthState = PrismaBackofficeAuthState;
 export type BackofficeCustomerProfile = PrismaBackofficeCustomerProfile;
+export type TransferReceipt = PrismaTransferReceipt;
 
 /**
  * User with backoffice auth state relation
@@ -37,6 +39,7 @@ export type BackofficeCustomerProfileUpdate =
 
 export type BackofficeAuthStateCreate = Prisma.BackofficeAuthStateCreateInput;
 export type BackofficeAuthStateUpdate = Prisma.BackofficeAuthStateUpdateInput;
+export type TransferReceiptCreate = Prisma.TransferReceiptCreateInput;
 
 /**
  * Legacy interfaces for backwards compatibility (to be deprecated)

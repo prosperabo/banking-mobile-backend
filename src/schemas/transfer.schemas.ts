@@ -32,7 +32,43 @@ export interface TransferRequest {
 export interface SpeiCashoutRequest {
   clabe: string;
   amount: number;
+  receiverName: string;
+  entityName: string;
   description?: string;
+}
+
+export type ReceiptType = 'internal_transfer' | 'spei_cashout';
+
+export interface BaseTransferReceipt {
+  receiptType: ReceiptType;
+  title: string;
+  dateTime: string;
+  timezone: string;
+  senderName: string;
+  receiverName: string;
+}
+
+export interface InternalTransferReceipt extends BaseTransferReceipt {
+  receiptType: 'internal_transfer';
+}
+
+export interface SpeiCashoutReceipt extends BaseTransferReceipt {
+  receiptType: 'spei_cashout';
+  entityName: string;
+  receiverClabeMasked: string;
+}
+
+export type TransferReceiptResponse =
+  | InternalTransferReceipt
+  | SpeiCashoutReceipt;
+
+export interface TransferTransactionResponse {
+  transactionId: string | number;
+}
+
+export interface TransferOperationResponse {
+  transaction: TransferTransactionResponse;
+  receipt: TransferReceiptResponse;
 }
 
 // API endpoint response type using ApiResponse wrapper

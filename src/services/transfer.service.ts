@@ -6,12 +6,14 @@ import { config } from '@/config';
 import {
   AccountInfoResponse,
   SpeiCashoutRequest,
+  TransferOperationResponse,
   TransferRequest,
   UserQRResponse,
 } from '@/schemas/transfer.schemas';
 import { BadRequestError } from '@/shared/errors';
 import { BackofficeService } from './customer.backoffice.service';
 import { buildFullName } from '@/utils/buildFullName';
+import { TransferReceiptService } from './transfer-receipt.service';
 
 const logger = buildLogger('TransferService');
 
@@ -27,7 +29,7 @@ export class TransferService {
     customerToken: string,
     customerId: number,
     queryType: QueryType = 'email'
-  ) {
+  ): Promise<TransferOperationResponse> {
     logger.info(`Transferring funds to ${queryType} ${transferData.target}`, {
       userId,
       amount: transferData.amount,
@@ -76,7 +78,19 @@ export class TransferService {
       amount: transferData.amount,
     });
 
-    return response.payload.transactionId;
+    const receipt = await TransferReceiptService.createInternalTransferReceipt({
+      userId,
+      senderCustomerId: customerId,
+      recipientUserId: recipientUser.id,
+      recipientCustomerId: recipientProfile.external_customer_id,
+    });
+
+    return {
+      transaction: {
+        transactionId: response.payload.transactionId,
+      },
+      receipt,
+    };
   }
 
   /**
@@ -143,8 +157,9 @@ export class TransferService {
   static async speiCashout(
     userId: number,
     cashoutData: SpeiCashoutRequest,
-    customerToken: string
-  ) {
+    customerToken: string,
+    customerId: number
+  ): Promise<TransferOperationResponse> {
     logger.info('Processing SPEI cashout', {
       userId,
       clabe: cashoutData.clabe,
@@ -160,12 +175,25 @@ export class TransferService {
       customerToken
     );
 
+    const receipt = await TransferReceiptService.createSpeiCashoutReceipt({
+      userId,
+      senderCustomerId: customerId,
+      receiverName: cashoutData.receiverName,
+      entityName: cashoutData.entityName,
+      clabe: cashoutData.clabe,
+    });
+
     logger.info('SPEI cashout completed successfully', {
       userId,
       transactionId: response.payload.transactionId,
     });
 
-    return response.payload.transactionId;
+    return {
+      transaction: {
+        transactionId: response.payload.transactionId,
+      },
+      receipt,
+    };
   }
 
   /**
