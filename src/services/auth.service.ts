@@ -1,8 +1,6 @@
 import {
   LoginRequest,
   LoginResponse,
-  BackofficeLoginRequest,
-  BackofficeLoginResponse,
   BackofficeRefreshRequest,
   BackofficeRefreshResponse,
   BackofficeCreateAccountData,
@@ -117,35 +115,21 @@ export class AuthService {
   ): Promise<BackofficeJwtData> {
     const ecommerceToken = config.ecommerceToken;
     const deviceId = authState.deviceId;
+    const hasReusableRefreshToken = Boolean(authState.refreshToken);
+    const hasRegisteredDevice = Boolean(deviceId);
 
-    let connectionResp: BackofficeLoginResponse | undefined;
-
-    try {
-      const req: BackofficeLoginRequest = {
-        client_state: 9,
-        customer_id: authState.externalCustomerId ?? fallbackUserId,
-        customer_private_key: authState.privateKey,
-        customer_refresh_token: authState.refreshToken,
-        device_id: deviceId,
-        ecommerce_token: ecommerceToken,
-        extra_login_data: '{"idAuth":1,"detail":"detail of login"}',
-      };
-
-      connectionResp = await BackofficeService.getCustomerConnectionToken(req);
-    } catch {
-      logger.error('Failed to obtain backoffice token');
-    }
-
-    if (connectionResp?.response?.customer_oauth_token) {
-      logger.info('User logged in successfully (new connection)', {
-        userId: user.id,
-        email: user.email,
-      });
-
-      return {
-        ...connectionResp.response,
-        customerId: authState.externalCustomerId ?? 0,
-      };
+    if (!hasReusableRefreshToken || !hasRegisteredDevice) {
+      logger.error(
+        'Backoffice auth state is incomplete for login; skipping getCustomerConnectionToken in normal authentication flow',
+        {
+          userId: user.id,
+          email: user.email,
+          hasRefreshToken: hasReusableRefreshToken,
+          hasRegisteredDevice,
+          externalCustomerId: authState.externalCustomerId ?? fallbackUserId,
+        }
+      );
+      throw new NotFoundError('Backoffice authentication state is incomplete');
     }
 
     const refreshReq: BackofficeRefreshRequest = {
@@ -158,9 +142,32 @@ export class AuthService {
     const refreshResp: BackofficeRefreshResponse =
       await BackofficeService.refreshCustomerToken(refreshReq);
 
+    await Promise.all([
+      BackofficeRepository.updateAuthState(user.id, {
+        lastCustomerOauthToken: refreshResp.response.oauth_token,
+        oauthExpirationTimestamp: refreshResp.response.expiration_timestamp,
+      }),
+      BackofficeRepository.updateProfile(user.id, {
+        oauth_token: refreshResp.response.oauth_token,
+      }).catch(() => {
+        logger.warn(
+          'Backoffice customer profile was not updated after refresh; auth state was updated successfully',
+          {
+            userId: user.id,
+            authFlow: 'refresh_customer_token',
+          }
+        );
+      }),
+    ]);
+
     logger.info('User logged in via refresh successfully', {
       userId: user.id,
       email: user.email,
+      authFlow: 'refresh_customer_token',
+      endpointUsed: 'refresh-customer-token',
+      avoidedEndpoint: 'get-customer-connection-token',
+      reusedRegisteredDevice: true,
+      reusedRefreshToken: true,
     });
 
     return {
@@ -169,6 +176,62 @@ export class AuthService {
       customer_refresh_token: authState.refreshToken,
       refresh_expiration_timestamp: '',
       client_state_ret: 9,
+      customerId: authState.externalCustomerId ?? 0,
+    };
+  }
+
+  static async initializeCustomerConnectionToken(
+    user: UserWithAuthState,
+    authState: AuthState,
+    fallbackUserId: number
+  ): Promise<BackofficeJwtData> {
+    const req = {
+      client_state: 9,
+      customer_id: authState.externalCustomerId ?? fallbackUserId,
+      customer_private_key: authState.privateKey,
+      customer_refresh_token: authState.refreshToken,
+      device_id: authState.deviceId,
+      ecommerce_token: config.ecommerceToken,
+      extra_login_data: '{"idAuth":1,"detail":"detail of login"}',
+    };
+
+    logger.warn(
+      'Initializing customer connection token through restricted flow',
+      {
+        userId: user.id,
+        authFlow: 'get_customer_connection_token',
+        reason: authState.refreshToken
+          ? 'new_device_registration'
+          : 'initial_customer_setup',
+      }
+    );
+
+    const connectionResp =
+      await BackofficeService.getCustomerConnectionToken(req);
+
+    await BackofficeRepository.updateAuthState(user.id, {
+      refreshToken: connectionResp.response.customer_refresh_token,
+      lastCustomerOauthToken: connectionResp.response.customer_oauth_token,
+      oauthExpirationTimestamp: connectionResp.response.expiration_timestamp,
+      refreshExpirationTimestamp:
+        connectionResp.response.refresh_expiration_timestamp,
+    });
+
+    await BackofficeRepository.updateProfile(user.id, {
+      oauth_token: connectionResp.response.customer_oauth_token,
+      refresh_token: connectionResp.response.customer_refresh_token,
+    }).catch(() => {
+      logger.warn(
+        'Backoffice customer profile was not updated after restricted connection-token flow',
+        {
+          userId: user.id,
+          authFlow: 'get_customer_connection_token',
+        }
+      );
+    });
+
+    return {
+      ...connectionResp.response,
       customerId: authState.externalCustomerId ?? 0,
     };
   }

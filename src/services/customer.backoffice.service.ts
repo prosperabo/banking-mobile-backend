@@ -30,9 +30,12 @@ export class BackofficeService {
     loginData: BackofficeLoginRequest
   ): Promise<BackofficeLoginResponse> {
     try {
-      logger.info('Getting customer connection token from backoffice', {
-        customer_id: loginData.customer_id,
-      });
+      logger.warn(
+        'Getting customer connection token from backoffice; this flow must be limited to customer initialization or new device registration',
+        {
+          customer_id: loginData.customer_id,
+        }
+      );
 
       const response = await fetch(
         `${this.BASE_URL}${this.OAUTH_ENDPOINT}/get-customer-connection-token`,
@@ -46,7 +49,7 @@ export class BackofficeService {
       );
 
       if (!response.ok) {
-        logger.error('Non-ok response refreshing customer token', {
+        logger.error('Non-ok response getting customer connection token', {
           ...(await response.json()),
         });
         throw new Error(`HTTP error! status: ${response.status}`);
