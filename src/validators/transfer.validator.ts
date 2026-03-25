@@ -30,6 +30,20 @@ export const speiCashoutValidator = [
     .withMessage('Amount is required')
     .isFloat({ min: 0 })
     .withMessage('Amount must be a non-negative number'),
+  body('receiverName')
+    .notEmpty()
+    .withMessage('Receiver name is required')
+    .isString()
+    .withMessage('Receiver name must be a string')
+    .isLength({ min: 3, max: 255 })
+    .withMessage('Receiver name must be between 3 and 255 characters'),
+  body('entityName')
+    .notEmpty()
+    .withMessage('Entity name is required')
+    .isString()
+    .withMessage('Entity name must be a string')
+    .isLength({ min: 2, max: 255 })
+    .withMessage('Entity name must be between 2 and 255 characters'),
   body('description')
     .optional()
     .isString()

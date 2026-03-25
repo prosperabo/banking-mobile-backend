@@ -85,7 +85,7 @@ export class TransferController {
    */
   static speiCashout = catchErrors(async (req: Request, res: Response) => {
     const userId = req.user!.userId;
-    const { customer_oauth_token: customerToken } = req.backoffice!;
+    const { customer_oauth_token: customerToken, customerId } = req.backoffice!;
     const cashoutData: SpeiCashoutRequest = req.body;
 
     logger.info('Processing SPEI cashout', {
@@ -94,18 +94,19 @@ export class TransferController {
       amount: cashoutData.amount,
     });
 
-    const transactionId = await TransferService.speiCashout(
+    const result = await TransferService.speiCashout(
       userId,
       cashoutData,
-      customerToken
+      customerToken,
+      customerId
     );
 
     logger.info('SPEI cashout completed successfully', {
       userId,
-      transactionId,
+      transactionId: result.transaction.transactionId,
     });
 
-    return successHandler(res, { transactionId }, 'SPEI cashout successful');
+    return successHandler(res, result, 'SPEI cashout successful');
   });
 
   /**

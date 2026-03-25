@@ -62,6 +62,7 @@ model Users {
   completedLessons           CompletedLesson[]
   DeviceCredentials          DeviceCredentials[]
   Transactions               Transactions[]
+  TransferReceipts           TransferReceipt[]
   payments                   payments[]
 }
 
@@ -324,6 +325,18 @@ model CardPickup {
   @@index([userId])
 }
 
+model TransferReceipt {
+  id           Int                 @id @default(autoincrement())
+  userId       Int                 @map("user_id")
+  type         TransferReceiptType
+  transferData Json                @map("transfer_data")
+  generatedAt  DateTime            @default(now()) @map("generated_at")
+  Users        Users               @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "idx_transfer_receipts_user")
+  @@map("transfer_receipts")
+}
+
 enum Gender {
   MASCULINO
   FEMENINO
@@ -373,4 +386,9 @@ enum Cards_status {
   INACTIVE
   EXPIRED
   PENDING
+}
+
+enum TransferReceiptType {
+  INTERNAL_TRANSFER
+  SPEI_CASHOUT
 }
