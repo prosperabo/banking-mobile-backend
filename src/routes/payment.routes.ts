@@ -24,6 +24,12 @@ router.post(
 );
 
 router.get(
+  '/verify/:paymentId',
+  validateRequest(...paymentIdParamValidator),
+  PaymentController.verifyPaymentStatus
+);
+
+router.get(
   '/:paymentId',
   authenticateToken,
   validateRequest(...paymentIdParamValidator),

@@ -47,11 +47,19 @@ export interface PaymentProviderAPIPaymentRequest {
     email?: string;
     phone?: string;
   };
+  prevention_data?: {
+    session_id?: string;
+    user_agent?: string;
+  };
   metadata?: PaymentMetadata;
 }
 
 export interface ProcessPaymentRequest {
   card_token: string;
+  prevention_data?: {
+    session_id?: string;
+    user_agent?: string;
+  };
 }
 
 // Payment Provider API Payment Response
@@ -98,6 +106,10 @@ export interface PaymentProviderPaymentResponse {
     code: string;
     message: string;
   };
+  pending_action?: {
+    type: string;
+    url: string;
+  };
   metadata?: PaymentMetadata;
   created_at: string;
   version: number;
@@ -125,6 +137,10 @@ export interface PaymentServiceClientResponse {
     lastDigits: string;
     type: string;
     issuer: string;
+  };
+  pendingAction?: {
+    type: string;
+    url: string;
   };
 }
 

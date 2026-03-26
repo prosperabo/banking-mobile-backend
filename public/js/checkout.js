@@ -358,6 +358,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setError('');
 
     try {
+      // 1. Tokenizar tarjeta
       const tokenResp = await card.cardToken();
       const cardTokenID = tokenResp?.id;
 
@@ -365,12 +366,29 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error('No se pudo tokenizar la tarjeta. Verifica los datos.');
       }
 
+      // 2. Obtener datos de prevención de fraude del SDK
+      let preventionData = null;
+      try {
+        preventionData = await card.preventionData();
+      } catch (pdErr) {
+        console.warn('No se pudieron obtener prevention data:', pdErr);
+      }
+
+      // 3. Enviar al backend incluyendo prevention_data si está disponible
+      const requestBody = { card_token: cardTokenID };
+      if (preventionData) {
+        requestBody.prevention_data = {
+          session_id: preventionData.session_id,
+          user_agent: preventionData.user_agent,
+        };
+      }
+
       const response = await fetch(
         `${CONFIG.BACKEND_URL}/payments/process/${paymentId}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ card_token: cardTokenID }),
+          body: JSON.stringify(requestBody),
         }
       );
 
@@ -380,6 +398,15 @@ document.addEventListener('DOMContentLoaded', () => {
         throw new Error(data.message || 'Error procesando pago');
       }
 
+      const paymentResult = data.data ?? data;
+
+      // 4. Verificar si se requiere autenticación 3DS
+      if (paymentResult?.pendingAction?.url) {
+        show3DSIframe(paymentResult.pendingAction.url);
+        return; // El flujo continúa dentro de show3DSIframe
+      }
+
+      // 5. Pago completado sin 3DS
       renderResultUI({
         ok: true,
         title: '¡Pago Exitoso!',
@@ -387,12 +414,10 @@ document.addEventListener('DOMContentLoaded', () => {
         emoji: '✅',
       });
 
-      // Notificar a Flutter
-      const sent = await notifyApp('paymentDone', { paymentId, result: data });
-
-      // Si es navegador normal, intenta cerrar (solo funcionará si fue abierto por script)
+      const sent = await notifyApp('paymentDone', { paymentId, result: paymentResult });
       if (!sent) setTimeout(() => tryCloseBrowserTab(), 1200);
 
+    } catch (error) {
       const msg = error?.message
         ? String(error.message)
         : 'Error procesando pago';
@@ -405,11 +430,83 @@ document.addEventListener('DOMContentLoaded', () => {
       });
 
       await notifyApp('paymentFailed', { paymentId, message: msg });
-
-      // En web: deja reintentar recargando (o puedes reconstruir el form)
-      // Aquí, como ya renderizamos result UI, si quieres “reintentar” sin recargar,
-      // dímelo y te lo dejo con botón que restaura el formulario.
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    } catch (_) {}
+    }
   });
+
+  // =========================
+  // 3DS: mostrar iFrame y escuchar resultado
+  // =========================
+  function show3DSIframe(url) {
+    const container = document.getElementById('3ds-iframe-container');
+    if (!container) return;
+
+    container.innerHTML = `<iframe
+      title="cybersource3Ds"
+      src="${url}"
+      data-testid="cybersource3Ds-iframe"
+      style="width:100vw;height:100vh;border:none;position:fixed;top:0;left:0;z-index:9999;">
+    </iframe>`;
+    container.style.display = 'block';
+
+    let resolved = false;
+
+    window.addEventListener('message', async event => {
+      if (resolved) return;
+
+      // Validar origen del mensaje contra el dominio del iFrame 3DS
+      try {
+        if (event.origin !== new URL(url).origin) return;
+      } catch {
+        return;
+      }
+
+      if (!event.data?.paymentId) return;
+      resolved = true;
+
+      // Ocultar y limpiar el iFrame
+      container.innerHTML = '';
+      container.style.display = 'none';
+
+      // Verificar el estado final del pago via backend
+      try {
+        const verifyRes = await fetch(
+          `${CONFIG.BACKEND_URL}/payments/verify/${paymentId}`,
+          { method: 'GET', headers: { 'Content-Type': 'application/json' } }
+        );
+        const verifyData = await verifyRes.json().catch(() => ({}));
+        const result = verifyData.data ?? verifyData;
+        const ok = result?.status === 'COMPLETED';
+
+        renderResultUI({
+          ok,
+          title: ok ? '¡Pago Exitoso!' : 'Autenticación 3DS fallida',
+          subtitle: ok
+            ? 'Finalizando...'
+            : result?.statusMessage || 'El pago fue rechazado',
+          emoji: ok ? '✅' : '❌',
+        });
+
+        if (ok) {
+          const sent = await notifyApp('paymentDone', { paymentId, result });
+          if (!sent) setTimeout(() => tryCloseBrowserTab(), 1200);
+        } else {
+          await notifyApp('paymentFailed', {
+            paymentId,
+            message: result?.statusMessage || 'Autenticación 3DS fallida',
+          });
+        }
+      } catch (err) {
+        renderResultUI({
+          ok: false,
+          title: 'Error al verificar pago',
+          subtitle: 'No se pudo confirmar el resultado. Contacta soporte.',
+          emoji: '❌',
+        });
+        await notifyApp('paymentFailed', {
+          paymentId,
+          message: 'Error verificando estado 3DS',
+        });
+      }
+    });
+  }
 });

@@ -60,4 +60,21 @@ export class PaymentController {
       );
     }
   );
+
+  /**
+   * Verify payment status after 3DS authentication
+   */
+  static verifyPaymentStatus = catchErrors(
+    async (req: Request, res: Response) => {
+      const { paymentId } = req.params;
+
+      logger.info('Verifying 3DS payment status', { paymentId });
+
+      const result = await PaymentService.verifyPaymentStatus(
+        Number(paymentId)
+      );
+
+      return successHandler(res, result, 'Payment status verified');
+    }
+  );
 }

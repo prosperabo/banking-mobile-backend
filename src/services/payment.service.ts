@@ -87,6 +87,9 @@ export class PaymentService {
         email: dbPayment.Users.email,
         phone: dbPayment.Users.phone,
       },
+      ...(paymentData.prevention_data && {
+        prevention_data: paymentData.prevention_data,
+      }),
     };
 
     await PaymentRepository.updatePaymentStatus(
@@ -131,6 +134,45 @@ export class PaymentService {
   }
 
   /**
+   * Verify payment status after 3DS authentication
+   */
+  static async verifyPaymentStatus(
+    dbPaymentId: number
+  ): Promise<PaymentServiceClientResponse> {
+    logger.info('Verifying payment status after 3DS', { dbPaymentId });
+
+    const dbPayment = await PaymentRepository.getPaymentById(dbPaymentId);
+
+    if (!dbPayment) {
+      throw new BadRequestError('Payment not found');
+    }
+
+    if (!dbPayment.provider_payment_id) {
+      throw new BadRequestError(
+        'Payment has not been submitted to provider yet'
+      );
+    }
+
+    const payment = await PaymentProviderService.getPaymentDetails(
+      dbPayment.provider_payment_id
+    );
+
+    await PaymentRepository.updatePaymentStatus(
+      dbPaymentId,
+      mapClipStatusToInternal(payment.status),
+      payment.id,
+      payment
+    );
+
+    logger.info('Payment status verified', {
+      dbPaymentId,
+      status: payment.status,
+    });
+
+    return this.mapToClientResponse(payment);
+  }
+
+  /**
    * Map Payment Provider API response to client-friendly format
    */
   private static mapToClientResponse(
@@ -149,6 +191,12 @@ export class PaymentService {
             lastDigits: payment.payment_method.card.last_digits,
             type: payment.payment_method.type,
             issuer: payment.payment_method.card.issuer,
+          }
+        : undefined,
+      pendingAction: payment.pending_action
+        ? {
+            type: payment.pending_action.type,
+            url: payment.pending_action.url,
           }
         : undefined,
     };
