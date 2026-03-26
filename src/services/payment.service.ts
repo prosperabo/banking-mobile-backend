@@ -36,7 +36,7 @@ export class PaymentService {
 
     const payment = await PaymentRepository.createPayment(
       userId,
-      paymentData,
+      { ...paymentData, amount: fees.grossAmount },
       fees,
       idempotencyKey
     );

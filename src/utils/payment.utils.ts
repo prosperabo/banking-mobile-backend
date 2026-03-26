@@ -2,35 +2,44 @@ import { createHash, randomUUID } from 'crypto';
 import { PaymentStatus } from '@/schemas/payment.schemas';
 import { SipCurrency } from '@/schemas/sip.schemas';
 import { buildLogger } from '@/utils';
+import { config } from '@/config';
 
 const logger = buildLogger('PaymentUtils');
 
 export interface PaymentFeeCalculation {
   businessFeeRate: number;
   businessFeeAmount: number;
+  grossAmount: number;
   netAmount: number;
 }
 
 /**
- * Calculate payment fees: total commission 5%, Clip takes 3%, we take 2%
+ * Calculate payment fees for exchange-rate payments.
+ *
+ * The incoming `amount` is the net value (the exchange rate was already
+ * discounted by `usdMxnFeeRate` before the payment was created).
+ * We back-calculate the gross so that:
+ *   grossAmount = netAmount / (1 - feeRate)
+ *   netAmount   = amount (what arrived in the request)
  */
 export function calculatePaymentFees(amount: number): PaymentFeeCalculation {
-  const totalCommissionRate = 0.05;
-  const businessFeeRate = 0.02;
+  const businessFeeRate = config.exchangeRate.usdMxnFeeRate;
 
-  const businessFeeAmount = amount * businessFeeRate;
-  const netAmount = amount - amount * totalCommissionRate;
+  const netAmount = amount;
+  const grossAmount = netAmount / (1 - businessFeeRate);
+  const businessFeeAmount = grossAmount - netAmount;
 
   logger.debug('Calculated payment fees', {
-    amount,
+    netAmount,
+    grossAmount,
     businessFeeRate,
     businessFeeAmount,
-    netAmount,
   });
 
   return {
     businessFeeRate,
     businessFeeAmount,
+    grossAmount,
     netAmount,
   };
 }
