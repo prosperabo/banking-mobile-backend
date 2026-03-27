@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================
   const CONFIG = {
     API_KEY: 'ac12a9b5-4bc7-4ec3-8d86-fd5edd2aeb6b',
-    BACKEND_URL: 'http://localhost:3001/api/v1',
+    BACKEND_URL: 'https://api.mobile.slan.mx/api/v1',
   };
 
   // =========================
