@@ -4,7 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================
   const CONFIG = {
     API_KEY: 'ac12a9b5-4bc7-4ec3-8d86-fd5edd2aeb6b',
-    BACKEND_URL: 'https://api.mobile.slan.mx/api/v1',
+    BACKEND_URL: 'http://localhost:3001/api/v1',
   };
 
   // =========================
@@ -406,7 +406,14 @@ document.addEventListener('DOMContentLoaded', () => {
         return; // El flujo continúa dentro de show3DSIframe
       }
 
-      // 5. Pago completado sin 3DS
+      // 5. Verificar que el pago realmente fue aprobado
+      if (paymentResult?.status !== 'COMPLETED') {
+        throw new Error(
+          paymentResult?.statusMessage || 'El pago fue rechazado por el banco'
+        );
+      }
+
+      // 6. Pago completado sin 3DS
       renderResultUI({
         ok: true,
         title: '¡Pago Exitoso!',
@@ -414,9 +421,11 @@ document.addEventListener('DOMContentLoaded', () => {
         emoji: '✅',
       });
 
-      const sent = await notifyApp('paymentDone', { paymentId, result: paymentResult });
+      const sent = await notifyApp('paymentDone', {
+        paymentId,
+        result: paymentResult,
+      });
       if (!sent) setTimeout(() => tryCloseBrowserTab(), 1200);
-
     } catch (error) {
       const msg = error?.message
         ? String(error.message)
