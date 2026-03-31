@@ -11,6 +11,7 @@ export enum PaymentProvider {
 
 export enum PaymentStatus {
   PENDING = 'PENDING',
+  PROCESSING = 'PROCESSING',
   COMPLETED = 'COMPLETED',
   FAILED = 'FAILED',
   CANCELLED = 'CANCELLED',
@@ -149,6 +150,59 @@ export interface PaymentServiceWebhookNotification {
   event: 'payment.created' | 'payment.updated' | 'payment.refunded';
   payment: PaymentProviderPaymentResponse;
   timestamp: string;
+}
+
+export interface ClipWebhookPayload {
+  id?: string;
+  type?: string;
+  event?: string;
+  resource?: string;
+  resource_id?: string;
+  payment_id?: string;
+  provider_payment_id?: string;
+  status?: string;
+  item?: {
+    id?: string;
+    payment_id?: string;
+    status?: string;
+    status_detail?: {
+      code?: string;
+      message?: string;
+    };
+    [key: string]: unknown;
+  };
+  data?: {
+    id?: string;
+    payment_id?: string;
+    status?: string;
+    status_detail?: {
+      code?: string;
+      message?: string;
+    };
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+export interface WalletTopUpRequest {
+  externalTransactionId: string;
+  balanceId: number;
+  amount: number;
+  sourceCustomerID: number;
+  transactionType: 1;
+}
+
+export interface WalletTopUpResponsePayload {
+  transactionId?: string | number;
+  [key: string]: unknown;
+}
+
+export interface ClipWebhookProcessResponse {
+  providerPaymentId: string;
+  paymentId: string;
+  status: PaymentStatus;
+  topupTriggered: boolean;
+  topupExternalTransactionId?: string;
 }
 
 // Refund request

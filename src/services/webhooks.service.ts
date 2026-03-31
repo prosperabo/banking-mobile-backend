@@ -1,6 +1,11 @@
 import { BulkBatchRepository } from '../repositories/bulkBatch.repository';
 import { CardRepository } from '@/repositories/card.repository';
 import { BulkOrderCardNotification } from '@/schemas';
+import {
+  ClipWebhookPayload,
+  ClipWebhookProcessResponse,
+} from '@/schemas/payment.schemas';
+import { PaymentService } from './payment.service';
 import { buildLogger } from '@/utils';
 
 const logger = buildLogger('WebhooksService');
@@ -37,5 +42,17 @@ export class WebhooksService {
     }
 
     logger.info('Bulk order notification processed successfully');
+  }
+
+  static async handleClipPaymentWebhook(
+    data: ClipWebhookPayload
+  ): Promise<ClipWebhookProcessResponse> {
+    logger.info('Processing Clip payment webhook', { data });
+
+    const result = await PaymentService.handleClipWebhook(data);
+
+    logger.info('Clip payment webhook processed successfully', { result });
+
+    return result;
   }
 }

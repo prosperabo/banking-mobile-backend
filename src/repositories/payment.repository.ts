@@ -1,6 +1,8 @@
+import { Prisma } from '@prisma/client';
 import { db } from '@/config/prisma';
 import { buildLogger } from '@/utils';
 import {
+  ClipWebhookPayload,
   PaymentCreateRequest,
   PaymentStatus,
   PaymentProvider,
@@ -81,6 +83,30 @@ export class PaymentRepository {
     return payments;
   }
 
+  static async getPaymentByProviderPaymentId(
+    provider: PaymentProvider,
+    providerPaymentId: string
+  ) {
+    logger.info('Fetching payment by provider payment ID', {
+      provider,
+      providerPaymentId,
+    });
+
+    return db.payments.findFirst({
+      where: {
+        provider,
+        provider_payment_id: providerPaymentId,
+      },
+      include: {
+        Users: {
+          include: {
+            BackofficeAuthState: true,
+          },
+        },
+      },
+    });
+  }
+
   /**
    * Update payment status and details after processing
    */
@@ -127,5 +153,86 @@ export class PaymentRepository {
     });
 
     return payment;
+  }
+
+  static async mergeWebhookProcessingResult(
+    paymentId: bigint,
+    status: PaymentStatus,
+    params: {
+      providerPayload?: PaymentProviderPaymentResponse;
+      webhookPayload?: ClipWebhookPayload;
+      topup?: Record<string, unknown>;
+    }
+  ) {
+    const existing = await db.payments.findUnique({
+      where: { id: paymentId },
+      select: { response_payload: true },
+    });
+
+    const currentPayload =
+      (existing?.response_payload as Record<string, unknown> | null) ?? {};
+
+    const mergedPayload = {
+      ...currentPayload,
+      ...(params.providerPayload
+        ? { providerPayment: params.providerPayload }
+        : {}),
+      ...(params.webhookPayload ? { clipWebhook: params.webhookPayload } : {}),
+      ...(params.topup ? { topup: params.topup } : {}),
+    };
+
+    return db.payments.update({
+      where: { id: paymentId },
+      data: {
+        status,
+        response_payload: mergedPayload as Prisma.InputJsonValue,
+        updated_at: new Date(),
+      },
+    });
+  }
+
+  static async findTopupTransaction(externalTransactionId: string) {
+    return db.transactions.findFirst({
+      where: { externalTransactionId },
+    });
+  }
+
+  static async createOrUpdateTopupTransaction(params: {
+    externalTransactionId: string;
+    userId: number;
+    amount: number;
+    status: 'PENDING' | 'COMPLETED' | 'FAILED';
+    description: string;
+    prosperaReference: string;
+  }) {
+    const existing = await this.findTopupTransaction(
+      params.externalTransactionId
+    );
+
+    if (existing) {
+      return db.transactions.update({
+        where: { id: existing.id },
+        data: {
+          amount: params.amount,
+          status: params.status,
+          description: params.description,
+          prosperaReference: params.prosperaReference,
+          updatedAt: new Date(),
+        },
+      });
+    }
+
+    return db.transactions.create({
+      data: {
+        userId: params.userId,
+        type: 'TOPUP',
+        amount: params.amount,
+        status: params.status,
+        description: params.description,
+        externalTransactionId: params.externalTransactionId,
+        prosperaReference: params.prosperaReference,
+        updatedAt: new Date(),
+      },
+    });
   }
 }
