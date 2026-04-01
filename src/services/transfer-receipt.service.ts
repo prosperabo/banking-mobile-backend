@@ -20,6 +20,7 @@ export class TransferReceiptService {
     senderCustomerId: number;
     recipientUserId: number;
     recipientCustomerId: number;
+    amount: number;
   }): Promise<InternalTransferReceipt> {
     const generatedAt = new Date();
     const [senderName, receiverName] = await Promise.all([
@@ -35,6 +36,7 @@ export class TransferReceiptService {
       title: 'Comprobante de transferencia interna',
       dateTime: generatedAt.toISOString(),
       timezone: RECEIPT_TIMEZONE_LABEL,
+      amount: params.amount,
       senderName,
       receiverName,
     };
@@ -54,6 +56,7 @@ export class TransferReceiptService {
     receiverName: string;
     entityName: string;
     clabe: string;
+    amount: number;
   }): Promise<SpeiCashoutReceipt> {
     const generatedAt = new Date();
     const senderName = await this.resolveUserDisplayName(
@@ -66,6 +69,7 @@ export class TransferReceiptService {
       title: 'Comprobante de transferencia externa',
       dateTime: generatedAt.toISOString(),
       timezone: RECEIPT_TIMEZONE_LABEL,
+      amount: params.amount,
       senderName,
       receiverName: params.receiverName,
       entityName: params.entityName,

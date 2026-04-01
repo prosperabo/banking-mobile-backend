@@ -44,6 +44,7 @@ export interface BaseTransferReceipt {
   title: string;
   dateTime: string;
   timezone: string;
+  amount: number;
   senderName: string;
   receiverName: string;
 }

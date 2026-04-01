@@ -83,6 +83,7 @@ export class TransferService {
       senderCustomerId: customerId,
       recipientUserId: recipientUser.id,
       recipientCustomerId: recipientProfile.external_customer_id,
+      amount: transferData.amount,
     });
 
     return {
@@ -181,6 +182,7 @@ export class TransferService {
       receiverName: cashoutData.receiverName,
       entityName: cashoutData.entityName,
       clabe: cashoutData.clabe,
+      amount: cashoutData.amount,
     });
 
     logger.info('SPEI cashout completed successfully', {
