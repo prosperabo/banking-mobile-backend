@@ -4,6 +4,7 @@ import { buildLogger } from '@/utils';
 import {
   ClipWebhookPayload,
   PaymentCreateRequest,
+  PaymentTopupPayload,
   PaymentStatus,
   PaymentProvider,
   PaymentProviderPaymentResponse,
@@ -161,7 +162,7 @@ export class PaymentRepository {
     params: {
       providerPayload?: PaymentProviderPaymentResponse;
       webhookPayload?: ClipWebhookPayload;
-      topup?: Record<string, unknown>;
+      topup?: PaymentTopupPayload;
     }
   ) {
     const existing = await db.payments.findUnique({
@@ -191,48 +192,17 @@ export class PaymentRepository {
     });
   }
 
-  static async findTopupTransaction(externalTransactionId: string) {
-    return db.transactions.findFirst({
-      where: { externalTransactionId },
-    });
+  static async acquirePaymentLock(lockName: string): Promise<boolean> {
+    const result = await db.$queryRaw<Array<{ lockStatus: number | null }>>`
+      SELECT GET_LOCK(${lockName}, 5) AS lockStatus
+    `;
+
+    return result[0]?.lockStatus === 1;
   }
 
-  static async createOrUpdateTopupTransaction(params: {
-    externalTransactionId: string;
-    userId: number;
-    amount: number;
-    status: 'PENDING' | 'COMPLETED' | 'FAILED';
-    description: string;
-    prosperaReference: string;
-  }) {
-    const existing = await this.findTopupTransaction(
-      params.externalTransactionId
-    );
-
-    if (existing) {
-      return db.transactions.update({
-        where: { id: existing.id },
-        data: {
-          amount: params.amount,
-          status: params.status,
-          description: params.description,
-          prosperaReference: params.prosperaReference,
-          updatedAt: new Date(),
-        },
-      });
-    }
-
-    return db.transactions.create({
-      data: {
-        userId: params.userId,
-        type: 'TOPUP',
-        amount: params.amount,
-        status: params.status,
-        description: params.description,
-        externalTransactionId: params.externalTransactionId,
-        prosperaReference: params.prosperaReference,
-        updatedAt: new Date(),
-      },
-    });
+  static async releasePaymentLock(lockName: string): Promise<void> {
+    await db.$queryRaw`
+      SELECT RELEASE_LOCK(${lockName})
+    `;
   }
 }

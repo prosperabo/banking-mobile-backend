@@ -1,5 +1,4 @@
 import { PaymentRepository } from '@/repositories/payment.repository';
-import { db } from '@/config/prisma';
 import { buildLogger, paymentUtils } from '@/utils';
 import { PaymentProviderService } from './payment.provider.service';
 import { TopupBackofficeService } from './topup.backoffice.service';
@@ -13,13 +12,13 @@ import {
   PaymentProviderAPIPaymentRequest,
   PaymentProviderPaymentResponse,
   PaymentServiceClientResponse,
+  PaymentTopupPayload,
   PaymentStatus,
 } from '@/schemas/payment.schemas';
 import { BadRequestError, ConflictError, NotFoundError } from '@/shared/errors';
 import { config } from '@/config';
 import {
   extractClipWebhookPaymentId,
-  extractClipWebhookStatus,
   mapClipStatusToInternal,
 } from '@/utils/payment.utils';
 
@@ -208,8 +207,8 @@ export class PaymentService {
       throw new NotFoundError('Payment not found for Clip webhook');
     }
 
-    const lockName = `clip-webhook-${dbPayment.id.toString()}`;
-    const lockAcquired = await this.acquirePaymentLock(lockName);
+    const lockName = dbPayment.idempotency_key;
+    const lockAcquired = await PaymentRepository.acquirePaymentLock(lockName);
 
     if (!lockAcquired) {
       throw new ConflictError('Clip webhook is already being processed');
@@ -226,12 +225,11 @@ export class PaymentService {
         throw new NotFoundError('Payment not found for Clip webhook');
       }
 
-      const providerPayment =
-        await PaymentProviderService.getPaymentDetails(providerPaymentId);
-
-      const internalStatus = mapClipStatusToInternal(
-        providerPayment.status ?? extractClipWebhookStatus(payload)
+      const providerPayment = await this.getConfirmedProviderPayment(
+        providerPaymentId,
+        payload
       );
+      const internalStatus = mapClipStatusToInternal(providerPayment.status);
 
       logger.info('Clip webhook received', {
         paymentId: lockedPayment.id.toString(),
@@ -273,27 +271,10 @@ export class PaymentService {
         }
       );
 
-      const authState = lockedPayment.Users.BackofficeAuthState;
-
-      if (!authState?.defaultBalanceId || !authState.externalCustomerId) {
-        logger.error('Missing backoffice auth state for Clip topup', {
-          paymentId: lockedPayment.id.toString(),
-          userId: lockedPayment.user_id,
-        });
-        throw new BadRequestError(
-          'User backoffice data is incomplete for Clip topup'
-        );
-      }
-
-      const topupExternalTransactionId = `clip-topup-${lockedPayment.id.toString()}`;
-      const existingTopup = await PaymentRepository.findTopupTransaction(
-        topupExternalTransactionId
-      );
-
-      if (existingTopup?.status === PaymentStatus.COMPLETED) {
+      if (this.hasCompletedTopup(lockedPayment.response_payload)) {
         logger.info('Clip topup already processed, skipping duplicate', {
           paymentId: lockedPayment.id.toString(),
-          topupExternalTransactionId,
+          externalTransactionId: lockedPayment.idempotency_key,
         });
 
         return {
@@ -301,38 +282,14 @@ export class PaymentService {
           paymentId: lockedPayment.id.toString(),
           status: PaymentStatus.COMPLETED,
           topupTriggered: false,
-          topupExternalTransactionId,
+          topupExternalTransactionId: lockedPayment.idempotency_key,
         };
       }
 
-      const topupAmount = lockedPayment.net_amount.toNumber();
-
-      await PaymentRepository.createOrUpdateTopupTransaction({
-        externalTransactionId: topupExternalTransactionId,
-        userId: lockedPayment.user_id,
-        amount: topupAmount,
-        status: 'PENDING',
-        description: 'Clip payment topup',
-        prosperaReference: providerPaymentId,
-      });
+      const topupRequest = this.buildTopupRequest(lockedPayment);
 
       try {
-        const topupResponse = await TopupBackofficeService.topUp({
-          externalTransactionId: topupExternalTransactionId,
-          balanceId: authState.defaultBalanceId,
-          amount: topupAmount,
-          sourceCustomerID: authState.externalCustomerId,
-          transactionType: 1,
-        });
-
-        await PaymentRepository.createOrUpdateTopupTransaction({
-          externalTransactionId: topupExternalTransactionId,
-          userId: lockedPayment.user_id,
-          amount: topupAmount,
-          status: 'COMPLETED',
-          description: 'Clip payment topup',
-          prosperaReference: providerPaymentId,
-        });
+        const topupResponse = await TopupBackofficeService.topUp(topupRequest);
 
         await PaymentRepository.mergeWebhookProcessingResult(
           lockedPayment.id,
@@ -340,21 +297,18 @@ export class PaymentService {
           {
             providerPayload: providerPayment,
             webhookPayload: payload,
-            topup: {
-              status: PaymentStatus.COMPLETED,
-              externalTransactionId: topupExternalTransactionId,
-              amount: topupAmount,
-              balanceId: authState.defaultBalanceId,
-              sourceCustomerID: authState.externalCustomerId,
-              response: topupResponse,
-            },
+            topup: this.buildTopupPayload(
+              topupRequest,
+              PaymentStatus.COMPLETED,
+              { response: topupResponse }
+            ),
           }
         );
 
         logger.info('Clip webhook topup completed', {
           paymentId: lockedPayment.id.toString(),
           providerPaymentId,
-          topupExternalTransactionId,
+          externalTransactionId: topupRequest.externalTransactionId,
         });
 
         return {
@@ -362,24 +316,15 @@ export class PaymentService {
           paymentId: lockedPayment.id.toString(),
           status: PaymentStatus.COMPLETED,
           topupTriggered: true,
-          topupExternalTransactionId,
+          topupExternalTransactionId: topupRequest.externalTransactionId,
         };
       } catch (error) {
         if (error instanceof ConflictError) {
           logger.warn('Clip topup reported duplicate/conflict, marking done', {
             paymentId: lockedPayment.id.toString(),
             providerPaymentId,
-            topupExternalTransactionId,
+            externalTransactionId: topupRequest.externalTransactionId,
             message: error.message,
-          });
-
-          await PaymentRepository.createOrUpdateTopupTransaction({
-            externalTransactionId: topupExternalTransactionId,
-            userId: lockedPayment.user_id,
-            amount: topupAmount,
-            status: 'COMPLETED',
-            description: 'Clip payment topup',
-            prosperaReference: providerPaymentId,
           });
 
           await PaymentRepository.mergeWebhookProcessingResult(
@@ -388,14 +333,11 @@ export class PaymentService {
             {
               providerPayload: providerPayment,
               webhookPayload: payload,
-              topup: {
-                status: PaymentStatus.COMPLETED,
-                externalTransactionId: topupExternalTransactionId,
-                amount: topupAmount,
-                balanceId: authState.defaultBalanceId,
-                sourceCustomerID: authState.externalCustomerId,
-                note: 'Topup conflict treated as idempotent duplicate',
-              },
+              topup: this.buildTopupPayload(
+                topupRequest,
+                PaymentStatus.COMPLETED,
+                { note: 'Topup conflict treated as idempotent duplicate' }
+              ),
             }
           );
 
@@ -404,18 +346,9 @@ export class PaymentService {
             paymentId: lockedPayment.id.toString(),
             status: PaymentStatus.COMPLETED,
             topupTriggered: false,
-            topupExternalTransactionId,
+            topupExternalTransactionId: topupRequest.externalTransactionId,
           };
         }
-
-        await PaymentRepository.createOrUpdateTopupTransaction({
-          externalTransactionId: topupExternalTransactionId,
-          userId: lockedPayment.user_id,
-          amount: topupAmount,
-          status: 'FAILED',
-          description: 'Clip payment topup',
-          prosperaReference: providerPaymentId,
-        });
 
         await PaymentRepository.mergeWebhookProcessingResult(
           lockedPayment.id,
@@ -423,46 +356,27 @@ export class PaymentService {
           {
             providerPayload: providerPayment,
             webhookPayload: payload,
-            topup: {
-              status: PaymentStatus.FAILED,
-              externalTransactionId: topupExternalTransactionId,
-              amount: topupAmount,
-              balanceId: authState.defaultBalanceId,
-              sourceCustomerID: authState.externalCustomerId,
+            topup: this.buildTopupPayload(topupRequest, PaymentStatus.FAILED, {
               error:
                 error instanceof Error
                   ? error.message
                   : 'Unknown topup processing error',
-            },
+            }),
           }
         );
 
         logger.error('Clip webhook topup failed', {
           paymentId: lockedPayment.id.toString(),
           providerPaymentId,
-          topupExternalTransactionId,
+          externalTransactionId: topupRequest.externalTransactionId,
           error,
         });
 
         throw error;
       }
     } finally {
-      await this.releasePaymentLock(lockName);
+      await PaymentRepository.releasePaymentLock(lockName);
     }
-  }
-
-  private static async acquirePaymentLock(lockName: string): Promise<boolean> {
-    const result = await db.$queryRaw<Array<{ lockStatus: number | null }>>`
-      SELECT GET_LOCK(${lockName}, 5) AS lockStatus
-    `;
-
-    return result[0]?.lockStatus === 1;
-  }
-
-  private static async releasePaymentLock(lockName: string): Promise<void> {
-    await db.$queryRaw`
-      SELECT RELEASE_LOCK(${lockName})
-    `;
   }
 
   /**
@@ -504,5 +418,72 @@ export class PaymentService {
     }
 
     return finalStatus;
+  }
+
+  private static async getConfirmedProviderPayment(
+    providerPaymentId: string,
+    _payload: ClipWebhookPayload
+  ): Promise<PaymentProviderPaymentResponse> {
+    return PaymentProviderService.getPaymentDetails(providerPaymentId);
+  }
+
+  private static hasCompletedTopup(responsePayload: unknown): boolean {
+    const typedPayload = responsePayload as {
+      topup?: PaymentTopupPayload;
+    } | null;
+    return typedPayload?.topup?.status === PaymentStatus.COMPLETED;
+  }
+
+  private static buildTopupRequest(payment: {
+    id: bigint;
+    idempotency_key: string;
+    net_amount: { toNumber(): number };
+    user_id: number;
+    Users: {
+      BackofficeAuthState: {
+        defaultBalanceId: number | null;
+        externalCustomerId: number | null;
+      } | null;
+    };
+  }) {
+    const authState = payment.Users.BackofficeAuthState;
+
+    if (!authState?.defaultBalanceId || !authState.externalCustomerId) {
+      logger.error('Missing backoffice auth state for Clip topup', {
+        paymentId: payment.id.toString(),
+        userId: payment.user_id,
+      });
+      throw new BadRequestError(
+        'User backoffice data is incomplete for Clip topup'
+      );
+    }
+
+    return {
+      externalTransactionId: payment.idempotency_key,
+      balanceId: authState.defaultBalanceId,
+      amount: payment.net_amount.toNumber(),
+      sourceCustomerID: authState.externalCustomerId,
+      transactionType: 1 as const,
+    };
+  }
+
+  private static buildTopupPayload(
+    topupRequest: {
+      externalTransactionId: string;
+      balanceId: number;
+      amount: number;
+      sourceCustomerID: number;
+    },
+    status: PaymentStatus,
+    extras?: Pick<PaymentTopupPayload, 'response' | 'note' | 'error'>
+  ): PaymentTopupPayload {
+    return {
+      status,
+      externalTransactionId: topupRequest.externalTransactionId,
+      amount: topupRequest.amount,
+      balanceId: topupRequest.balanceId,
+      sourceCustomerID: topupRequest.sourceCustomerID,
+      ...extras,
+    };
   }
 }

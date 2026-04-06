@@ -1,3 +1,5 @@
+import { ApiResponse } from './api.backoffice.schemas';
+
 // Metadata type for payment data
 export interface PaymentMetadata {
   userId?: number;
@@ -195,6 +197,19 @@ export interface WalletTopUpRequest {
 export interface WalletTopUpResponsePayload {
   transactionId?: string | number;
   [key: string]: unknown;
+}
+
+export type WalletTopUpResponse = ApiResponse<WalletTopUpResponsePayload>;
+
+export interface PaymentTopupPayload {
+  status: PaymentStatus;
+  externalTransactionId: string;
+  amount: number;
+  balanceId: number;
+  sourceCustomerID: number;
+  response?: WalletTopUpResponse;
+  note?: string;
+  error?: string;
 }
 
 export interface ClipWebhookProcessResponse {
