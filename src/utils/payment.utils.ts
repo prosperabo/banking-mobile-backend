@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'crypto';
-import { PaymentStatus } from '@/schemas/payment.schemas';
+import { ClipWebhookPayload, PaymentStatus } from '@/schemas/payment.schemas';
 import { SipCurrency } from '@/schemas/sip.schemas';
 import { buildLogger } from '@/utils';
 import { config } from '@/config';
@@ -90,20 +90,60 @@ export function generateSipQrIdempotencyKey(
 export function mapClipStatusToInternal(status?: string): PaymentStatus {
   switch (status?.toLowerCase()) {
     case 'approved':
+    case 'succeeded':
+    case 'completed':
       return PaymentStatus.COMPLETED;
 
     case 'pending':
     case 'in_process':
-      return PaymentStatus.PENDING;
+    case 'authorized':
+      return PaymentStatus.PROCESSING;
 
     case 'rejected':
-    case 'cancelled':
-    case 'canceled':
+    case 'failed':
+    case 'declined':
       return PaymentStatus.FAILED;
 
+    case 'cancelled':
+    case 'canceled':
+      return PaymentStatus.CANCELLED;
+
     default:
-      return PaymentStatus.FAILED;
+      return PaymentStatus.PENDING;
   }
+}
+
+export function extractClipWebhookPaymentId(
+  payload: ClipWebhookPayload
+): string | undefined {
+  const candidates = [
+    payload.provider_payment_id,
+    payload.payment_id,
+    payload.resource_id,
+    payload.item?.payment_id,
+    payload.item?.id,
+    payload.data?.payment_id,
+    payload.data?.id,
+    payload.id,
+  ];
+
+  return candidates.find(
+    candidate => typeof candidate === 'string' && candidate.trim().length > 0
+  );
+}
+
+export function extractClipWebhookStatus(
+  payload: ClipWebhookPayload
+): string | undefined {
+  const candidates = [
+    payload.status,
+    payload.item?.status,
+    payload.data?.status,
+  ];
+
+  return candidates.find(
+    candidate => typeof candidate === 'string' && candidate.trim().length > 0
+  );
 }
 
 export function buildExpirationDate(daysFromNow = 1): string {

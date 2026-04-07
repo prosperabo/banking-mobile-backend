@@ -11,4 +11,6 @@ router.post(
   WebhooksController.handleBulkOrderCardNotification
 );
 
+router.post('/clip/payment', WebhooksController.handleClipPaymentWebhook);
+
 export default router;

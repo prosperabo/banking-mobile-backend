@@ -1,18 +1,26 @@
 import { PaymentRepository } from '@/repositories/payment.repository';
 import { buildLogger, paymentUtils } from '@/utils';
 import { PaymentProviderService } from './payment.provider.service';
+import { TopupBackofficeService } from './topup.backoffice.service';
 import {
+  ClipWebhookPayload,
+  ClipWebhookProcessResponse,
   PaymentCreateRequest,
+  PaymentProvider,
   PaymentServiceCreateResponse,
   ProcessPaymentRequest,
   PaymentProviderAPIPaymentRequest,
   PaymentProviderPaymentResponse,
   PaymentServiceClientResponse,
+  PaymentTopupPayload,
   PaymentStatus,
 } from '@/schemas/payment.schemas';
-import { BadRequestError } from '@/shared/errors';
+import { BadRequestError, ConflictError, NotFoundError } from '@/shared/errors';
 import { config } from '@/config';
-import { mapClipStatusToInternal } from '@/utils/payment.utils';
+import {
+  extractClipWebhookPaymentId,
+  mapClipStatusToInternal,
+} from '@/utils/payment.utils';
 
 const logger = buildLogger('PaymentService');
 
@@ -108,14 +116,16 @@ export class PaymentService {
       status: payment.status,
     });
 
+    const preWebhookStatus = this.mapClipStatusBeforeWebhook(payment.status);
+
     await PaymentRepository.updatePaymentStatus(
       paymentId,
-      mapClipStatusToInternal(payment.status),
+      preWebhookStatus,
       payment.id,
       payment
     );
 
-    return this.mapToClientResponse(payment);
+    return this.mapToClientResponse(payment, preWebhookStatus);
   }
 
   /**
@@ -157,9 +167,11 @@ export class PaymentService {
       dbPayment.provider_payment_id
     );
 
+    const preWebhookStatus = this.mapClipStatusBeforeWebhook(payment.status);
+
     await PaymentRepository.updatePaymentStatus(
       dbPaymentId,
-      mapClipStatusToInternal(payment.status),
+      preWebhookStatus,
       payment.id,
       payment
     );
@@ -169,20 +181,216 @@ export class PaymentService {
       status: payment.status,
     });
 
-    return this.mapToClientResponse(payment);
+    return this.mapToClientResponse(payment, preWebhookStatus);
+  }
+
+  static async handleClipWebhook(
+    payload: ClipWebhookPayload
+  ): Promise<ClipWebhookProcessResponse> {
+    const providerPaymentId = extractClipWebhookPaymentId(payload);
+
+    if (!providerPaymentId) {
+      throw new BadRequestError(
+        'Clip webhook does not include a payment identifier'
+      );
+    }
+
+    const dbPayment = await PaymentRepository.getPaymentByProviderPaymentId(
+      PaymentProvider.CLIP,
+      providerPaymentId
+    );
+
+    if (!dbPayment) {
+      logger.warn('Clip webhook payment not found locally', {
+        providerPaymentId,
+      });
+      throw new NotFoundError('Payment not found for Clip webhook');
+    }
+
+    const lockName = dbPayment.idempotency_key;
+    const lockAcquired = await PaymentRepository.acquirePaymentLock(lockName);
+
+    if (!lockAcquired) {
+      throw new ConflictError('Clip webhook is already being processed');
+    }
+
+    try {
+      const lockedPayment =
+        await PaymentRepository.getPaymentByProviderPaymentId(
+          PaymentProvider.CLIP,
+          providerPaymentId
+        );
+
+      if (!lockedPayment) {
+        throw new NotFoundError('Payment not found for Clip webhook');
+      }
+
+      const providerPayment = await this.getConfirmedProviderPayment(
+        providerPaymentId,
+        payload
+      );
+      const internalStatus = mapClipStatusToInternal(providerPayment.status);
+
+      logger.info('Clip webhook received', {
+        paymentId: lockedPayment.id.toString(),
+        providerPaymentId,
+        providerStatus: providerPayment.status,
+        internalStatus,
+      });
+
+      if (internalStatus !== PaymentStatus.COMPLETED) {
+        await PaymentRepository.mergeWebhookProcessingResult(
+          lockedPayment.id,
+          internalStatus,
+          {
+            providerPayload: providerPayment,
+            webhookPayload: payload,
+          }
+        );
+
+        logger.info('Clip webhook processed without topup', {
+          paymentId: lockedPayment.id.toString(),
+          providerPaymentId,
+          status: internalStatus,
+        });
+
+        return {
+          providerPaymentId,
+          paymentId: lockedPayment.id.toString(),
+          status: internalStatus,
+          topupTriggered: false,
+        };
+      }
+
+      await PaymentRepository.mergeWebhookProcessingResult(
+        lockedPayment.id,
+        PaymentStatus.COMPLETED,
+        {
+          providerPayload: providerPayment,
+          webhookPayload: payload,
+        }
+      );
+
+      if (this.hasCompletedTopup(lockedPayment.response_payload)) {
+        logger.info('Clip topup already processed, skipping duplicate', {
+          paymentId: lockedPayment.id.toString(),
+          externalTransactionId: lockedPayment.idempotency_key,
+        });
+
+        return {
+          providerPaymentId,
+          paymentId: lockedPayment.id.toString(),
+          status: PaymentStatus.COMPLETED,
+          topupTriggered: false,
+          topupExternalTransactionId: lockedPayment.idempotency_key,
+        };
+      }
+
+      const topupRequest = this.buildTopupRequest(lockedPayment);
+
+      try {
+        const topupResponse = await TopupBackofficeService.topUp(topupRequest);
+
+        await PaymentRepository.mergeWebhookProcessingResult(
+          lockedPayment.id,
+          PaymentStatus.COMPLETED,
+          {
+            providerPayload: providerPayment,
+            webhookPayload: payload,
+            topup: this.buildTopupPayload(
+              topupRequest,
+              PaymentStatus.COMPLETED,
+              { response: topupResponse }
+            ),
+          }
+        );
+
+        logger.info('Clip webhook topup completed', {
+          paymentId: lockedPayment.id.toString(),
+          providerPaymentId,
+          externalTransactionId: topupRequest.externalTransactionId,
+        });
+
+        return {
+          providerPaymentId,
+          paymentId: lockedPayment.id.toString(),
+          status: PaymentStatus.COMPLETED,
+          topupTriggered: true,
+          topupExternalTransactionId: topupRequest.externalTransactionId,
+        };
+      } catch (error) {
+        if (error instanceof ConflictError) {
+          logger.warn('Clip topup reported duplicate/conflict, marking done', {
+            paymentId: lockedPayment.id.toString(),
+            providerPaymentId,
+            externalTransactionId: topupRequest.externalTransactionId,
+            message: error.message,
+          });
+
+          await PaymentRepository.mergeWebhookProcessingResult(
+            lockedPayment.id,
+            PaymentStatus.COMPLETED,
+            {
+              providerPayload: providerPayment,
+              webhookPayload: payload,
+              topup: this.buildTopupPayload(
+                topupRequest,
+                PaymentStatus.COMPLETED,
+                { note: 'Topup conflict treated as idempotent duplicate' }
+              ),
+            }
+          );
+
+          return {
+            providerPaymentId,
+            paymentId: lockedPayment.id.toString(),
+            status: PaymentStatus.COMPLETED,
+            topupTriggered: false,
+            topupExternalTransactionId: topupRequest.externalTransactionId,
+          };
+        }
+
+        await PaymentRepository.mergeWebhookProcessingResult(
+          lockedPayment.id,
+          PaymentStatus.COMPLETED,
+          {
+            providerPayload: providerPayment,
+            webhookPayload: payload,
+            topup: this.buildTopupPayload(topupRequest, PaymentStatus.FAILED, {
+              error:
+                error instanceof Error
+                  ? error.message
+                  : 'Unknown topup processing error',
+            }),
+          }
+        );
+
+        logger.error('Clip webhook topup failed', {
+          paymentId: lockedPayment.id.toString(),
+          providerPaymentId,
+          externalTransactionId: topupRequest.externalTransactionId,
+          error,
+        });
+
+        throw error;
+      }
+    } finally {
+      await PaymentRepository.releasePaymentLock(lockName);
+    }
   }
 
   /**
    * Map Payment Provider API response to client-friendly format
    */
   private static mapToClientResponse(
-    payment: PaymentProviderPaymentResponse
+    payment: PaymentProviderPaymentResponse,
+    statusOverride?: PaymentStatus
   ): PaymentServiceClientResponse {
     return {
       paymentId: payment.id,
       amount: payment.amount,
       currency: payment.currency,
-      status: mapClipStatusToInternal(payment.status),
+      status: statusOverride ?? mapClipStatusToInternal(payment.status),
       statusMessage: payment.status_detail.message,
       receiptNo: payment.receipt_no,
       approvedAt: payment.approved_at,
@@ -199,6 +407,83 @@ export class PaymentService {
             url: payment.pending_action.url,
           }
         : undefined,
+    };
+  }
+
+  private static mapClipStatusBeforeWebhook(status?: string): PaymentStatus {
+    const finalStatus = mapClipStatusToInternal(status);
+
+    if (finalStatus === PaymentStatus.COMPLETED) {
+      return PaymentStatus.PROCESSING;
+    }
+
+    return finalStatus;
+  }
+
+  private static async getConfirmedProviderPayment(
+    providerPaymentId: string,
+    _payload: ClipWebhookPayload
+  ): Promise<PaymentProviderPaymentResponse> {
+    return PaymentProviderService.getPaymentDetails(providerPaymentId);
+  }
+
+  private static hasCompletedTopup(responsePayload: unknown): boolean {
+    const typedPayload = responsePayload as {
+      topup?: PaymentTopupPayload;
+    } | null;
+    return typedPayload?.topup?.status === PaymentStatus.COMPLETED;
+  }
+
+  private static buildTopupRequest(payment: {
+    id: bigint;
+    idempotency_key: string;
+    net_amount: { toNumber(): number };
+    user_id: number;
+    Users: {
+      BackofficeAuthState: {
+        defaultBalanceId: number | null;
+        externalCustomerId: number | null;
+      } | null;
+    };
+  }) {
+    const authState = payment.Users.BackofficeAuthState;
+
+    if (!authState?.defaultBalanceId || !authState.externalCustomerId) {
+      logger.error('Missing backoffice auth state for Clip topup', {
+        paymentId: payment.id.toString(),
+        userId: payment.user_id,
+      });
+      throw new BadRequestError(
+        'User backoffice data is incomplete for Clip topup'
+      );
+    }
+
+    return {
+      externalTransactionId: payment.idempotency_key,
+      balanceId: authState.defaultBalanceId,
+      amount: payment.net_amount.toNumber(),
+      sourceCustomerID: authState.externalCustomerId,
+      transactionType: 1 as const,
+    };
+  }
+
+  private static buildTopupPayload(
+    topupRequest: {
+      externalTransactionId: string;
+      balanceId: number;
+      amount: number;
+      sourceCustomerID: number;
+    },
+    status: PaymentStatus,
+    extras?: Pick<PaymentTopupPayload, 'response' | 'note' | 'error'>
+  ): PaymentTopupPayload {
+    return {
+      status,
+      externalTransactionId: topupRequest.externalTransactionId,
+      amount: topupRequest.amount,
+      balanceId: topupRequest.balanceId,
+      sourceCustomerID: topupRequest.sourceCustomerID,
+      ...extras,
     };
   }
 }

@@ -1,7 +1,10 @@
+import { Prisma } from '@prisma/client';
 import { db } from '@/config/prisma';
 import { buildLogger } from '@/utils';
 import {
+  ClipWebhookPayload,
   PaymentCreateRequest,
+  PaymentTopupPayload,
   PaymentStatus,
   PaymentProvider,
   PaymentProviderPaymentResponse,
@@ -81,6 +84,30 @@ export class PaymentRepository {
     return payments;
   }
 
+  static async getPaymentByProviderPaymentId(
+    provider: PaymentProvider,
+    providerPaymentId: string
+  ) {
+    logger.info('Fetching payment by provider payment ID', {
+      provider,
+      providerPaymentId,
+    });
+
+    return db.payments.findFirst({
+      where: {
+        provider,
+        provider_payment_id: providerPaymentId,
+      },
+      include: {
+        Users: {
+          include: {
+            BackofficeAuthState: true,
+          },
+        },
+      },
+    });
+  }
+
   /**
    * Update payment status and details after processing
    */
@@ -127,5 +154,55 @@ export class PaymentRepository {
     });
 
     return payment;
+  }
+
+  static async mergeWebhookProcessingResult(
+    paymentId: bigint,
+    status: PaymentStatus,
+    params: {
+      providerPayload?: PaymentProviderPaymentResponse;
+      webhookPayload?: ClipWebhookPayload;
+      topup?: PaymentTopupPayload;
+    }
+  ) {
+    const existing = await db.payments.findUnique({
+      where: { id: paymentId },
+      select: { response_payload: true },
+    });
+
+    const currentPayload =
+      (existing?.response_payload as Record<string, unknown> | null) ?? {};
+
+    const mergedPayload = {
+      ...currentPayload,
+      ...(params.providerPayload
+        ? { providerPayment: params.providerPayload }
+        : {}),
+      ...(params.webhookPayload ? { clipWebhook: params.webhookPayload } : {}),
+      ...(params.topup ? { topup: params.topup } : {}),
+    };
+
+    return db.payments.update({
+      where: { id: paymentId },
+      data: {
+        status,
+        response_payload: mergedPayload as Prisma.InputJsonValue,
+        updated_at: new Date(),
+      },
+    });
+  }
+
+  static async acquirePaymentLock(lockName: string): Promise<boolean> {
+    const result = await db.$queryRaw<Array<{ lockStatus: number | null }>>`
+      SELECT GET_LOCK(${lockName}, 5) AS lockStatus
+    `;
+
+    return result[0]?.lockStatus === 1;
+  }
+
+  static async releasePaymentLock(lockName: string): Promise<void> {
+    await db.$queryRaw`
+      SELECT RELEASE_LOCK(${lockName})
+    `;
   }
 }
