@@ -62,8 +62,8 @@ model Users {
   completedLessons           CompletedLesson[]
   DeviceCredentials          DeviceCredentials[]
   Transactions               Transactions[]
-  TransferReceipts           TransferReceipt[]
   payments                   payments[]
+  TransferReceipts           TransferReceipt[]
 }
 
 model VerifiedEmails {
@@ -266,6 +266,7 @@ model payments {
   response_payload    Json?
   created_at          DateTime        @default(now()) @db.DateTime(0)
   updated_at          DateTime        @default(now()) @db.DateTime(0)
+  process_attempts    Int             @default(0)
   Users               Users           @relation(fields: [user_id], references: [id], map: "fk_payments_user")
 
   @@unique([provider, provider_payment_id], map: "uk_payments_provider_payment")
@@ -305,19 +306,19 @@ model CardPickup {
   id              Int      @id @default(autoincrement())
   userId          Int?
   cardId          Int
-  mobile          String
-  street          String
-  exteriorNumber  String
-  interiorNumber  String
-  neighborhood    String
-  city            String
-  state           String
-  postalCode      String
-  additionalNotes String
   isSlanPoint     Boolean  @default(false)
-  assignedAt      DateTime @default(now())
   createdAt       DateTime @default(now())
   updatedAt       DateTime @default(now())
+  mobile          String   @default("")
+  street          String   @default("")
+  exteriorNumber  String   @default("")
+  interiorNumber  String   @default("")
+  neighborhood    String   @default("")
+  city            String   @default("")
+  state           String   @default("")
+  postalCode      String   @default("")
+  additionalNotes String   @default("")
+  assignedAt      DateTime @default(now())
   Cards           Cards    @relation(fields: [cardId], references: [id])
   Users           Users?   @relation(fields: [userId], references: [id])
 
@@ -331,7 +332,7 @@ model TransferReceipt {
   type         TransferReceiptType
   transferData Json                @map("transfer_data")
   generatedAt  DateTime            @default(now()) @map("generated_at")
-  Users        Users               @relation(fields: [userId], references: [id])
+  Users        Users               @relation(fields: [userId], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@index([userId], map: "idx_transfer_receipts_user")
   @@map("transfer_receipts")
