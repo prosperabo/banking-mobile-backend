@@ -7,6 +7,11 @@ document.addEventListener('DOMContentLoaded', () => {
     BACKEND_URL: 'https://api.mobile.slan.mx/api/v1',
   };
 
+  console.log('[CHECKOUT] DOM listo');
+  console.log('[CHECKOUT] Config cargada', {
+    backendUrl: CONFIG.BACKEND_URL,
+  });
+
   // =========================
   // Helpers: entorno Flutter vs Browser
   // =========================
@@ -16,10 +21,21 @@ document.addEventListener('DOMContentLoaded', () => {
   let isFlutterReady = false;
   window.addEventListener('flutterInAppWebViewPlatformReady', () => {
     isFlutterReady = true;
+    console.log('[CHECKOUT] Flutter InAppWebView listo');
   });
 
   async function notifyApp(handlerName, payload) {
-    if (!isInAppWebView()) return false;
+    console.log('[CHECKOUT] Intentando notificar a Flutter', {
+      handlerName,
+      payload,
+      isInAppWebView: isInAppWebView(),
+      isFlutterReady,
+    });
+
+    if (!isInAppWebView()) {
+      console.log('[CHECKOUT] No está dentro de InAppWebView, no se notifica');
+      return false;
+    }
 
     // Espera a “ready” hasta ~2s
     for (let i = 0; i < 40; i++) {
@@ -29,10 +45,15 @@ document.addEventListener('DOMContentLoaded', () => {
             handlerName,
             payload ?? {}
           );
+          console.log('[CHECKOUT] Flutter notificado correctamente', {
+            handlerName,
+            mode: 'ready-loop',
+          });
           return true;
         }
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (_) {}
+      } catch (err) {
+        console.warn('[CHECKOUT] Falló notifyApp en ready-loop', err);
+      }
       await sleep(50);
     }
 
@@ -44,13 +65,19 @@ document.addEventListener('DOMContentLoaded', () => {
             handlerName,
             payload ?? {}
           );
+          console.log('[CHECKOUT] Flutter notificado correctamente', {
+            handlerName,
+            mode: 'fallback-loop',
+          });
           return true;
         }
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      } catch (_) {}
+      } catch (err) {
+        console.warn('[CHECKOUT] Falló notifyApp en fallback-loop', err);
+      }
       await sleep(80);
     }
 
+    console.warn('[CHECKOUT] No se pudo notificar a Flutter', { handlerName });
     return false;
   }
 
@@ -63,14 +90,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const errorBox = document.querySelector('#card-error');
 
   // Visuales (opcionales)
-  const visualBrand = document.querySelector('#brand-display'); // si existe
-  const visualLast4 = document.querySelector('.card-number-display'); // sí existe
-  const visualStatus = document.querySelector('#status-display'); // si existe
+  const visualBrand = document.querySelector('#brand-display');
+  const visualLast4 = document.querySelector('.card-number-display');
+  const visualStatus = document.querySelector('#status-display');
 
   // Params
   const urlParams = new URLSearchParams(window.location.search);
   const paymentId = urlParams.get('paymentId');
   const amount = urlParams.get('amount');
+
+  console.log('[CHECKOUT] Parámetros detectados', {
+    paymentId,
+    amount,
+    inAppWebView: isInAppWebView(),
+  });
 
   // =========================
   // UI helpers
@@ -78,6 +111,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function setError(text) {
     if (!errorBox) return;
     errorBox.textContent = text || '';
+    if (text) {
+      console.warn('[CHECKOUT] Error mostrado al usuario:', text);
+    }
   }
 
   function setSubmitText(text) {
@@ -89,6 +125,7 @@ document.addEventListener('DOMContentLoaded', () => {
   function setSubmitEnabled(enabled) {
     if (!submitButton) return;
     submitButton.disabled = !enabled;
+    console.log('[CHECKOUT] Botón submit', enabled ? 'habilitado' : 'deshabilitado');
   }
 
   function setSubmitLoading(isLoading) {
@@ -97,10 +134,19 @@ document.addEventListener('DOMContentLoaded', () => {
     submitButton.innerHTML = isLoading
       ? 'Procesando...'
       : `<span>Reintentar Pago</span>`;
+
+    console.log('[CHECKOUT] Estado loading del submit', { isLoading });
   }
 
   function renderResultUI({ ok, title, subtitle, emoji }) {
     if (!formSide) return;
+
+    console.log('[CHECKOUT] Renderizando resultado', {
+      ok,
+      title,
+      subtitle,
+      emoji,
+    });
 
     const color = ok ? '#27ae60' : '#e74c3c';
 
@@ -144,25 +190,25 @@ document.addEventListener('DOMContentLoaded', () => {
       if (actions) actions.style.display = 'flex';
 
       btnBack?.addEventListener('click', () => {
+        console.log('[CHECKOUT] Usuario presionó Volver en navegador');
         try {
           history.back();
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (_) {}
       });
 
       btnClose?.addEventListener('click', () => {
+        console.log('[CHECKOUT] Usuario presionó Cerrar pestaña en navegador');
         try {
           window.close();
-          // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (_) {}
       });
     }
   }
 
   function tryCloseBrowserTab() {
+    console.log('[CHECKOUT] Intentando cerrar pestaña');
     try {
       window.close();
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (_) {}
   }
 
@@ -170,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Validación inicial
   // =========================
   if (!paymentId) {
-    console.error('No se encontró paymentId en la URL');
+    console.error('[CHECKOUT] No se encontró paymentId en la URL');
     setSubmitEnabled(false);
     if (submitButton) submitButton.textContent = 'Enlace inválido';
     renderResultUI({
@@ -186,12 +232,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const parsed = Number(amount);
     if (!Number.isNaN(parsed)) {
       setSubmitText(`Pagar $${parsed.toFixed(2)}`);
+      console.log('[CHECKOUT] Monto mostrado en botón', parsed.toFixed(2));
     }
   }
 
   // =========================
   // Inicializar SDK de Clip
   // =========================
+  console.log('[CHECKOUT] Inicializando ClipSDK');
+
   const clip = new ClipSDK(CONFIG.API_KEY);
 
   const card = clip.element.create('Card', {
@@ -214,6 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   card.mount('checkout');
+  console.log('[CHECKOUT] Card de Clip montada en #checkout');
 
   // ✅ Arranca deshabilitado, pero con fallback
   setSubmitEnabled(false);
@@ -225,16 +275,23 @@ document.addEventListener('DOMContentLoaded', () => {
   let gotAnyCardEvent = false;
 
   function bindCardEvent(cb) {
-    if (typeof card?.on === 'function') return card.on('change', cb);
-    if (typeof card?.addEventListener === 'function')
+    if (typeof card?.on === 'function') {
+      console.log('[CHECKOUT] Bind usando card.on');
+      return card.on('change', cb);
+    }
+    if (typeof card?.addEventListener === 'function') {
+      console.log('[CHECKOUT] Bind usando card.addEventListener');
       return card.addEventListener('change', cb);
-    if (typeof card?.addListener === 'function')
+    }
+    if (typeof card?.addListener === 'function') {
+      console.log('[CHECKOUT] Bind usando card.addListener');
       return card.addListener('change', cb);
-    // Si el SDK cambió y no hay forma de escuchar cambios, usaremos fallback (botón habilitado)
+    }
+
+    console.warn('[CHECKOUT] No se encontró método de bind para eventos de card');
   }
 
   function normalizeEvent(e) {
-    // algunos SDKs envían e.detail
     return e?.detail ?? e ?? {};
   }
 
@@ -242,8 +299,7 @@ document.addEventListener('DOMContentLoaded', () => {
     gotAnyCardEvent = true;
     const e = normalizeEvent(raw);
 
-    // DEBUG: mira qué trae realmente tu SDK en producción
-    // console.log('[CLIP change]', e);
+    console.log('[CHECKOUT] Evento de card detectado', e);
 
     const hasError =
       !!(e.error && (e.error.message || e.error)) || !!e.errorMessage;
@@ -253,15 +309,12 @@ document.addEventListener('DOMContentLoaded', () => {
       e.errorMessage ||
       '';
 
-    // ✅ “complete” puede llamarse distinto según versión
     const isComplete =
       e.complete === true ||
       e.isComplete === true ||
       e.valid === true ||
       e.isValid === true;
 
-    // fallback suave: si NO hay error y el usuario ya empezó a escribir, dejamos pagar
-    // (si está incompleto, card.cardToken() fallará y mostraremos el error)
     const userStarted =
       e.empty === false || e.touched === true || e.brand || e.last4;
 
@@ -295,18 +348,16 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     setError('');
-    // habilita si está completo, o si ya empezó y no hay error (fallback)
     setSubmitEnabled(isComplete || !!userStarted);
   }
 
   bindCardEvent(updateButtonFromCardEvent);
 
-  // ✅ Watchdog: si por alguna razón nunca llegan eventos en Android/alguna versión,
-  // habilitamos el botón después de un ratito y validamos al submit.
   setTimeout(() => {
     if (!gotAnyCardEvent) {
+      console.warn('[CHECKOUT] No llegaron eventos de card, activando fallback');
       setSubmitEnabled(true);
-      setError(''); // opcional: podrías poner “Completa los datos antes de pagar”.
+      setError('');
     }
   }, 1200);
 
@@ -315,24 +366,22 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================
   const copyBtn = document.querySelector('.copy-btn');
 
-  // Verificamos que el botón exista para evitar errores
   if (copyBtn) {
-    // PASO CLAVE: Sobrescribimos el 'data-link' con la URL actual del navegador.
-    // Esto asegura que se copie el link con el paymentId y monto exactos que se recibieron.
     copyBtn.dataset.link = window.location.href;
+    console.log('[CHECKOUT] Botón copiar listo', {
+      link: copyBtn.dataset.link,
+    });
 
     copyBtn.addEventListener('click', async () => {
-      // Leemos el link dinámico que acabamos de asignar
       const link = copyBtn.dataset.link;
 
       try {
         await navigator.clipboard.writeText(link);
+        console.log('[CHECKOUT] Link copiado correctamente', { link });
 
-        // Feedback visual (clases y texto)
         copyBtn.classList.add('copied');
         const textElement = copyBtn.querySelector('.copy-text');
 
-        // Guardamos el texto original por si acaso, aunque sabemos que es "Copiar enlace"
         if (textElement) textElement.textContent = '¡Copiado!';
 
         setTimeout(() => {
@@ -340,17 +389,22 @@ document.addEventListener('DOMContentLoaded', () => {
           if (textElement) textElement.textContent = 'Copiar enlace';
         }, 2000);
       } catch (err) {
-        console.error('Error al copiar:', err);
-        // Opcional: Feedback de error si el navegador bloquea el portapapeles
-        // alert('No se pudo copiar automáticamente.');
+        console.error('[CHECKOUT] Error al copiar:', err);
       }
     });
   }
+
+  if (!form || !submitButton) {
+    console.error('[CHECKOUT] No se encontró el formulario o el botón submit');
+    return;
+  }
+
   // =========================
   // Submit: procesar pago
   // =========================
   form.addEventListener('submit', async event => {
     event.preventDefault();
+    console.log('[CHECKOUT] Submit de pago iniciado', { paymentId });
 
     if (!submitButton) return;
 
@@ -359,19 +413,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     try {
       // 1. Tokenizar tarjeta
+      console.log('[CHECKOUT] Tokenizando tarjeta...');
       const tokenResp = await card.cardToken();
       const cardTokenID = tokenResp?.id;
+
+      console.log('[CHECKOUT] Respuesta tokenización', tokenResp);
 
       if (!cardTokenID) {
         throw new Error('No se pudo tokenizar la tarjeta. Verifica los datos.');
       }
 
+      console.log('[CHECKOUT] Token obtenido correctamente', { cardTokenID });
+
       // 2. Obtener datos de prevención de fraude del SDK
       let preventionData = null;
       try {
         preventionData = await card.preventionData();
+        console.log('[CHECKOUT] Prevention data obtenida', preventionData);
       } catch (pdErr) {
-        console.warn('No se pudieron obtener prevention data:', pdErr);
+        console.warn('[CHECKOUT] No se pudieron obtener prevention data:', pdErr);
       }
 
       // 3. Enviar al backend incluyendo prevention_data si está disponible
@@ -382,6 +442,11 @@ document.addEventListener('DOMContentLoaded', () => {
           user_agent: preventionData.user_agent,
         };
       }
+
+      console.log('[CHECKOUT] Enviando pago al backend', {
+        endpoint: `${CONFIG.BACKEND_URL}/payments/process/${paymentId}`,
+        requestBody,
+      });
 
       const response = await fetch(
         `${CONFIG.BACKEND_URL}/payments/process/${paymentId}`,
@@ -394,21 +459,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const data = await response.json().catch(() => ({}));
 
+      console.log('[CHECKOUT] Respuesta backend /process', {
+        httpStatus: response.status,
+        ok: response.ok,
+        data,
+      });
+
       if (!response.ok) {
         throw new Error(data.message || 'Error procesando pago');
       }
 
       const paymentResult = data.data ?? data;
+      console.log('[CHECKOUT] paymentResult normalizado', paymentResult);
 
       // 4. Verificar si se requiere autenticación 3DS
       if (paymentResult?.pendingAction?.url) {
+        console.log('[CHECKOUT] Pago requiere 3DS', {
+          url: paymentResult.pendingAction.url,
+        });
         show3DSIframe(paymentResult.pendingAction.url);
-        return; // El flujo continúa dentro de show3DSIframe
+        return;
       }
 
       const paymentStatus = String(paymentResult?.status || '').toUpperCase();
+      console.log('[CHECKOUT] Estado final recibido', {
+        paymentStatus,
+        statusMessage: paymentResult?.statusMessage,
+      });
 
       if (paymentStatus === 'COMPLETED') {
+        console.log('[CHECKOUT] Pago COMPLETED, mostrando éxito');
+
         renderResultUI({
           ok: true,
           title: '¡Pago exitoso!',
@@ -421,11 +502,15 @@ document.addEventListener('DOMContentLoaded', () => {
           result: paymentResult,
         });
 
+        console.log('[CHECKOUT] Resultado notifyApp(paymentDone)', { sent });
+
         if (!sent) setTimeout(() => tryCloseBrowserTab(), 1200);
         return;
       }
 
       if (paymentStatus === 'PROCESSING') {
+        console.log('[CHECKOUT] Pago PROCESSING, mostrando en proceso');
+
         renderResultUI({
           ok: true,
           title: 'Pago en proceso',
@@ -433,14 +518,21 @@ document.addEventListener('DOMContentLoaded', () => {
           emoji: '🕒',
         });
 
-        const sent = await notifyApp('paymentProcessing', {
+        const sent = await notifyApp('paymentDone', {
           paymentId,
           result: paymentResult,
         });
 
+        console.log('[CHECKOUT] Resultado notifyApp(paymentDone)', { sent });
+
         if (!sent) setTimeout(() => tryCloseBrowserTab(), 1200);
         return;
       }
+
+      console.warn('[CHECKOUT] Estado no exitoso recibido', {
+        paymentStatus,
+        statusMessage: paymentResult?.statusMessage,
+      });
 
       throw new Error(
         paymentResult?.statusMessage || 'El pago fue rechazado por el banco'
@@ -450,6 +542,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ? String(error.message)
         : 'Error procesando pago';
 
+      console.error('[CHECKOUT] Error en submit de pago', error);
+
       renderResultUI({
         ok: false,
         title: 'Pago no completado',
@@ -457,7 +551,8 @@ document.addEventListener('DOMContentLoaded', () => {
         emoji: '❌',
       });
 
-      await notifyApp('paymentFailed', { paymentId, message: msg });
+      const sent = await notifyApp('paymentFailed', { paymentId, message: msg });
+      console.log('[CHECKOUT] Resultado notifyApp(paymentFailed)', { sent, msg });
     }
   });
 
@@ -466,7 +561,12 @@ document.addEventListener('DOMContentLoaded', () => {
   // =========================
   function show3DSIframe(url) {
     const container = document.getElementById('3ds-iframe-container');
-    if (!container) return;
+    if (!container) {
+      console.error('[CHECKOUT] No existe #3ds-iframe-container');
+      return;
+    }
+
+    console.log('[CHECKOUT] Mostrando iframe 3DS', { url });
 
     container.innerHTML = `<iframe
       title="cybersource3Ds"
@@ -481,29 +581,59 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('message', async event => {
       if (resolved) return;
 
-      // Validar origen del mensaje contra el dominio del iFrame 3DS
+      console.log('[CHECKOUT] Mensaje recibido desde 3DS', {
+        origin: event.origin,
+        data: event.data,
+      });
+
       try {
-        if (event.origin !== new URL(url).origin) return;
-      } catch {
+        if (event.origin !== new URL(url).origin) {
+          console.warn('[CHECKOUT] Mensaje 3DS ignorado por origin distinto', {
+            expected: new URL(url).origin,
+            received: event.origin,
+          });
+          return;
+        }
+      } catch (err) {
+        console.error('[CHECKOUT] Error validando origin 3DS', err);
         return;
       }
 
-      if (!event.data?.paymentId) return;
-      resolved = true;
+      if (!event.data?.paymentId) {
+        console.warn('[CHECKOUT] Mensaje 3DS ignorado porque no trae paymentId');
+        return;
+      }
 
-      // Ocultar y limpiar el iFrame
+      resolved = true;
+      console.log('[CHECKOUT] Mensaje 3DS válido, verificando pago final');
+
       container.innerHTML = '';
       container.style.display = 'none';
 
-      // Verificar el estado final del pago via backend
       try {
-        const verifyRes = await fetch(
-          `${CONFIG.BACKEND_URL}/payments/verify/${paymentId}`,
-          { method: 'GET', headers: { 'Content-Type': 'application/json' } }
-        );
+        const verifyUrl = `${CONFIG.BACKEND_URL}/payments/verify/${paymentId}`;
+        console.log('[CHECKOUT] Consultando verify', { verifyUrl });
+
+        const verifyRes = await fetch(verifyUrl, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
         const verifyData = await verifyRes.json().catch(() => ({}));
+        console.log('[CHECKOUT] Respuesta backend /verify', {
+          httpStatus: verifyRes.status,
+          ok: verifyRes.ok,
+          verifyData,
+        });
+
         const result = verifyData.data ?? verifyData;
         const ok = result?.status === 'COMPLETED';
+
+        console.log('[CHECKOUT] Resultado final 3DS', {
+          status: result?.status,
+          statusMessage: result?.statusMessage,
+          ok,
+        });
 
         renderResultUI({
           ok,
@@ -516,23 +646,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (ok) {
           const sent = await notifyApp('paymentDone', { paymentId, result });
+          console.log('[CHECKOUT] Resultado notifyApp(paymentDone) desde 3DS', {
+            sent,
+          });
           if (!sent) setTimeout(() => tryCloseBrowserTab(), 1200);
         } else {
-          await notifyApp('paymentFailed', {
+          const sent = await notifyApp('paymentFailed', {
             paymentId,
             message: result?.statusMessage || 'Autenticación 3DS fallida',
           });
+
+          console.log('[CHECKOUT] Resultado notifyApp(paymentFailed) desde 3DS', {
+            sent,
+          });
         }
       } catch (err) {
+        console.error('[CHECKOUT] Error verificando pago 3DS', err);
+
         renderResultUI({
           ok: false,
           title: 'Error al verificar pago',
           subtitle: 'No se pudo confirmar el resultado. Contacta soporte.',
           emoji: '❌',
         });
-        await notifyApp('paymentFailed', {
+
+        const sent = await notifyApp('paymentFailed', {
           paymentId,
           message: 'Error verificando estado 3DS',
+        });
+
+        console.log('[CHECKOUT] Resultado notifyApp(paymentFailed) por error 3DS', {
+          sent,
         });
       }
     });
