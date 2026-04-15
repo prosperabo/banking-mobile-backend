@@ -406,26 +406,45 @@ document.addEventListener('DOMContentLoaded', () => {
         return; // El flujo continúa dentro de show3DSIframe
       }
 
-      // 5. Verificar que el pago realmente fue aprobado
-      if (paymentResult?.status !== 'COMPLETED') {
-        throw new Error(
-          paymentResult?.statusMessage || 'El pago fue rechazado por el banco'
-        );
+      const paymentStatus = String(paymentResult?.status || '').toUpperCase();
+
+      if (paymentStatus === 'COMPLETED') {
+        renderResultUI({
+          ok: true,
+          title: '¡Pago exitoso!',
+          subtitle: 'Tu pago fue procesado correctamente.',
+          emoji: '✅',
+        });
+
+        const sent = await notifyApp('paymentDone', {
+          paymentId,
+          result: paymentResult,
+        });
+
+        if (!sent) setTimeout(() => tryCloseBrowserTab(), 1200);
+        return;
       }
 
-      // 6. Pago completado sin 3DS
-      renderResultUI({
-        ok: true,
-        title: '¡Pago Exitoso!',
-        subtitle: 'Finalizando...',
-        emoji: '✅',
-      });
+      if (paymentStatus === 'PROCESSING') {
+        renderResultUI({
+          ok: true,
+          title: 'Pago en proceso',
+          subtitle: 'Tu pago fue autorizado y está en proceso de acreditación.',
+          emoji: '🕒',
+        });
 
-      const sent = await notifyApp('paymentDone', {
-        paymentId,
-        result: paymentResult,
-      });
-      if (!sent) setTimeout(() => tryCloseBrowserTab(), 1200);
+        const sent = await notifyApp('paymentProcessing', {
+          paymentId,
+          result: paymentResult,
+        });
+
+        if (!sent) setTimeout(() => tryCloseBrowserTab(), 1200);
+        return;
+      }
+
+      throw new Error(
+        paymentResult?.statusMessage || 'El pago fue rechazado por el banco'
+      );
     } catch (error) {
       const msg = error?.message
         ? String(error.message)
