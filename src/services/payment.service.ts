@@ -21,6 +21,10 @@ import {
   extractClipWebhookPaymentId,
   mapClipStatusToInternal,
 } from '@/utils/payment.utils';
+import { ReceiptData } from '../schemas/receiptData.schema';
+import { SendReceiptResult } from '../schemas/sendReceiptResult.schema';
+import { sendReceipt } from '../utils/sender.util';
+import { formatDateTime } from '../utils/dates.util';
 
 const logger = buildLogger('PaymentService');
 
@@ -229,6 +233,7 @@ export class PaymentService {
         providerPaymentId,
         payload
       );
+
       const internalStatus = mapClipStatusToInternal(providerPayment.status);
 
       logger.info('Clip webhook received', {
@@ -237,6 +242,14 @@ export class PaymentService {
         providerStatus: providerPayment.status,
         internalStatus,
       });
+
+      const receiptPaymentData: ReceiptData = {
+        amount: providerPayment.amount,
+        currency: providerPayment.currency,
+        reference: `Payment ID: ${lockedPayment.id}`,
+        recipient:
+          lockedPayment.Users.firstName + ' ' + lockedPayment.Users.lastName,
+      };
 
       if (internalStatus !== PaymentStatus.COMPLETED) {
         await PaymentRepository.mergeWebhookProcessingResult(
@@ -252,6 +265,15 @@ export class PaymentService {
           paymentId: lockedPayment.id.toString(),
           providerPaymentId,
           status: internalStatus,
+        });
+
+        const linkProofPaymentSent = await this.sendReceiptEmail(
+          lockedPayment.Users.email,
+          receiptPaymentData
+        );
+
+        logger.debug('Link proof of payment email sent', {
+          result: linkProofPaymentSent,
         });
 
         return {
@@ -309,6 +331,15 @@ export class PaymentService {
           paymentId: lockedPayment.id.toString(),
           providerPaymentId,
           externalTransactionId: topupRequest.externalTransactionId,
+        });
+
+        const linkProofPaymentSent = await this.sendReceiptEmail(
+          lockedPayment.Users.email,
+          receiptPaymentData
+        );
+
+        logger.debug('Link proof of payment email sent', {
+          result: linkProofPaymentSent,
         });
 
         return {
@@ -379,6 +410,24 @@ export class PaymentService {
     }
   }
 
+  private static async sendReceiptEmail(
+    email: string,
+    payload: Omit<ReceiptData, 'date' | 'time'> &
+      Partial<Pick<ReceiptData, 'date' | 'time'>>
+  ): Promise<SendReceiptResult> {
+    const { date, time } = formatDateTime();
+
+    const data: ReceiptData = {
+      ...payload,
+      date: payload.date ?? date,
+      time: payload.time ?? time,
+      timezone: payload.timezone ?? 'CDMX',
+      company: payload.company ?? 'Prospera Fintech S.A.P.I. de C.V.',
+    };
+
+    return sendReceipt({ to: email, data });
+  }
+
   /**
    * Map Payment Provider API response to client-friendly format
    */
@@ -386,6 +435,15 @@ export class PaymentService {
     payment: PaymentProviderPaymentResponse,
     statusOverride?: PaymentStatus
   ): PaymentServiceClientResponse {
+    const paymentMethodCard = {
+      lastDigits: payment.payment_method.card.last_digits,
+      type: payment.payment_method.type,
+      issuer: payment.payment_method.card.issuer,
+    };
+    const pendingAction = {
+      type: payment.pending_action.type,
+      url: payment.pending_action.url,
+    };
     return {
       paymentId: payment.id,
       amount: payment.amount,
@@ -394,19 +452,8 @@ export class PaymentService {
       statusMessage: payment.status_detail.message,
       receiptNo: payment.receipt_no,
       approvedAt: payment.approved_at,
-      card: payment.payment_method.card
-        ? {
-            lastDigits: payment.payment_method.card.last_digits,
-            type: payment.payment_method.type,
-            issuer: payment.payment_method.card.issuer,
-          }
-        : undefined,
-      pendingAction: payment.pending_action
-        ? {
-            type: payment.pending_action.type,
-            url: payment.pending_action.url,
-          }
-        : undefined,
+      card: payment.payment_method.card ? paymentMethodCard : undefined,
+      pendingAction: payment.pending_action ? pendingAction : undefined,
     };
   }
 

@@ -65,4 +65,5 @@ export const config = {
   spei: {
     cashoutFee: Number(process.env.SPEI_CASHOUT_FEE) || 0,
   },
+  timeZone: process.env.TIME_ZONE || 'America/Mexico_City',
 };
