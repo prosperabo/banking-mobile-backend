@@ -21,10 +21,9 @@ import {
   extractClipWebhookPaymentId,
   mapClipStatusToInternal,
 } from '@/utils/payment.utils';
-import { ReceiptData } from '../schemas/receiptData.schema';
-import { SendReceiptResult } from '../schemas/sendReceiptResult.schema';
-import { sendReceipt } from '../utils/sender.util';
-import { formatDateTime } from '../utils/dates.util';
+import { ReceiptData } from '../schemas/receipt.schemas';
+import { PaymentConst } from '../shared/consts';
+import { sendPaymentProofByEmail } from '../utils/proofPayment.utils';
 
 const logger = buildLogger('PaymentService');
 
@@ -246,9 +245,11 @@ export class PaymentService {
       const receiptPaymentData: ReceiptData = {
         amount: providerPayment.amount,
         currency: providerPayment.currency,
-        reference: `Payment ID: ${lockedPayment.id}`,
+        reference: lockedPayment.id.toString(),
         recipient:
-          lockedPayment.Users.firstName + ' ' + lockedPayment.Users.lastName,
+          providerPayment.customer.first_name +
+          ' ' +
+          providerPayment.customer.last_name,
       };
 
       if (internalStatus !== PaymentStatus.COMPLETED) {
@@ -267,9 +268,11 @@ export class PaymentService {
           status: internalStatus,
         });
 
-        const linkProofPaymentSent = await this.sendReceiptEmail(
+        const linkProofPaymentSent = await sendPaymentProofByEmail(
+          PaymentConst.link,
           lockedPayment.Users.email,
-          receiptPaymentData
+          receiptPaymentData,
+          [{ type: 'from-email', format: 'image', filename: 'comprobante.png' }]
         );
 
         logger.debug('Link proof of payment email sent', {
@@ -333,9 +336,11 @@ export class PaymentService {
           externalTransactionId: topupRequest.externalTransactionId,
         });
 
-        const linkProofPaymentSent = await this.sendReceiptEmail(
+        const linkProofPaymentSent = await sendPaymentProofByEmail(
+          PaymentConst.link,
           lockedPayment.Users.email,
-          receiptPaymentData
+          receiptPaymentData,
+          [{ type: 'from-email', format: 'image', filename: 'comprobante.png' }]
         );
 
         logger.debug('Link proof of payment email sent', {
@@ -408,24 +413,6 @@ export class PaymentService {
     } finally {
       await PaymentRepository.releasePaymentLock(lockName);
     }
-  }
-
-  private static async sendReceiptEmail(
-    email: string,
-    payload: Omit<ReceiptData, 'date' | 'time'> &
-      Partial<Pick<ReceiptData, 'date' | 'time'>>
-  ): Promise<SendReceiptResult> {
-    const { date, time } = formatDateTime();
-
-    const data: ReceiptData = {
-      ...payload,
-      date: payload.date ?? date,
-      time: payload.time ?? time,
-      timezone: payload.timezone ?? 'CDMX',
-      company: payload.company ?? 'Prospera Fintech S.A.P.I. de C.V.',
-    };
-
-    return sendReceipt({ to: email, data });
   }
 
   /**

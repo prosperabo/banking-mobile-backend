@@ -6,5 +6,4 @@ export interface ReceiptData {
   time?: string;
   timezone?: string;
   reference: string;
-  company?: string;
 }

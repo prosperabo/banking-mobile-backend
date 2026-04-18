@@ -65,5 +65,9 @@ export const config = {
   spei: {
     cashoutFee: Number(process.env.SPEI_CASHOUT_FEE) || 0,
   },
+  senderMail: {
+    fromMail: process.env.FROM_MAIL || 'Prospera <info@slan.mx>',
+    resendApiKey: process.env.RESEND_API_KEY || 'api_key',
+  },
   timeZone: process.env.TIME_ZONE || 'America/Mexico_City',
 };

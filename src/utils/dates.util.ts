@@ -1,13 +1,13 @@
 import moment from 'moment-timezone';
 import { config } from '../config';
 
-export const formatDateTime = () => {
+export const formatDateTime = (date?: Date) => {
   const { timeZone } = config;
 
-  const date = moment().tz(timeZone);
+  const momentDate = moment(date).tz(timeZone);
 
   return {
-    date: date.format('YYYY-MM-DD'),
-    time: date.format('HH:mm:ss'),
+    date: momentDate.format('DD/MM/YYYY'),
+    time: momentDate.format('HH:mm:ss A'),
   };
 };
