@@ -754,4 +754,33 @@ export class CardService {
 
     logger.info('Card assigned successfully', { userId, cardIdentifier });
   }
+
+  static async unlinkCard(cardId: number, customerId: number) {
+    logger.info(`Unlinking card ${cardId}`);
+
+    const card = await CardRepository.getCardById(cardId);
+    if (!card) {
+      logger.error(`Card ${cardId} not found`);
+      throw new BadRequestError('Card not found');
+    }
+
+    if (!card.userId) {
+      logger.warn(`Card ${cardId} is already unlinked`);
+      throw new BadRequestError('Card is already unlinked');
+    }
+
+    if (!card.prosperaCardId) {
+      logger.error(`Card ${cardId} is missing prosperaCardId`);
+      throw new BadRequestError('Card not found or missing prosperaCardId');
+    }
+
+    await CardBackofficeService.retireCard({
+      card_id: Number(card.prosperaCardId),
+      customer_id: customerId,
+    });
+
+    await CardRepository.unlinkCard(cardId);
+
+    logger.info(`Card ${cardId} unlinked successfully`);
+  }
 }

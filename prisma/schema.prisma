@@ -306,9 +306,6 @@ model CardPickup {
   id              Int      @id @default(autoincrement())
   userId          Int?
   cardId          Int
-  isSlanPoint     Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @default(now())
   mobile          String   @default("")
   street          String   @default("")
   exteriorNumber  String   @default("")
@@ -318,6 +315,9 @@ model CardPickup {
   state           String   @default("")
   postalCode      String   @default("")
   additionalNotes String   @default("")
+  isSlanPoint     Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @default(now())
   assignedAt      DateTime @default(now())
   Cards           Cards    @relation(fields: [cardId], references: [id])
   Users           Users?   @relation(fields: [userId], references: [id])

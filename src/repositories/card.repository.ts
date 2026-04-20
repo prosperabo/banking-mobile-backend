@@ -215,4 +215,15 @@ export const CardRepository = {
       },
     });
   },
+
+  async unlinkCard(cardId: number) {
+    return db.cards.update({
+      where: { id: cardId },
+      data: {
+        userId: null,
+        status: 'INACTIVE',
+        updatedAt: new Date(),
+      },
+    });
+  },
 };

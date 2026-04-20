@@ -252,4 +252,18 @@ export class CardController {
 
     return successHandler(res, null, 'Card assigned successfully');
   });
+
+  static unlinkCard = catchErrors(async (req: Request, res: Response) => {
+    const { cardId } = req.params;
+    const userId = req.user!.userId;
+    const { customerId } = req.backoffice!;
+
+    logger.info('Unlinking card', { cardId, userId, customerId });
+
+    await CardService.unlinkCard(Number(cardId), customerId);
+
+    logger.info('Card unlinked successfully', { cardId, userId });
+
+    return successHandler(res, null, 'Card unlinked successfully');
+  });
 }

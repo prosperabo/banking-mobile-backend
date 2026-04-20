@@ -234,6 +234,17 @@ export interface CardStatusResponse {
   cards: CardStatusDetail[];
 }
 
+export interface RetireCardParams {
+  card_id: number;
+  customer_id: number;
+}
+
+export interface RetireCardResponsePayload {
+  card_id: number;
+}
+
+export type RetireCardResponse = ApiResponse<RetireCardResponsePayload>;
+
 export interface RequestPhysicalCardResponse {
   success: boolean;
   message: string;
