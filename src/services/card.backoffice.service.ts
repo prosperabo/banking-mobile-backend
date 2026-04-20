@@ -13,6 +13,8 @@ import {
   CardInfoResponse,
   UpdateCVVParams,
   UpdateCVVResponse,
+  RetireCardParams,
+  RetireCardResponse,
 } from '@/schemas/card.schemas';
 import { buildLogger } from '@/utils';
 
@@ -134,6 +136,22 @@ export class CardBackofficeService {
     );
 
     logger.info('Card unstopped successfully. Response:', {
+      response: response.data,
+    });
+    return response.data;
+  }
+
+  static async retireCard(
+    params: RetireCardParams
+  ): Promise<RetireCardResponse> {
+    logger.info('Retiring card with params:', { params });
+
+    const response = await backOfficeInstance.post<RetireCardResponse>(
+      '/debit/v1/retire-card',
+      params
+    );
+
+    logger.info('Card retired successfully. Response:', {
       response: response.data,
     });
     return response.data;

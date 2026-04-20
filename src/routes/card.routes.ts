@@ -103,6 +103,14 @@ router.get(
   CardController.showCardCvv
 );
 
+// Route to unlink a card from the current user
+router.post(
+  '/:cardId/unlink',
+  validateRequest(...cardIdParamValidator),
+  validateCardOwnership(),
+  CardController.unlinkCard
+);
+
 // Route to get slan points
 router.get('/slan-points', CardController.getSlanPoints);
 
