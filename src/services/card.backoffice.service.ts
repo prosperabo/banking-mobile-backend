@@ -142,13 +142,19 @@ export class CardBackofficeService {
   }
 
   static async retireCard(
-    params: RetireCardParams
+    params: RetireCardParams,
+    customerToken: string
   ): Promise<RetireCardResponse> {
     logger.info('Retiring card with params:', { params });
 
     const response = await backOfficeInstance.post<RetireCardResponse>(
       '/debit/v1/retire-card',
-      params
+      params,
+      {
+        headers: {
+          'Authorization-customer': customerToken,
+        },
+      }
     );
 
     logger.info('Card retired successfully. Response:', {

@@ -256,11 +256,11 @@ export class CardController {
   static unlinkCard = catchErrors(async (req: Request, res: Response) => {
     const { cardId } = req.params;
     const userId = req.user!.userId;
-    const { customerId } = req.backoffice!;
+    const { customerId, customer_oauth_token: customerToken } = req.backoffice!;
 
     logger.info('Unlinking card', { cardId, userId, customerId });
 
-    await CardService.unlinkCard(Number(cardId), customerId);
+    await CardService.unlinkCard(Number(cardId), customerId, customerToken);
 
     logger.info('Card unlinked successfully', { cardId, userId });
 

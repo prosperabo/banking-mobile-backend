@@ -755,7 +755,11 @@ export class CardService {
     logger.info('Card assigned successfully', { userId, cardIdentifier });
   }
 
-  static async unlinkCard(cardId: number, customerId: number) {
+  static async unlinkCard(
+    cardId: number,
+    customerId: number,
+    customerToken: string
+  ) {
     logger.info(`Unlinking card ${cardId}`);
 
     const card = await CardRepository.getCardById(cardId);
@@ -774,10 +778,13 @@ export class CardService {
       throw new BadRequestError('Card not found or missing prosperaCardId');
     }
 
-    await CardBackofficeService.retireCard({
-      card_id: Number(card.prosperaCardId),
-      customer_id: customerId,
-    });
+    await CardBackofficeService.retireCard(
+      {
+        card_id: Number(card.prosperaCardId),
+        customer_id: customerId,
+      },
+      customerToken
+    );
 
     await CardRepository.unlinkCard(cardId);
 
