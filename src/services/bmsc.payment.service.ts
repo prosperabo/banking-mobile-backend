@@ -11,6 +11,7 @@ import {
   SIP_PROVIDER,
 } from '@/schemas/sip.schemas';
 import { BadRequestError, NotFoundError } from '@/shared/errors';
+import { NotificationService } from './notification.service';
 
 const logger = buildLogger('BmscPaymentService');
 
@@ -199,6 +200,12 @@ export class BmscPaymentService {
     logger.info('SIP callback processed — TOPUP transaction created', {
       alias,
       topupRef,
+    });
+
+    await NotificationService.sendToUser(payment.user_id, {
+      title: 'Depósito recibido',
+      body: `Se acreditaron ${payment.amount.toNumber()} ${payment.currency} a tu cuenta`,
+      data: { type: 'sip_topup', orderId: alias },
     });
 
     return { codigo: '0000', mensaje: 'Registro Exitoso' };

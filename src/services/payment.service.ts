@@ -24,6 +24,7 @@ import {
 import { ReceiptData } from '../schemas/receipt.schemas';
 import { PaymentConst } from '../shared/consts';
 import { sendPaymentProofByEmail } from '../utils/proofPayment.utils';
+import { NotificationService } from './notification.service';
 
 const logger = buildLogger('PaymentService');
 
@@ -345,6 +346,12 @@ export class PaymentService {
 
         logger.debug('Link proof of payment email sent', {
           result: linkProofPaymentSent,
+        });
+
+        await NotificationService.sendToUser(Number(lockedPayment.user_id), {
+          title: 'Depósito recibido',
+          body: `Se acreditaron $${providerPayment.amount} ${providerPayment.currency} a tu cuenta`,
+          data: { type: 'clip_topup', paymentId: lockedPayment.id.toString() },
         });
 
         return {

@@ -14,6 +14,7 @@ import { BadRequestError } from '@/shared/errors';
 import { BackofficeService } from './customer.backoffice.service';
 import { buildFullName } from '@/utils/buildFullName';
 import { TransferReceiptService } from './transfer-receipt.service';
+import { NotificationService } from './notification.service';
 
 const logger = buildLogger('TransferService');
 
@@ -84,6 +85,12 @@ export class TransferService {
       recipientUserId: recipientUser.id,
       recipientCustomerId: recipientProfile.external_customer_id,
       amount: transferData.amount,
+    });
+
+    await NotificationService.sendToUser(recipientUser.id, {
+      title: 'Transferencia recibida',
+      body: `Recibiste $${transferData.amount} MXN`,
+      data: { type: 'transfer', transactionId: response.payload.transactionId },
     });
 
     return {
