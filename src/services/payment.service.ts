@@ -102,6 +102,9 @@ export class PaymentService {
       ...(paymentData.prevention_data && {
         prevention_data: paymentData.prevention_data,
       }),
+      ...(config.apiUrl && {
+        webhook_url: `${config.apiUrl}/api/v${config.version}/webhooks/clip/payment`,
+      }),
     };
 
     await PaymentRepository.updatePaymentStatus(
