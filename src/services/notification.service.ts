@@ -31,13 +31,19 @@ export class NotificationService {
 
     for (const deviceToken of activeTokens) {
       try {
+        const sanitizedData = payload.data
+          ? Object.fromEntries(
+              Object.entries(payload.data).map(([k, v]) => [k, String(v)])
+            )
+          : undefined;
+
         await firebaseMessaging.send({
           token: deviceToken.fcm_token,
           notification: {
             title: payload.title,
             body: payload.body,
           },
-          ...(payload.data ? { data: payload.data } : {}),
+          ...(sanitizedData ? { data: sanitizedData } : {}),
         });
 
         tokensSent++;
