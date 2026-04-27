@@ -55,6 +55,7 @@ export interface PaymentProviderAPIPaymentRequest {
     user_agent?: string;
   };
   metadata?: PaymentMetadata;
+  webhook_url?: string;
 }
 
 export interface ProcessPaymentRequest {

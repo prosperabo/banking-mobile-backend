@@ -15,6 +15,7 @@ import { sendPaymentProofByEmail } from '../utils/proofPayment.utils';
 import { PaymentConst } from '../shared/consts';
 import { QrReceiptData } from '../schemas/receipt.schemas';
 import { UserRepository } from '../repositories/user.repository';
+import { NotificationService } from './notification.service';
 
 const logger = buildLogger('BmscPaymentService');
 
@@ -236,6 +237,11 @@ export class BmscPaymentService {
     );
 
     logger.debug('Proof of payment email result', { alias, proofByEmail });
+    await NotificationService.sendToUser(payment.user_id, {
+      title: 'Depósito recibido',
+      body: `Se acreditaron ${payment.amount.toNumber()} ${payment.currency} a tu cuenta`,
+      data: { type: 'sip_topup', orderId: alias },
+    });
 
     return { codigo: '0000', mensaje: 'Registro Exitoso' };
   }
