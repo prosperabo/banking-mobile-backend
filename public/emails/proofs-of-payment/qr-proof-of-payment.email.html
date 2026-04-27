@@ -5,19 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="format-detection" content="telephone=no, date=no, address=no, email=no" />
-  <title>Comprobante de recarga — Slan</title>
-  <!--[if mso]>
-  <noscript><xml><o:OfficeDocumentSettings>
-    <o:PixelsPerInch>96</o:PixelsPerInch>
-  </o:OfficeDocumentSettings></xml></noscript>
-  <![endif]-->
+  <title>{{methodTitle}} — Slan</title>
   <style type="text/css">
     body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
     table, td          { mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-collapse: collapse; }
     img                { border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; -ms-interpolation-mode: bicubic; }
     body               { margin: 0 !important; padding: 0 !important; width: 100% !important; }
 
-    .btn-download:hover { background-color: #FF2B2B !important; color: #ffffff !important; }
+    .divider           { border-top: 2px solid #E5E5E5; margin: 32px 0; }
 
     @media only screen and (max-width: 520px) {
       .email-container { width: 100% !important; min-width: unset !important; }
@@ -59,17 +54,34 @@
           </td>
         </tr>
 
+        <!-- ── CONTENT ── -->
         <tr>
           <td class="mobile-pad"
               style="padding:16px 32px 48px 32px;background-color:#ffffff;">
 
+            <!-- Title -->
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
                 <td style="padding-bottom:24px;">
                   <p style="margin:0;font-family:Arial,Helvetica,sans-serif;
                               font-size:28px;font-weight:800;line-height:1.2;
                               color:#111111;letter-spacing:-0.5px;">
-                    Comprobante de recarga con<br />link de pago
+                    {{methodTitle}}
+                  </p>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Payment Method Badge -->
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0"
+                    style="margin-bottom:32px;">
+              <tr>
+                <td style="background-color:#F5F5F5;padding:12px 20px;
+                            border-radius:6px;display:inline-block;">
+                  <p style="margin:0;font-family:Arial,Helvetica,sans-serif;
+                              font-size:14px;font-weight:700;color:#111111;
+                              text-transform:uppercase;letter-spacing:0.5px;">
+                    {{methodDescription}}
                   </p>
                 </td>
               </tr>
@@ -92,36 +104,92 @@
               </tr>
             </table>
 
-            <!-- Detail rows -->
+            <!-- Transaction Details -->
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
-                    border="0" style="margin-bottom:48px;">
+                    border="0" style="margin-bottom:24px;">
               <tr>
                 <td style="padding:16px 0;font-family:Arial,Helvetica,sans-serif;
                             font-size:18px;font-weight:700;color:#111111;
-                            width:50%;vertical-align:middle;">
+                            width:50%;vertical-align:middle;
+                            border-bottom:1px solid #E5E5E5;">
                   Nombre de receptor
                 </td>
                 <td align="right"
                     style="padding:16px 0;font-family:Arial,Helvetica,sans-serif;
                             font-size:18px;color:#444444;text-align:right;
-                            vertical-align:middle;">
+                            vertical-align:middle;border-bottom:1px solid #E5E5E5;">
                   {{recipient}}
                 </td>
               </tr>
               <tr>
                 <td style="padding:16px 0;font-family:Arial,Helvetica,sans-serif;
                             font-size:18px;font-weight:700;color:#111111;
-                            width:50%;vertical-align:middle;">
+                            width:50%;vertical-align:middle;
+                            border-bottom:1px solid #E5E5E5;">
                   Monto
+                </td>
+                <td align="right"
+                    style="padding:16px 0;font-family:Arial,Helvetica,sans-serif;
+                            font-size:24px;font-weight:800;color:#111111;
+                            text-align:right;vertical-align:middle;
+                            border-bottom:1px solid #E5E5E5;">
+                  {{currencySymbol}} {{amount}}
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:16px 0;font-family:Arial,Helvetica,sans-serif;
+                            font-size:18px;font-weight:700;color:#111111;
+                            width:50%;vertical-align:middle;">
+                  Moneda
                 </td>
                 <td align="right"
                     style="padding:16px 0;font-family:Arial,Helvetica,sans-serif;
                             font-size:18px;color:#444444;text-align:right;
                             vertical-align:middle;">
-                  {{amount}} {{currency}}
+                  {{currencyName}} ({{currency}})
                 </td>
               </tr>
             </table>
+
+            <!-- Optional: QR Transaction ID -->
+            {{#if qrTransactionId}}
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+                    border="0" style="margin-top:24px;margin-bottom:24px;">
+              <tr>
+                <td style="padding:16px 0;font-family:Arial,Helvetica,sans-serif;
+                            font-size:16px;font-weight:700;color:#111111;
+                            width:50%;vertical-align:middle;">
+                  ID de transacción QR
+                </td>
+                <td align="right"
+                    style="padding:16px 0;font-family:Arial,Helvetica,sans-serif;
+                            font-size:16px;color:#666666;text-align:right;
+                            vertical-align:middle;word-break:break-all;">
+                  {{qrTransactionId}}
+                </td>
+              </tr>
+            </table>
+            {{/if}}
+
+            <!-- Optional: Provider -->
+            {{#if provider}}
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+                    border="0" style="margin-bottom:24px;">
+              <tr>
+                <td style="padding:16px 0;font-family:Arial,Helvetica,sans-serif;
+                            font-size:16px;font-weight:700;color:#111111;
+                            width:50%;vertical-align:middle;">
+                  Proveedor
+                </td>
+                <td align="right"
+                    style="padding:16px 0;font-family:Arial,Helvetica,sans-serif;
+                            font-size:16px;color:#666666;text-align:right;
+                            vertical-align:middle;">
+                  {{provider}}
+                </td>
+              </tr>
+            </table>
+            {{/if}}
 
           </td>
         </tr>

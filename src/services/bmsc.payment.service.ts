@@ -11,6 +11,10 @@ import {
   SIP_PROVIDER,
 } from '@/schemas/sip.schemas';
 import { BadRequestError, NotFoundError } from '@/shared/errors';
+import { sendPaymentProofByEmail } from '../utils/proofPayment.utils';
+import { PaymentConst } from '../shared/consts';
+import { QrReceiptData } from '../schemas/receipt.schemas';
+import { UserRepository } from '../repositories/user.repository';
 
 const logger = buildLogger('BmscPaymentService');
 
@@ -200,6 +204,38 @@ export class BmscPaymentService {
       alias,
       topupRef,
     });
+
+    const user = await UserRepository.findById(payment.user_id);
+
+    if (!user) {
+      logger.error('SIP callback: user not found', {
+        alias,
+        userId: payment.user_id,
+      });
+      throw new NotFoundError(`User not found for ID: ${payment.user_id}`);
+    }
+
+    const proofByEmail = await sendPaymentProofByEmail<QrReceiptData>(
+      PaymentConst.qr,
+      user.email,
+      {
+        amount: Number(dto.monto),
+        currency: payment.currency,
+        recipient: dto.nombreCliente ?? 'Cliente SIP',
+        reference: dto.numeroOrdenOriginante ?? '',
+        date: dto.fechaproceso,
+        time: dto.fechaproceso
+          ? new Date(dto.fechaproceso).toLocaleTimeString()
+          : undefined,
+        timezone: 'CDMX',
+        method: PaymentConst.qr,
+        qrTransactionId: dto.idQr,
+        provider: SIP_PROVIDER,
+      } as QrReceiptData,
+      [{ type: 'from-email', format: 'image', filename: 'comprobante.png' }]
+    );
+
+    logger.debug('Proof of payment email result', { alias, proofByEmail });
 
     return { codigo: '0000', mensaje: 'Registro Exitoso' };
   }
