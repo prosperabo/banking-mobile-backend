@@ -87,9 +87,28 @@ export class TransferService {
       amount: transferData.amount,
     });
 
+    const senderUser = await UserRepository.findById(userId);
+    const formattedAmount = Number(transferData.amount).toFixed(2);
+    const senderName = buildFullName({
+      first_name: senderUser.firstName,
+      last_name: senderUser.lastName,
+      second_last_name: senderUser.secondLastName,
+    });
+    const recipientName = buildFullName({
+      first_name: recipientUser.firstName,
+      last_name: recipientUser.lastName,
+      second_last_name: recipientUser.secondLastName,
+    });
+
     await NotificationService.sendToUser(recipientUser.id, {
       title: 'Transferencia recibida',
-      body: `Recibiste $${transferData.amount} MXN`,
+      body: `Recibiste $${formattedAmount} MXN de ${senderName}`,
+      data: { type: 'transfer', transactionId: response.payload.transactionId },
+    });
+
+    await NotificationService.sendToUser(userId, {
+      title: 'Transferencia enviada',
+      body: `Enviaste $${formattedAmount} MXN a ${recipientName}`,
       data: { type: 'transfer', transactionId: response.payload.transactionId },
     });
 
