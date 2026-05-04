@@ -8,6 +8,10 @@ export const createPaymentValidator = [
     .optional()
     .isIn(['MXN', 'USD'])
     .withMessage('Currency must be MXN or USD'),
+  body('netAmountMxn')
+    .optional({ nullable: true })
+    .isFloat({ min: 0.01 })
+    .withMessage('netAmountMxn must be a positive number'),
   body('description')
     .optional()
     .isString()

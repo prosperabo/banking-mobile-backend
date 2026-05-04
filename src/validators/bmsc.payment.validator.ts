@@ -4,6 +4,10 @@ export const createSipQrValidator = [
   body('amount')
     .isFloat({ min: 0.01 })
     .withMessage('amount debe ser mayor a 0'),
+  body('netAmountMxn')
+    .optional({ nullable: true })
+    .isFloat({ min: 0.01 })
+    .withMessage('netAmountMxn debe ser un número positivo'),
   body('currency')
     .isIn(['BOB', 'USD'])
     .withMessage('currency debe ser BOB o USD'),

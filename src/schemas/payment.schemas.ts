@@ -24,6 +24,7 @@ export interface PaymentCreateRequest {
   amount: number;
   currency?: string;
   description?: string;
+  netAmountMxn?: number;
   metadata?: PaymentMetadata;
 }
 

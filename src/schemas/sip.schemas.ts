@@ -12,6 +12,7 @@ export interface CreateSipQrRequestDto {
   amount: number;
   currency: SipCurrency;
   description?: string;
+  netAmountMxn?: number;
 }
 
 /** Body sent to SIP /autenticacion/v1/generarToken */
@@ -89,6 +90,7 @@ export interface CreateSipPaymentInput {
   description: string;
   idempotencyKey: string;
   requestPayload: SipGenerateQrRequestDto;
+  netAmountMxn?: number;
 }
 
 export interface UpdateSipQrResponseInput {

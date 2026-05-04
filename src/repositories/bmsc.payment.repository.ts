@@ -42,6 +42,7 @@ export class BmscPaymentRepository {
         business_fee_rate: new Prisma.Decimal(0),
         business_fee_amount: new Prisma.Decimal(0),
         net_amount: new Prisma.Decimal(0),
+        net_amount_mxn: new Prisma.Decimal(input.netAmountMxn ?? 0),
         status: payments_status.PENDING,
         payment_method: SIP_PAYMENT_METHOD,
         idempotency_key: idempotencyKey,
@@ -74,6 +75,13 @@ export class BmscPaymentRepository {
       where: {
         provider: SIP_PROVIDER,
         order_id: orderId,
+      },
+      include: {
+        Users: {
+          include: {
+            BackofficeAuthState: true,
+          },
+        },
       },
     });
   }

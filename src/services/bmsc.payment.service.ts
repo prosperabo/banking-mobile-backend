@@ -12,9 +12,15 @@ import {
 } from '@/schemas/sip.schemas';
 import { BadRequestError, NotFoundError } from '@/shared/errors';
 import { sendPaymentProofByEmail } from '../utils/proofPayment.utils';
+import { TopupBackofficeService } from './topup.backoffice.service';
+import { PaymentRepository } from '@/repositories/payment.repository';
+import {
+  buildTopupRequestFromPayment,
+  buildTopupPayloadFromRequest,
+} from '@/utils/topup.utils';
+import { PaymentStatus } from '@/schemas/payment.schemas';
 import { PaymentConst } from '../shared/consts';
 import { QrReceiptData } from '../schemas/receipt.schemas';
-import { UserRepository } from '../repositories/user.repository';
 import { NotificationService } from './notification.service';
 
 const logger = buildLogger('BmscPaymentService');
@@ -93,6 +99,7 @@ export class BmscPaymentService {
       amount: sipQrRequest.amount,
       currency: sipQrRequest.currency,
       description: sipQrRequest.description ?? 'USDT Purchase',
+      netAmountMxn: sipQrRequest.netAmountMxn,
       idempotencyKey,
       requestPayload: sipRequest,
     });
@@ -196,7 +203,7 @@ export class BmscPaymentService {
 
     await BmscPaymentRepository.createTopupIfNotExists(
       payment.user_id,
-      payment.amount,
+      payment.net_amount_mxn ?? payment.net_amount,
       topupRef,
       'SIP QR TOPUP'
     );
@@ -206,22 +213,40 @@ export class BmscPaymentService {
       topupRef,
     });
 
-    const user = await UserRepository.findById(payment.user_id);
+    // Re-fetch payment to ensure we have Users.BackofficeAuthState included
+    const updatedPayment = await BmscPaymentRepository.findByOrderId(alias);
 
-    if (!user) {
-      logger.error('SIP callback: user not found', {
-        alias,
-        userId: payment.user_id,
-      });
-      throw new NotFoundError(`User not found for ID: ${payment.user_id}`);
+    if (!updatedPayment) {
+      throw new NotFoundError('Payment not found after completion');
     }
+
+    // Build topup request from payment (uses net_amount_mxn ?? net_amount)
+    const topupRequest = buildTopupRequestFromPayment(updatedPayment);
+
+    // Call backoffice topup (let errors bubble to existing error handler)
+    const topupResponse = await TopupBackofficeService.topUp(topupRequest);
+
+    // Persist topup result into payment.response_payload for traceability
+    await PaymentRepository.mergeWebhookProcessingResult(
+      updatedPayment.id,
+      PaymentStatus.COMPLETED,
+      {
+        topup: buildTopupPayloadFromRequest(
+          topupRequest,
+          PaymentStatus.COMPLETED,
+          { response: topupResponse }
+        ),
+      }
+    );
+
+    const recipientEmail = updatedPayment.Users?.email ?? '';
 
     const proofByEmail = await sendPaymentProofByEmail<QrReceiptData>(
       PaymentConst.qr,
-      user.email,
+      recipientEmail,
       {
         amount: Number(dto.monto),
-        currency: payment.currency,
+        currency: updatedPayment.currency,
         recipient: dto.nombreCliente ?? 'Cliente SIP',
         reference: dto.numeroOrdenOriginante ?? '',
         date: dto.fechaproceso,
@@ -237,9 +262,9 @@ export class BmscPaymentService {
     );
 
     logger.debug('Proof of payment email result', { alias, proofByEmail });
-    await NotificationService.sendToUser(payment.user_id, {
+    await NotificationService.sendToUser(updatedPayment.user_id, {
       title: 'Depósito recibido',
-      body: `Se acreditaron ${payment.amount.toNumber()} ${payment.currency} a tu cuenta`,
+      body: `Se acreditaron ${topupRequest.amount} ${updatedPayment.currency} a tu cuenta`,
       data: { type: 'sip_topup', orderId: alias },
     });
 

@@ -1,5 +1,9 @@
 import { PaymentRepository } from '@/repositories/payment.repository';
 import { buildLogger, paymentUtils } from '@/utils';
+import {
+  buildTopupRequestFromPayment,
+  buildTopupPayloadFromRequest,
+} from '@/utils/topup.utils';
 import { PaymentProviderService } from './payment.provider.service';
 import { TopupBackofficeService } from './topup.backoffice.service';
 import {
@@ -315,7 +319,7 @@ export class PaymentService {
         };
       }
 
-      const topupRequest = this.buildTopupRequest(lockedPayment);
+      const topupRequest = buildTopupRequestFromPayment(lockedPayment);
 
       try {
         const topupResponse = await TopupBackofficeService.topUp(topupRequest);
@@ -326,7 +330,7 @@ export class PaymentService {
           {
             providerPayload: providerPayment,
             webhookPayload: payload,
-            topup: this.buildTopupPayload(
+            topup: buildTopupPayloadFromRequest(
               topupRequest,
               PaymentStatus.COMPLETED,
               { response: topupResponse }
@@ -379,7 +383,7 @@ export class PaymentService {
             {
               providerPayload: providerPayment,
               webhookPayload: payload,
-              topup: this.buildTopupPayload(
+              topup: buildTopupPayloadFromRequest(
                 topupRequest,
                 PaymentStatus.COMPLETED,
                 { note: 'Topup conflict treated as idempotent duplicate' }
@@ -402,12 +406,16 @@ export class PaymentService {
           {
             providerPayload: providerPayment,
             webhookPayload: payload,
-            topup: this.buildTopupPayload(topupRequest, PaymentStatus.FAILED, {
-              error:
-                error instanceof Error
-                  ? error.message
-                  : 'Unknown topup processing error',
-            }),
+            topup: buildTopupPayloadFromRequest(
+              topupRequest,
+              PaymentStatus.FAILED,
+              {
+                error:
+                  error instanceof Error
+                    ? error.message
+                    : 'Unknown topup processing error',
+              }
+            ),
           }
         );
 
@@ -476,58 +484,5 @@ export class PaymentService {
       topup?: PaymentTopupPayload;
     } | null;
     return typedPayload?.topup?.status === PaymentStatus.COMPLETED;
-  }
-
-  private static buildTopupRequest(payment: {
-    id: bigint;
-    idempotency_key: string;
-    net_amount: { toNumber(): number };
-    user_id: number;
-    Users: {
-      BackofficeAuthState: {
-        defaultBalanceId: number | null;
-        externalCustomerId: number | null;
-      } | null;
-    };
-  }) {
-    const authState = payment.Users.BackofficeAuthState;
-
-    if (!authState?.defaultBalanceId || !authState.externalCustomerId) {
-      logger.error('Missing backoffice auth state for Clip topup', {
-        paymentId: payment.id.toString(),
-        userId: payment.user_id,
-      });
-      throw new BadRequestError(
-        'User backoffice data is incomplete for Clip topup'
-      );
-    }
-
-    return {
-      externalTransactionId: payment.idempotency_key,
-      balanceId: authState.defaultBalanceId,
-      amount: payment.net_amount.toNumber(),
-      sourceCustomerID: authState.externalCustomerId,
-      transactionType: 1 as const,
-    };
-  }
-
-  private static buildTopupPayload(
-    topupRequest: {
-      externalTransactionId: string;
-      balanceId: number;
-      amount: number;
-      sourceCustomerID: number;
-    },
-    status: PaymentStatus,
-    extras?: Pick<PaymentTopupPayload, 'response' | 'note' | 'error'>
-  ): PaymentTopupPayload {
-    return {
-      status,
-      externalTransactionId: topupRequest.externalTransactionId,
-      amount: topupRequest.amount,
-      balanceId: topupRequest.balanceId,
-      sourceCustomerID: topupRequest.sourceCustomerID,
-      ...extras,
-    };
   }
 }

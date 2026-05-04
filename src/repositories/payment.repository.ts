@@ -24,7 +24,7 @@ export class PaymentRepository {
     fees: PaymentFeeCalculation,
     idempotencyKey: string
   ) {
-    const { amount, currency = 'MXN', description } = paymentData;
+    const { amount, currency = 'MXN', description, netAmountMxn } = paymentData;
 
     logger.info('Creating payment record', {
       userId,
@@ -43,6 +43,7 @@ export class PaymentRepository {
         business_fee_amount: fees.businessFeeAmount,
         idempotency_key: idempotencyKey,
         net_amount: fees.netAmount,
+        net_amount_mxn: netAmountMxn ?? fees.netAmount,
         status: PaymentStatus.PENDING,
         payment_method: 'card',
         provider: PaymentProvider.CLIP,
