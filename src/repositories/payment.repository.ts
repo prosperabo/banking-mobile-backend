@@ -192,18 +192,31 @@ export class PaymentRepository {
       },
     });
   }
-
   static async acquirePaymentLock(lockName: string): Promise<boolean> {
+    logger.info('Attempting to acquire payment lock', { lockName });
     const result = await db.$queryRaw<Array<{ lockStatus: number | null }>>`
-      SELECT GET_LOCK(${lockName}, 5) AS lockStatus
-    `;
+        SELECT GET_LOCK(${lockName}, 5) AS lockStatus
+      `;
 
-    return result[0]?.lockStatus === 1;
+    const acquired = result[0]?.lockStatus === 1;
+    logger.info('Acquire payment lock result', {
+      lockName,
+      acquired,
+      rawResult: result[0],
+    });
+
+    return acquired;
   }
 
   static async releasePaymentLock(lockName: string): Promise<void> {
-    await db.$queryRaw`
-      SELECT RELEASE_LOCK(${lockName})
-    `;
+    logger.info('Releasing payment lock', { lockName });
+    const result = await db.$queryRaw<Array<{ releaseStatus: number | null }>>`
+        SELECT RELEASE_LOCK(${lockName}) AS releaseStatus
+      `;
+
+    logger.info('Release payment lock result', {
+      lockName,
+      rawResult: result[0],
+    });
   }
 }
