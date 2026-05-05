@@ -14,7 +14,7 @@ export function buildTopupRequestFromPayment(
   payment: PaymentModel & {
     Users?: {
       BackofficeAuthState?: {
-        defaultBalanceId: number | null;
+        ewalletId: number | null;
         externalCustomerId: number | null;
       } | null;
     };
@@ -22,7 +22,7 @@ export function buildTopupRequestFromPayment(
 ): WalletTopUpRequest {
   const authState = payment.Users?.BackofficeAuthState;
 
-  if (!authState?.defaultBalanceId || !authState.externalCustomerId) {
+  if (!authState?.ewalletId || !authState.externalCustomerId) {
     throw new BadRequestError('User backoffice data is incomplete for topup');
   }
 
@@ -30,7 +30,7 @@ export function buildTopupRequestFromPayment(
 
   return {
     externalTransactionId: payment.idempotency_key,
-    balanceId: authState.defaultBalanceId,
+    balanceId: authState.ewalletId,
     amount: amountDecimal.toNumber(),
     sourceCustomerID: authState.externalCustomerId,
     transactionType: 1 as const,
