@@ -232,6 +232,11 @@ export class PaymentService {
           providerPaymentId
         );
 
+      logger.info('Payment lock acquired for Clip webhook', {
+        paymentId: lockedPayment?.id.toString(),
+        paymentRaw: lockedPayment,
+      });
+
       if (!lockedPayment) {
         throw new NotFoundError('Payment not found for Clip webhook');
       }
