@@ -357,7 +357,7 @@ export class PaymentService {
 
         await NotificationService.sendToUser(Number(lockedPayment.user_id), {
           title: 'Depósito recibido',
-          body: `Se acreditaron $${providerPayment.amount} ${providerPayment.currency} a tu cuenta`,
+          body: `Se acreditaron $${lockedPayment.net_amount_mxn ?? lockedPayment.net_amount} ${providerPayment.currency} a tu cuenta`,
           data: { type: 'clip_topup', paymentId: lockedPayment.id.toString() },
         });
 
