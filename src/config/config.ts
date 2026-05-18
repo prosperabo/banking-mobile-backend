@@ -69,6 +69,14 @@ export const config = {
     fromMail: process.env.FROM_MAIL || 'Prospera <info@slan.mx>',
     resendApiKey: process.env.RESEND_API_KEY || 'api_key',
   },
+  crossmint: {
+    serverApiKey: process.env.CROSSMINT_SERVER_API_KEY || '',
+    env: process.env.CROSSMINT_ENV || 'staging',
+    baseUrl:
+      process.env.CROSSMINT_ENV === 'production'
+        ? 'https://www.crossmint.com'
+        : 'https://staging.crossmint.com',
+  },
   timeZone: process.env.TIME_ZONE || 'America/Mexico_City',
   firebase: {
     projectId: process.env.FIREBASE_PROJECT_ID || '',

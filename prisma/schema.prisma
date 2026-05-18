@@ -65,6 +65,7 @@ model Users {
   payments                   payments[]
   push_device_tokens         push_device_tokens[]
   TransferReceipts           TransferReceipt[]
+  DefindexWallet             DefindexWallet?
 }
 
 model VerifiedEmails {
@@ -357,6 +358,18 @@ model push_device_tokens {
   @@index([user_id], map: "idx_push_tokens_user_id")
 }
 
+model DefindexWallet {
+  id                 Int                        @id @default(autoincrement())
+  userId             Int                        @unique
+  crossmintWalletId  String                     @unique @db.VarChar(255)
+  walletAddress      String                     @db.VarChar(255)
+  chainType          DefindexWallet_chainType   @default(STELLAR)
+  status             DefindexWallet_status      @default(ACTIVE)
+  createdAt          DateTime                   @default(now())
+  updatedAt          DateTime                   @default(now())
+  Users              Users                      @relation(fields: [userId], references: [id])
+}
+
 enum Gender {
   MASCULINO
   FEMENINO
@@ -416,4 +429,13 @@ enum TransferReceiptType {
 enum push_device_tokens_platform {
   ANDROID
   IOS
+}
+
+enum DefindexWallet_chainType {
+  STELLAR
+}
+
+enum DefindexWallet_status {
+  ACTIVE
+  PENDING
 }
