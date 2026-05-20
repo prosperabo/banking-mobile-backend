@@ -11,6 +11,7 @@ import transferRouter from './transfer.routes';
 import exchangeRateRouter from './exchangeRate.routes';
 import bmscPaymentRouter from './bmsc.payment.routes';
 import pushRouter from './push.routes';
+import defindexRouter from './defindex.routes';
 
 const router = Router();
 
@@ -26,6 +27,7 @@ router.use('/bmsc/payments', bmscPaymentRouter);
 router.use('/transfers', transferRouter);
 router.use('/exchange-rate', exchangeRateRouter);
 router.use('/push', pushRouter);
+router.use('/defindex', defindexRouter);
 
 router.get('/myip', async (req, res) => {
   const r = await fetch('https://ifconfig.me', {
