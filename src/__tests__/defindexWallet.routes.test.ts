@@ -1,5 +1,8 @@
 import request from 'supertest';
-import { DefindexWallet_chainType, DefindexWallet_status } from '@prisma/client';
+import {
+  DefindexWallet_chainType,
+  DefindexWallet_status,
+} from '@prisma/client';
 
 jest.mock('@/config/firebase', () => ({ firebaseAdmin: {} }));
 
@@ -32,7 +35,9 @@ const mockWallet = {
 
 describe('POST /api/v1/defindex/wallets', () => {
   it('returns 201 and wallet when created successfully', async () => {
-    jest.mocked(DefindexWalletService.createOrGetWallet).mockResolvedValue(mockWallet);
+    jest
+      .mocked(DefindexWalletService.createOrGetWallet)
+      .mockResolvedValue(mockWallet);
 
     const res = await request(app)
       .post('/api/v1/defindex/wallets')
@@ -43,7 +48,9 @@ describe('POST /api/v1/defindex/wallets', () => {
   });
 
   it('returns 201 and existing wallet when user already has one', async () => {
-    jest.mocked(DefindexWalletService.createOrGetWallet).mockResolvedValue(mockWallet);
+    jest
+      .mocked(DefindexWalletService.createOrGetWallet)
+      .mockResolvedValue(mockWallet);
 
     const res = await request(app)
       .post('/api/v1/defindex/wallets')
@@ -62,7 +69,9 @@ describe('POST /api/v1/defindex/wallets', () => {
 
 describe('GET /api/v1/defindex/wallets/me', () => {
   it('returns 200 and wallet when it exists', async () => {
-    jest.mocked(DefindexWalletService.getWalletByUser).mockResolvedValue(mockWallet);
+    jest
+      .mocked(DefindexWalletService.getWalletByUser)
+      .mockResolvedValue(mockWallet);
 
     const res = await request(app)
       .get('/api/v1/defindex/wallets/me')
@@ -73,9 +82,9 @@ describe('GET /api/v1/defindex/wallets/me', () => {
   });
 
   it('returns 404 when wallet does not exist', async () => {
-    jest.mocked(DefindexWalletService.getWalletByUser).mockRejectedValue(
-      new NotFoundError('Wallet not found for this user.')
-    );
+    jest
+      .mocked(DefindexWalletService.getWalletByUser)
+      .mockRejectedValue(new NotFoundError('Wallet not found for this user.'));
 
     const res = await request(app)
       .get('/api/v1/defindex/wallets/me')

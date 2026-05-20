@@ -13,7 +13,12 @@ export class DefindexWalletController {
 
     const wallet = await DefindexWalletService.createOrGetWallet(userId);
 
-    return successHandler(res, { wallet }, 'Wallet created successfully', StatusCodes.CREATED);
+    return successHandler(
+      res,
+      { wallet },
+      'Wallet created successfully',
+      StatusCodes.CREATED
+    );
   });
 
   static getMyWallet = catchErrors(async (req: Request, res: Response) => {

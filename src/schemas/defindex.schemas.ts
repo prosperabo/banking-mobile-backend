@@ -1,6 +1,12 @@
-import { DefindexWallet_chainType, DefindexWallet_status } from '@prisma/client';
+import {
+  DefindexWallet_chainType,
+  DefindexWallet_status,
+} from '@prisma/client';
 
-export { DefindexWallet_chainType as WalletChainType, DefindexWallet_status as WalletStatus };
+export {
+  DefindexWallet_chainType as WalletChainType,
+  DefindexWallet_status as WalletStatus,
+};
 
 export interface WalletResponse {
   id: number;

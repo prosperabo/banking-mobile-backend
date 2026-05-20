@@ -1,5 +1,8 @@
 import { db } from '@/config/prisma';
-import { DefindexWallet_chainType, DefindexWallet_status } from '@prisma/client';
+import {
+  DefindexWallet_chainType,
+  DefindexWallet_status,
+} from '@prisma/client';
 import { buildLogger } from '@/utils';
 
 const logger = buildLogger('DefindexWalletRepository');

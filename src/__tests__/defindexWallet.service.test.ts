@@ -1,4 +1,7 @@
-import { DefindexWallet_chainType, DefindexWallet_status } from '@prisma/client';
+import {
+  DefindexWallet_chainType,
+  DefindexWallet_status,
+} from '@prisma/client';
 
 jest.mock('@/config/firebase', () => ({ firebaseAdmin: {} }));
 
@@ -24,7 +27,9 @@ const mockWallet = {
 describe('DefindexWalletService', () => {
   describe('createOrGetWallet', () => {
     it('returns existing wallet without calling Crossmint', async () => {
-      jest.mocked(DefindexWalletRepository.findByUserId).mockResolvedValue(mockWallet);
+      jest
+        .mocked(DefindexWalletRepository.findByUserId)
+        .mockResolvedValue(mockWallet);
 
       const result = await DefindexWalletService.createOrGetWallet(42);
 
@@ -33,11 +38,20 @@ describe('DefindexWalletService', () => {
     });
 
     it('creates a new wallet via Crossmint when none exists', async () => {
-      jest.mocked(DefindexWalletRepository.findByUserId).mockResolvedValue(null);
+      jest
+        .mocked(DefindexWalletRepository.findByUserId)
+        .mockResolvedValue(null);
       jest.mocked(crossmintInstance.post).mockResolvedValue({
-        data: { id: 'cm-wallet-123', type: 'stellar-mpc-wallet:non-custodial', address: 'GXYZ123ABC', linkedUser: 'userId:42' },
+        data: {
+          id: 'cm-wallet-123',
+          type: 'stellar-mpc-wallet:non-custodial',
+          address: 'GXYZ123ABC',
+          linkedUser: 'userId:42',
+        },
       } as any);
-      jest.mocked(DefindexWalletRepository.create).mockResolvedValue(mockWallet);
+      jest
+        .mocked(DefindexWalletRepository.create)
+        .mockResolvedValue(mockWallet);
 
       const result = await DefindexWalletService.createOrGetWallet(42);
 
@@ -58,7 +72,9 @@ describe('DefindexWalletService', () => {
 
   describe('getWalletByUser', () => {
     it('returns wallet when it exists', async () => {
-      jest.mocked(DefindexWalletRepository.findByUserId).mockResolvedValue(mockWallet);
+      jest
+        .mocked(DefindexWalletRepository.findByUserId)
+        .mockResolvedValue(mockWallet);
 
       const result = await DefindexWalletService.getWalletByUser(42);
 
@@ -66,9 +82,13 @@ describe('DefindexWalletService', () => {
     });
 
     it('throws NotFoundError when wallet does not exist', async () => {
-      jest.mocked(DefindexWalletRepository.findByUserId).mockResolvedValue(null);
+      jest
+        .mocked(DefindexWalletRepository.findByUserId)
+        .mockResolvedValue(null);
 
-      await expect(DefindexWalletService.getWalletByUser(42)).rejects.toThrow(NotFoundError);
+      await expect(DefindexWalletService.getWalletByUser(42)).rejects.toThrow(
+        NotFoundError
+      );
     });
   });
 });
