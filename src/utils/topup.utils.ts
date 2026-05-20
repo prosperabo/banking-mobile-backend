@@ -5,6 +5,9 @@ import {
   PaymentStatus,
 } from '@/schemas/payment.schemas';
 import { BadRequestError } from '@/shared/errors';
+import { buildLogger } from './logger';
+
+const logger = buildLogger('TopupUtils');
 
 /**
  * Build a Backoffice wallet topup request from a payment record.
@@ -17,12 +20,26 @@ export function buildTopupRequestFromPayment(
         ewalletId: number | null;
         externalCustomerId: number | null;
       } | null;
+      BackofficeCustomerProfile?: {
+        ewallet_id: number | null;
+        external_customer_id: number | null;
+      } | null;
     };
   }
 ): WalletTopUpRequest {
-  const authState = payment.Users?.BackofficeAuthState;
+  const authState = payment.Users!.BackofficeAuthState;
+  const profile = payment.Users!.BackofficeCustomerProfile;
+  const ewalletId = authState!.ewalletId ?? profile!.ewallet_id;
+  const externalCustomerId =
+    authState!.externalCustomerId ?? profile!.external_customer_id;
 
-  if (!authState?.ewalletId || !authState.externalCustomerId) {
+  logger.info('Building topup request from payment', {
+    paymentId: payment.id.toString(),
+    ewalletId,
+    externalCustomerId,
+  });
+
+  if (!ewalletId || !externalCustomerId) {
     throw new BadRequestError('User backoffice data is incomplete for topup');
   }
 
@@ -30,9 +47,9 @@ export function buildTopupRequestFromPayment(
 
   return {
     externalTransactionId: payment.idempotency_key,
-    balanceId: authState.ewalletId,
+    balanceId: ewalletId,
     amount: amountDecimal.toNumber(),
-    sourceCustomerID: authState.externalCustomerId,
+    sourceCustomerID: externalCustomerId,
     transactionType: 1 as const,
   };
 }

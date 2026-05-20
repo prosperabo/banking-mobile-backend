@@ -13,13 +13,15 @@ interface LogMetadata {
 }
 
 const logsDirectory = './logs';
+const jsonReplacer = (_key: string, value: unknown) =>
+  typeof value === 'bigint' ? value.toString() : value;
 
 const logFormat = winston.format.combine(
   winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
   winston.format.printf(info => {
     const { timestamp, level, message, service, ...meta } = info;
     const additionalInfo = Object.keys(meta).length
-      ? JSON.stringify(meta, null, 4)
+      ? JSON.stringify(meta, jsonReplacer, 4)
       : '';
     return `${timestamp} [${level}] [${service}]: ${message} ${additionalInfo}`;
   }),

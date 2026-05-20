@@ -103,6 +103,7 @@ export class PaymentRepository {
         Users: {
           include: {
             BackofficeAuthState: true,
+            BackofficeCustomerProfile: true,
           },
         },
       },

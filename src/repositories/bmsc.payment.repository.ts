@@ -80,6 +80,7 @@ export class BmscPaymentRepository {
         Users: {
           include: {
             BackofficeAuthState: true,
+            BackofficeCustomerProfile: true,
           },
         },
       },
