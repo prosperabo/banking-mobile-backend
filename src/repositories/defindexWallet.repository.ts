@@ -7,15 +7,15 @@ import { buildLogger } from '@/utils';
 
 const logger = buildLogger('DefindexWalletRepository');
 
-export const DefindexWalletRepository = {
-  async findByUserId(userId: number) {
+export class DefindexWalletRepository {
+  static async findByUserId(userId: number) {
     logger.debug('Finding wallet by userId', { userId });
     return db.defindexWallet.findUnique({
       where: { userId },
     });
-  },
+  }
 
-  async create(data: {
+  static async create(data: {
     userId: number;
     crossmintWalletId: string;
     walletAddress: string;
@@ -33,5 +33,5 @@ export const DefindexWalletRepository = {
         updatedAt: new Date(),
       },
     });
-  },
-};
+  }
+}
