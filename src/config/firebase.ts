@@ -5,6 +5,7 @@ import { config } from './config';
 const logger = buildLogger('FirebaseConfig');
 
 let messagingInstance: admin.messaging.Messaging | null = null;
+let firestoreInstance: admin.firestore.Firestore | null = null;
 
 const initializeFirebase = (): admin.messaging.Messaging => {
   if (messagingInstance) {
@@ -27,4 +28,19 @@ const initializeFirebase = (): admin.messaging.Messaging => {
   return messagingInstance;
 };
 
+const getFirestore = (): admin.firestore.Firestore => {
+  if (firestoreInstance) {
+    return firestoreInstance;
+  }
+
+  if (!admin.apps.length) {
+    initializeFirebase();
+  }
+
+  firestoreInstance = admin.firestore();
+  logger.info('Firestore instance created');
+  return firestoreInstance;
+};
+
 export const firebaseMessaging = initializeFirebase();
+export const firebaseDB = getFirestore();
