@@ -1,4 +1,3 @@
-import { firebaseMessaging } from '@/config/firebase';
 import { buildLogger } from '@/utils';
 import { NotFoundError } from '@/shared/errors';
 import {
@@ -6,7 +5,7 @@ import {
   NewsDto,
   CreateNewsBodyDto,
   CreateNewsQueryDto,
-  FirebaseAnnouncementPayloadDto,
+  NoveltyResponseItemDto,
 } from '@/schemas/news.schemas';
 import { NewsRepository } from '@/repositories/news.repository';
 import { MulterFile } from '@/types/muterFile';
@@ -15,12 +14,26 @@ import { uploadToGCS } from '@/utils/storage.util';
 const logger = buildLogger('NewsService');
 
 export class NewsService {
-  static async getNews(query: GetNewsQueryDto): Promise<NewsDto[]> {
-    const news = await NewsRepository.findAllByAppVersion(query.appVersion);
+  static async getNews(
+    query: GetNewsQueryDto
+  ): Promise<NoveltyResponseItemDto[]> {
+    const rawNews = await NewsRepository.findAllByAppVersion(query.appVersion);
     logger.info(
-      `Fetched ${news.length} news notifications for app version ${query.appVersion}`
+      `Fetched ${rawNews.length} news notifications for app version ${query.appVersion}`
     );
-    return news;
+    const items: NoveltyResponseItemDto[] = rawNews.map(news => {
+      return {
+        id: news.id,
+        title: news.title,
+        description: news.description,
+        image_url: news.imageUrl ?? '',
+        redirect_url: news.redirectUrl ?? '',
+        app_version: news.appVersion ?? query.appVersion ?? '',
+        published_at: news.publishedAt,
+        is_active: news.published,
+      };
+    });
+    return items;
   }
 
   static async createNews(
@@ -35,30 +48,11 @@ export class NewsService {
 
   static async publishNews(id: string): Promise<NewsDto> {
     const news = await NewsRepository.findById(id);
-
     if (!news) {
       throw new NotFoundError(`News with id ${id} not found`);
     }
-
     const published = await NewsRepository.publish(id);
-
-    const payload: FirebaseAnnouncementPayloadDto = {
-      data: {
-        type: 'announcement',
-        announcement_id: published.id,
-        title: published.title,
-        description: published.description,
-        ...(published.imageUrl && { image_url: published.imageUrl }),
-        ...(published.redirectUrl && { redirect_url: published.redirectUrl }),
-      },
-    };
-
-    await firebaseMessaging.send({
-      topic: 'announcements',
-      data: { ...payload.data },
-    });
     logger.info(`Announcement ${id} published and sent via FCM`);
-
     return published;
   }
 }

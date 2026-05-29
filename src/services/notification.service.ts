@@ -5,6 +5,12 @@ import {
   NotificationSendResult,
 } from '@/schemas/notification.schemas';
 import { buildLogger } from '@/utils';
+import {
+  FirebaseAnnouncementPayloadDto,
+  NewsDto,
+} from '../schemas/news.schemas';
+import { NewsType } from '@/shared/consts';
+import { NotificationsType } from '@/shared/consts';
 
 const logger = buildLogger('NotificationService');
 
@@ -31,11 +37,14 @@ export class NotificationService {
 
     for (const deviceToken of activeTokens) {
       try {
-        const sanitizedData = payload.data
-          ? Object.fromEntries(
-              Object.entries(payload.data).map(([k, v]) => [k, String(v)])
-            )
-          : undefined;
+        let sanitizedData = undefined;
+        if (payload.data) {
+          const data = Object.entries(payload.data).map(([k, v]) => [
+            k,
+            String(v),
+          ]);
+          sanitizedData = Object.fromEntries(data);
+        }
 
         await firebaseMessaging.send({
           token: deviceToken.fcm_token,
@@ -48,17 +57,18 @@ export class NotificationService {
 
         tokensSent++;
       } catch (err: unknown) {
-        const firebaseCode =
+        const errorRecord = err as Record<string, unknown>;
+
+        const hasErrorInfo =
           err instanceof Error &&
-          'errorInfo' in err &&
-          typeof (err as Record<string, unknown>).errorInfo === 'object'
-            ? (
-                (err as Record<string, unknown>).errorInfo as Record<
-                  string,
-                  string
-                >
-              ).code
-            : undefined;
+          'errorInfo' in errorRecord &&
+          typeof errorRecord.errorInfo === 'object';
+
+        const errorInfo = hasErrorInfo
+          ? (errorRecord.errorInfo as Record<string, string>)
+          : undefined;
+
+        const firebaseCode = errorInfo?.code;
 
         if (firebaseCode && FIREBASE_INVALID_TOKEN_CODES.has(firebaseCode)) {
           logger.warn(`Deactivating invalid FCM token for user ${userId}`, {
@@ -88,5 +98,25 @@ export class NotificationService {
       tokensSent,
       tokensDeactivated,
     };
+  }
+
+  static async sendNewNotifications(newsDto: NewsDto): Promise<void> {
+    const payload: FirebaseAnnouncementPayloadDto = {
+      data: {
+        type: NewsType.ANNOUNCEMENT,
+        announcement_id: newsDto.id,
+        title: newsDto.title,
+        description: newsDto.description,
+        ...(newsDto.imageUrl && { image_url: newsDto.imageUrl }),
+        ...(newsDto.redirectUrl && { redirect_url: newsDto.redirectUrl }),
+      },
+    };
+
+    await firebaseMessaging.send({
+      topic: NotificationsType.ANNOUNCEMENTS,
+      data: { ...payload.data },
+    });
+
+    logger.info(`Announcement notification sent for news ${newsDto.id}`);
   }
 }

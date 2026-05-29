@@ -55,6 +55,22 @@ export interface NewsDto {
   updatedAt: string;
 }
 
+export interface NoveltyResponseItemDto {
+  id: string;
+  title: string;
+  description: string;
+  image_url?: string;
+  redirect_url?: string;
+  app_version: string;
+  published_at?: string;
+  is_active: boolean;
+}
+
+export interface NoveltiesResponseDto {
+  app_version: string;
+  items: NoveltyResponseItemDto[];
+}
+
 export interface GetNewsQueryDto {
   appVersion?: string;
 }
