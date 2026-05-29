@@ -91,17 +91,17 @@ async function requestBulkCardsNoUser(params: {
   const QR_URL = 'https://slan.mx/card-activation';
 
   const deliveryLocation: BulkOrderCardRequest['delivery_location'] = {
-    first_names: 'Prospera',
-    last_names: 'Recepcion',
-    street: 'Alcatraz M61 L1, jardines del sur 5',
-    neighborhood: 'Jardines del sur 5',
+    first_names: 'Mathias',
+    last_names: 'Abasto Patiño',
+    street: 'Augusto Rodin',
+    neighborhood: 'Mixcoac',
     city: 'Benito Juarez',
-    state: 'Quintana Roo',
-    exterior_number: '21',
-    interior_number: '1',
-    postal_code: '77536',
-    mobile: 9983940931,
-    additional_notes: 'Bulk order physical cards',
+    state: 'Ciudad de México',
+    exterior_number: '421',
+    interior_number: '104',
+    postal_code: '03910',
+    mobile: 5574063839,
+    additional_notes: 'Pedido de tarjeta física para Mathias Abasto Patiño',
   };
 
   const identifiers = buildIdentifiers(count);
