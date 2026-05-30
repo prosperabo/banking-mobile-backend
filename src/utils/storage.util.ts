@@ -17,7 +17,7 @@ export const uploadToGCS = async (file: MulterFile): Promise<string> => {
     stream.on('finish', resolve);
     stream.end(file.buffer);
   });
-  const publicUrl = `https://storage.googleapis.com/${config.gcp.bucketName}/${filename}`;
+  const publicUrl = `https://storage.googleapis.com/${config.gcpBucket.bucketName}/${filename}`;
   logger.info(`File uploaded to GCS: ${publicUrl}`);
   return publicUrl;
 };

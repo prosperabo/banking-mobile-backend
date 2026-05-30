@@ -83,10 +83,17 @@ export const config = {
     clientEmail: process.env.FIREBASE_CLIENT_EMAIL || '',
     privateKey: (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
   },
-  gcp: {
+  gcpBucket: {
     projectId: process.env.GCP_PROJECT_ID!,
     clientEmail: process.env.GCP_CLIENT_EMAIL!,
     privateKey: process.env.GCP_PRIVATE_KEY!,
     bucketName: process.env.GCP_BUCKET_NAME!,
+  },
+  gcpFirestore: {
+    projectId: process.env.GCP_FIRESTORE_PROJECT_ID!,
+    clientEmail: process.env.GCP_FIRESTORE_CLIENT_EMAIL!,
+    privateKey: process.env.GCP_FIRESTORE_PRIVATE_KEY!.replace(/\\n/g, '\n'),
+    privateKeyID: process.env.GCP_FIRESTORE_PRIVATE_KEY_ID!,
+    clientID: process.env.GCP_FIRESTORE_CLIENT_ID!,
   },
 };

@@ -7,7 +7,7 @@ export type NotificationProcessReason =
   | 'unsupported_type';
 
 export interface FirebaseAnnouncementDataDto {
-  type: 'announcement';
+  type: 'announcements';
   announcement_id: string;
   title: string;
   description: string;

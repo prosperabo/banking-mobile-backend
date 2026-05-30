@@ -8,19 +8,19 @@ let firestoreInstance: Firestore | null = null;
 const getStorage = () => {
   if (bucketInstance) return bucketInstance;
 
-  if (!config.gcp.bucketName) {
+  if (!config.gcpBucket.bucketName) {
     throw new Error('GCP_BUCKET_NAME is not defined in environment variables');
   }
 
   const storage = new Storage({
     credentials: {
-      client_email: config.gcp.clientEmail,
-      private_key: config.gcp.privateKey,
+      client_email: config.gcpBucket.clientEmail,
+      private_key: config.gcpBucket.privateKey,
     },
-    projectId: config.gcp.projectId,
+    projectId: config.gcpBucket.projectId,
   });
 
-  bucketInstance = storage.bucket(config.gcp.bucketName);
+  bucketInstance = storage.bucket(config.gcpBucket.bucketName);
   return bucketInstance;
 };
 
@@ -29,10 +29,10 @@ const getFirestore = (): Firestore => {
 
   firestoreInstance = new Firestore({
     credentials: {
-      client_email: config.gcp.clientEmail,
-      private_key: config.gcp.privateKey,
+      client_email: config.gcpFirestore.clientEmail,
+      private_key: config.gcpFirestore.privateKey,
     },
-    projectId: config.gcp.projectId,
+    projectId: config.gcpFirestore.projectId,
   });
 
   return firestoreInstance;

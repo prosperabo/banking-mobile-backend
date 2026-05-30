@@ -9,7 +9,6 @@ import {
   FirebaseAnnouncementPayloadDto,
   NewsDto,
 } from '../schemas/news.schemas';
-import { NewsType } from '@/shared/consts';
 import { NotificationsType } from '@/shared/consts';
 
 const logger = buildLogger('NotificationService');
@@ -103,7 +102,7 @@ export class NotificationService {
   static async sendNewNotifications(newsDto: NewsDto): Promise<void> {
     const payload: FirebaseAnnouncementPayloadDto = {
       data: {
-        type: NewsType.ANNOUNCEMENT,
+        type: NotificationsType.ANNOUNCEMENTS,
         announcement_id: newsDto.id,
         title: newsDto.title,
         description: newsDto.description,
@@ -115,6 +114,10 @@ export class NotificationService {
     await firebaseMessaging.send({
       topic: NotificationsType.ANNOUNCEMENTS,
       data: { ...payload.data },
+      notification: {
+        title: newsDto.title,
+        body: newsDto.description,
+      },
     });
 
     logger.info(`Announcement notification sent for news ${newsDto.id}`);
