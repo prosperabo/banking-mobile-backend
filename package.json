@@ -18,6 +18,10 @@
     "orm:migrate:deploy": "npx prisma migrate deploy",
     "prepare": "node -e \"process.env.HUSKY === '0' && process.exit(0)\" || husky"
   },
+  "engines": {
+    "node": ">=24.0.0",
+    "npm": ">=11.10.0"
+  },
   "keywords": [
     "banking",
     "mobile",
