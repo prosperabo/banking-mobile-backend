@@ -16,7 +16,10 @@
     "orm:generate": "npx prisma generate",
     "orm:migrate:dev": "npx prisma migrate dev",
     "orm:migrate:deploy": "npx prisma migrate deploy",
-    "prepare": "node -e \"process.env.HUSKY === '0' && process.exit(0)\" || husky"
+    "prepare": "node -e \"process.env.HUSKY === '0' && process.exit(0)\" || husky",
+    "audit:check": "better-npm-audit audit --level high",
+    "lint:lockfile": "lockfile-lint --path package-lock.json --allowed-hosts npm --validate-https",
+    "audit:all": "npm run audit:check && npm run lint:lockfile"
   },
   "keywords": [
     "banking",
@@ -72,6 +75,7 @@
     "@types/supertest": "^7.2.0",
     "@typescript-eslint/eslint-plugin": "^8.29.0",
     "@typescript-eslint/parser": "^8.29.0",
+    "better-npm-audit": "^3.11.0",
     "copyfiles": "^2.4.1",
     "eslint": "^9.23.0",
     "eslint-config-prettier": "^10.1.1",
@@ -79,6 +83,7 @@
     "globals": "^16.0.0",
     "husky": "^9.1.7",
     "jest": "^30.4.2",
+    "lockfile-lint": "^5.0.0",
     "prettier": "^3.5.3",
     "prisma": "^6.5.0",
     "supertest": "^7.2.2",
