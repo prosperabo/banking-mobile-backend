@@ -51,7 +51,9 @@ export class PaymentController {
 
       logger.info('Fetching payment details', { paymentId });
 
-      const result = await PaymentService.getPaymentDetails(paymentId);
+      const result = await PaymentService.getPaymentDetails(
+        paymentId as string
+      );
 
       return successHandler(
         res,
