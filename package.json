@@ -77,8 +77,8 @@
     "@types/multer": "^1.4.12",
     "@types/node": "^22.14.0",
     "@types/supertest": "^7.2.0",
-    "@typescript-eslint/eslint-plugin": "^8.29.0",
-    "@typescript-eslint/parser": "^8.29.0",
+    "@typescript-eslint/eslint-plugin": "8.60.1",
+    "@typescript-eslint/parser": "8.60.1",
     "better-npm-audit": "^3.11.0",
     "copyfiles": "^2.4.1",
     "eslint": "^9.23.0",
@@ -95,7 +95,7 @@
     "ts-node-dev": "^2.0.0",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.8.2",
-    "typescript-eslint": "^8.29.0"
+    "typescript-eslint": "8.60.1"
   },
   "_moduleAliases": {
     "@": "dist/src"
