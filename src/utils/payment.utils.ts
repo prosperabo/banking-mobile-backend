@@ -1,6 +1,6 @@
 import { createHash, randomUUID } from 'crypto';
-import { ClipWebhookPayload, PaymentStatus } from '../schemas/payment.schemas';
-import { SipCurrency } from '../schemas/sip.schemas';
+import { ClipWebhookPayload, PaymentStatus } from '@/schemas/payment.schemas';
+import { SipCurrency } from '@/schemas/sip.schemas';
 import { buildLogger } from '@/utils';
 import { config } from '@/config';
 
