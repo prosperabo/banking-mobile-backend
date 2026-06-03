@@ -1,7 +1,6 @@
-import { getBucket } from '../config/gcp';
-import { config } from '../config';
-import { MulterFile } from '../types/muterFile';
-import { buildLogger } from '../utils';
+import { getBucket, config } from '@/config';
+import { MulterFile } from '@/types/muterFile';
+import { buildLogger } from '@/utils';
 
 const logger = buildLogger('GcsService');
 
@@ -18,7 +17,7 @@ export class GcsService {
       stream.on('finish', resolve);
       stream.end(file.buffer);
     });
-    const publicUrl = `https://storage.googleapis.com/${config.gcs.bucketName}/${filename}`;
+    const publicUrl = `https://storage.googleapis.com/${config.gcpBucket.bucketName}/${filename}`;
     logger.info(`File uploaded to GCS: ${publicUrl}`);
     return publicUrl;
   }
