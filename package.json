@@ -21,6 +21,10 @@
     "lint:lockfile": "lockfile-lint --path package-lock.json --allowed-hosts npm --validate-https",
     "audit:all": "npm run audit:check && npm run lint:lockfile"
   },
+  "engines": {
+    "node": ">=24.0.0",
+    "npm": ">=11.10.0"
+  },
   "keywords": [
     "banking",
     "mobile",
