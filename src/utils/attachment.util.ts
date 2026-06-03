@@ -48,8 +48,7 @@ export async function htmlToBuffer(
   });
   try {
     const page = await browser.newPage();
-    await page.setContent(html, { waitUntil: 'load' });
-    await page.waitForNetworkIdle();
+    await page.setContent(html, { waitUntil: ['domcontentloaded', 'load'] });
 
     if (format === 'pdf') {
       const pdf = await page.pdf({
