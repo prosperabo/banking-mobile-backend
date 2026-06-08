@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import { NodeEnv } from '@/shared/consts';
+import { required, validateEnvVars } from './validate';
 
 dotenv.config();
 
@@ -8,23 +9,23 @@ export const config = {
     (process.env.NODE_ENV as keyof typeof NodeEnv) || NodeEnv.DEVELOPMENT,
   port: Number(process.env.PORT) || 3000,
   version: process.env.VERSION || '1',
-  databaseUrl: process.env.DATABASE_URL || 'database_url',
+  databaseUrl: required('DATABASE_URL'),
   clientUrls: String(process.env.CLIENT_URLS).split(',') || [
     'http://localhost:5173',
   ],
-  apiUrl: process.env.API_URL,
-  backofficeBaseUrl: process.env.BACKOFFICE_BASE_URL,
-  ecommerceToken: process.env.ECOMMERCE_TOKEN,
-  oauthEndpoint: process.env.OAUTH_ENDPOINT,
+  apiUrl: required('API_URL'),
+  backofficeBaseUrl: required('BACKOFFICE_BASE_URL'),
+  ecommerceToken: required('ECOMMERCE_TOKEN'),
+  oauthEndpoint: required('OAUTH_ENDPOINT'),
   webhookSecret: process.env.WEBHOOK_SECRET || '',
   webhookToleranceSeconds: Number(process.env.WEBHOOK_TOLERANCE_SECONDS) || 300,
   jwt: {
-    secret: process.env.JWT_SECRET,
+    secret: required('JWT_SECRET'),
     expiresIn: (process.env.JWT_EXPIRES_IN || '24h') as string,
   },
   paymentService: {
-    apiKey: process.env.PAYMENT_SERVICE_API_KEY || '',
-    secretKey: process.env.PAYMENT_SERVICE_SECRET_KEY || '',
+    apiKey: required('PAYMENT_SERVICE_API_KEY'),
+    secretKey: required('PAYMENT_SERVICE_SECRET_KEY'),
     baseUrl: process.env.PAYMENT_SERVICE_BASE_URL || 'https://api.payclip.com',
   },
   banxico: {
@@ -79,21 +80,23 @@ export const config = {
   },
   timeZone: process.env.TIME_ZONE || 'America/Mexico_City',
   firebase: {
-    projectId: process.env.FIREBASE_PROJECT_ID || '',
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL || '',
-    privateKey: (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n'),
+    projectId: required('FIREBASE_PROJECT_ID'),
+    clientEmail: required('FIREBASE_CLIENT_EMAIL'),
+    privateKey: required('FIREBASE_PRIVATE_KEY').replace(/\\n/g, '\n'),
   },
   gcpBucket: {
-    projectId: process.env.GCP_PROJECT_ID!,
-    clientEmail: process.env.GCP_CLIENT_EMAIL!,
-    privateKey: process.env.GCP_PRIVATE_KEY!,
-    bucketName: process.env.GCP_BUCKET_NAME!,
+    projectId: required('GCS_PROJECT_ID'),
+    clientEmail: required('GCS_CLIENT_EMAIL'),
+    privateKey: required('GCS_PRIVATE_KEY'),
+    bucketName: required('GCS_BUCKET_NAME'),
   },
   gcpFirestore: {
-    projectId: process.env.GCP_FIRESTORE_PROJECT_ID!,
-    clientEmail: process.env.GCP_FIRESTORE_CLIENT_EMAIL!,
-    privateKey: process.env.GCP_FIRESTORE_PRIVATE_KEY!.replace(/\\n/g, '\n'),
-    privateKeyID: process.env.GCP_FIRESTORE_PRIVATE_KEY_ID!,
-    clientID: process.env.GCP_FIRESTORE_CLIENT_ID!,
+    projectId: required('GCP_FIRESTORE_PROJECT_ID'),
+    clientEmail: required('GCP_FIRESTORE_CLIENT_EMAIL'),
+    privateKey: required('GCP_FIRESTORE_PRIVATE_KEY').replace(/\\n/g, '\n'),
+    privateKeyID: required('GCP_FIRESTORE_PRIVATE_KEY_ID'),
+    clientID: required('GCP_FIRESTORE_CLIENT_ID'),
   },
 };
+
+validateEnvVars();

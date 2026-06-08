@@ -8,19 +8,20 @@ if (process.env.NODE_ENV === 'production') {
   require('source-map-support/register');
 }
 
-import { config, prismaInit, registerPrismaShutdown } from './config';
 import { buildLogger } from './utils';
-import app from './app';
 
 const logger = buildLogger('index');
 
-const { port, version } = config;
-
-const PORT = port || 3000;
-const API = `http://localhost:${PORT}/api/v${version}`;
-
 (async () => {
   try {
+    const [{ config, prismaInit, registerPrismaShutdown }, { default: app }] =
+      await Promise.all([import('./config'), import('./app')]);
+
+    const { port, version } = config;
+
+    const PORT = port || 3000;
+    const API = `http://localhost:${PORT}/api/v${version}`;
+
     logger.info(`Trying to start on port: ${PORT}`);
     await prismaInit();
     const server = app.listen(PORT, () => {
