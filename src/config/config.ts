@@ -17,8 +17,6 @@ export const config = {
   backofficeBaseUrl: required('BACKOFFICE_BASE_URL'),
   ecommerceToken: required('ECOMMERCE_TOKEN'),
   oauthEndpoint: required('OAUTH_ENDPOINT'),
-  webhookSecret: process.env.WEBHOOK_SECRET || '',
-  webhookToleranceSeconds: Number(process.env.WEBHOOK_TOLERANCE_SECONDS) || 300,
   jwt: {
     secret: required('JWT_SECRET'),
     expiresIn: (process.env.JWT_EXPIRES_IN || '24h') as string,
