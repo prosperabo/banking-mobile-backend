@@ -65,7 +65,9 @@ model Users {
   payments                   payments[]
   push_device_tokens         push_device_tokens[]
   TransferReceipts           TransferReceipt[]
-  DefindexWallet             DefindexWallet?
+  UserWallet                 UserWallet?
+  RampOrder                  RampOrder[]
+  InvestmentOperation        InvestmentOperation[]
 }
 
 model VerifiedEmails {
@@ -358,16 +360,108 @@ model push_device_tokens {
   @@index([user_id], map: "idx_push_tokens_user_id")
 }
 
-model DefindexWallet {
-  id                 Int                        @id @default(autoincrement())
-  userId             Int                        @unique
-  crossmintWalletId  String                     @unique @db.VarChar(255)
-  walletAddress      String                     @db.VarChar(255)
-  chainType          DefindexWallet_chainType   @default(STELLAR)
-  status             DefindexWallet_status      @default(ACTIVE)
-  createdAt          DateTime                   @default(now())
-  updatedAt          DateTime                   @default(now())
-  Users              Users                      @relation(fields: [userId], references: [id])
+model UserWallet {
+  id                Int          @id @default(autoincrement())
+  userId            Int          @unique
+
+  provider          WalletProvider
+  providerWalletId  String       @unique @db.VarChar(255)
+
+  walletAddress     String       @db.VarChar(255)
+  chain             WalletChain
+  custodyType       CustodyType
+  status            WalletStatus @default(ACTIVE)
+
+  metadata          Json?
+
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  Users             Users        @relation(fields: [userId], references: [id])
+  RampOrders        RampOrder[]
+  InvestmentOperations InvestmentOperation[]
+
+  @@index([userId])
+  @@index([provider])
+  @@index([walletAddress])
+}
+
+model RampOrder {
+  id                Int             @id @default(autoincrement())
+  userId            Int
+  walletId          Int?
+
+  provider          RampProvider
+  type              RampOrderType
+
+  providerOrderId   String?         @unique @db.VarChar(255)
+  idempotencyKey    String          @unique @db.VarChar(100)
+
+  fiatAmount        Decimal?        @db.Decimal(14, 2)
+  fiatCurrency      String          @default("MXN") @db.Char(3)
+
+  cryptoAmount      Decimal?        @db.Decimal(18, 6)
+  cryptoAsset       String?         @db.VarChar(20)
+  chain             WalletChain?
+
+  paymentMethod     String?         @db.VarChar(50)
+  bankName          String?         @db.VarChar(255)
+  accountSuffix     String?         @db.VarChar(4)
+
+  status            RampOrderStatus @default(PENDING)
+  failureReason     String?         @db.Text
+
+  requestPayload    Json?
+  responsePayload   Json?
+
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+
+  Users             Users           @relation(fields: [userId], references: [id])
+  UserWallet        UserWallet?     @relation(fields: [walletId], references: [id])
+
+  @@index([userId])
+  @@index([provider])
+  @@index([type])
+  @@index([status])
+  @@index([providerOrderId])
+}
+
+model InvestmentOperation {
+  id                   Int                       @id @default(autoincrement())
+  userId               Int
+  walletId             Int
+
+  provider             InvestmentProvider
+  type                 InvestmentOperationType
+
+  externalProductId    String?                   @db.VarChar(255)
+  externalOperationId  String?                   @db.VarChar(255)
+
+  asset                String                    @db.VarChar(20)
+  amount               Decimal                   @db.Decimal(18, 6)
+  chain                WalletChain
+
+  status               InvestmentOperationStatus @default(PENDING)
+
+  txHash               String?                   @db.VarChar(255)
+  providerTxId         String?                   @db.VarChar(255)
+
+  requestPayload       Json?
+  responsePayload      Json?
+  failureReason        String?                   @db.Text
+
+  createdAt            DateTime                  @default(now())
+  updatedAt            DateTime                  @updatedAt
+
+  Users                Users                     @relation(fields: [userId], references: [id])
+  UserWallet           UserWallet                @relation(fields: [walletId], references: [id])
+
+  @@index([userId])
+  @@index([provider])
+  @@index([type])
+  @@index([status])
+  @@index([txHash])
 }
 
 enum Gender {
@@ -431,11 +525,65 @@ enum push_device_tokens_platform {
   IOS
 }
 
-enum DefindexWallet_chainType {
-  STELLAR
+enum WalletProvider {
+  CROSSMINT
+  PRIVY
+  FIREBLOCKS
 }
 
-enum DefindexWallet_status {
+enum WalletChain {
+  STELLAR
+  POLYGON
+  BASE
+  ETHEREUM
+  SOLANA
+}
+
+enum CustodyType {
+  CUSTODIAL
+  NON_CUSTODIAL
+  MPC
+}
+
+enum WalletStatus {
   ACTIVE
   PENDING
+  DISABLED
+}
+
+enum RampProvider {
+  CROSSMINT
+  ETHERFUSE
+}
+
+enum RampOrderType {
+  ONRAMP
+  OFFRAMP
+}
+
+enum RampOrderStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum InvestmentProvider {
+  DEFINDEX
+  OTHER
+}
+
+enum InvestmentOperationType {
+  DEPOSIT
+  WITHDRAW
+}
+
+enum InvestmentOperationStatus {
+  PENDING
+  SIGNING
+  SUBMITTED
+  COMPLETED
+  FAILED
+  CANCELLED
 }

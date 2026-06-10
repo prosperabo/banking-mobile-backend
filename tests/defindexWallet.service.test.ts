@@ -1,92 +1,100 @@
 import {
-  DefindexWallet_chainType,
-  DefindexWallet_status,
+  Prisma,
+  WalletChain,
+  WalletStatus,
 } from '@prisma/client';
 
 jest.mock('@/config/firebase', () => ({ firebaseAdmin: {} }));
 
-import { DefindexWalletService } from '@/services/defindexWallet.service';
-import { DefindexWalletRepository } from '@/repositories/defindexWallet.repository';
-import crossmintInstance from '@/api/crossmint.instance';
+import { UserWalletService } from '@/services/userWallet.service';
+import { UserWalletRepository } from '@/repositories/userWallet.repository';
+import { CrossmintWalletClient } from '@/services/crossmintWallet.client';
 import { NotFoundError } from '@/shared/errors';
 
-jest.mock('@/repositories/defindexWallet.repository');
-jest.mock('@/api/crossmint.instance', () => ({ post: jest.fn() }));
+jest.mock('@/repositories/userWallet.repository');
+jest.mock('@/services/crossmintWallet.client');
 
 const mockWallet = {
   id: 1,
   userId: 42,
-  crossmintWalletId: 'cm-wallet-123',
+  provider: 'CROSSMINT' as const,
+  providerWalletId: 'cm-wallet-123',
   walletAddress: 'GXYZ123ABC',
-  chainType: DefindexWallet_chainType.STELLAR,
-  status: DefindexWallet_status.ACTIVE,
+  chain: WalletChain.STELLAR,
+  custodyType: 'NON_CUSTODIAL' as const,
+  status: WalletStatus.ACTIVE,
+  metadata: null as Prisma.JsonValue,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
 
-describe('DefindexWalletService', () => {
+const mockWalletResponse = {
+  id: 1,
+  userId: 42,
+  crossmintWalletId: 'cm-wallet-123',
+  walletAddress: 'GXYZ123ABC',
+  chainType: WalletChain.STELLAR,
+  status: WalletStatus.ACTIVE,
+  createdAt: mockWallet.createdAt,
+};
+
+describe('UserWalletService', () => {
   describe('createOrGetWallet', () => {
     it('returns existing wallet without calling Crossmint', async () => {
       jest
-        .mocked(DefindexWalletRepository.findByUserId)
+        .mocked(UserWalletRepository.findByUserId)
         .mockResolvedValue(mockWallet);
 
-      const result = await DefindexWalletService.createOrGetWallet(42);
+      const result = await UserWalletService.createOrGetWallet(42);
 
-      expect(result).toEqual(mockWallet);
-      expect(crossmintInstance.post).not.toHaveBeenCalled();
+      expect(result).toEqual(mockWalletResponse);
+      expect(CrossmintWalletClient.createWallet).not.toHaveBeenCalled();
     });
 
     it('creates a new wallet via Crossmint when none exists', async () => {
       jest
-        .mocked(DefindexWalletRepository.findByUserId)
+        .mocked(UserWalletRepository.findByUserId)
         .mockResolvedValue(null);
-      jest.mocked(crossmintInstance.post).mockResolvedValue({
-        data: {
-          id: 'cm-wallet-123',
-          type: 'stellar-mpc-wallet:non-custodial',
-          address: 'GXYZ123ABC',
-          linkedUser: 'userId:42',
-        },
-      } as any);
       jest
-        .mocked(DefindexWalletRepository.create)
+        .mocked(CrossmintWalletClient.createWallet)
+        .mockResolvedValue({ id: 'cm-wallet-123', address: 'GXYZ123ABC' });
+      jest
+        .mocked(UserWalletRepository.create)
         .mockResolvedValue(mockWallet);
 
-      const result = await DefindexWalletService.createOrGetWallet(42);
+      const result = await UserWalletService.createOrGetWallet(42);
 
-      expect(crossmintInstance.post).toHaveBeenCalledWith(
-        '/api/2022-06-09/wallets',
-        { type: 'stellar-mpc-wallet:non-custodial', linkedUser: 'userId:42' }
-      );
-      expect(DefindexWalletRepository.create).toHaveBeenCalledWith({
+      expect(CrossmintWalletClient.createWallet).toHaveBeenCalledWith(42);
+      expect(UserWalletRepository.create).toHaveBeenCalledWith({
         userId: 42,
-        crossmintWalletId: 'cm-wallet-123',
+        provider: 'CROSSMINT',
+        providerWalletId: 'cm-wallet-123',
         walletAddress: 'GXYZ123ABC',
-        chainType: DefindexWallet_chainType.STELLAR,
-        status: DefindexWallet_status.ACTIVE,
+        chain: WalletChain.STELLAR,
+        custodyType: 'NON_CUSTODIAL',
+        status: WalletStatus.ACTIVE,
       });
-      expect(result).toEqual(mockWallet);
+      expect(result).toEqual(mockWalletResponse);
     });
   });
 
   describe('getWalletByUser', () => {
     it('returns wallet when it exists', async () => {
       jest
-        .mocked(DefindexWalletRepository.findByUserId)
+        .mocked(UserWalletRepository.findByUserId)
         .mockResolvedValue(mockWallet);
 
-      const result = await DefindexWalletService.getWalletByUser(42);
+      const result = await UserWalletService.getWalletByUser(42);
 
-      expect(result).toEqual(mockWallet);
+      expect(result).toEqual(mockWalletResponse);
     });
 
     it('throws NotFoundError when wallet does not exist', async () => {
       jest
-        .mocked(DefindexWalletRepository.findByUserId)
+        .mocked(UserWalletRepository.findByUserId)
         .mockResolvedValue(null);
 
-      await expect(DefindexWalletService.getWalletByUser(42)).rejects.toThrow(
+      await expect(UserWalletService.getWalletByUser(42)).rejects.toThrow(
         NotFoundError
       );
     });

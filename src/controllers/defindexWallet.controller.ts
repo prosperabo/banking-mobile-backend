@@ -1,17 +1,17 @@
 import { Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
-import { DefindexWalletService } from '@/services/defindexWallet.service';
+import { UserWalletService } from '@/services/userWallet.service';
 import { catchErrors, successHandler } from '@/shared/handlers';
 import { buildLogger } from '@/utils';
 
-const logger = buildLogger('DefindexWalletController');
+const logger = buildLogger('UserWalletController');
 
 export class DefindexWalletController {
   static createWallet = catchErrors(async (req: Request, res: Response) => {
     const userId = req.user!.userId;
     logger.info('createWallet called', { userId });
 
-    const wallet = await DefindexWalletService.createOrGetWallet(userId);
+    const wallet = await UserWalletService.createOrGetWallet(userId);
 
     return successHandler(
       res,
@@ -25,7 +25,7 @@ export class DefindexWalletController {
     const userId = req.user!.userId;
     logger.info('getMyWallet called', { userId });
 
-    const wallet = await DefindexWalletService.getWalletByUser(userId);
+    const wallet = await UserWalletService.getWalletByUser(userId);
 
     return successHandler(res, { wallet }, 'Wallet fetched successfully');
   });
