@@ -15,6 +15,8 @@
     "orm:init": "npx prisma init",
     "orm:generate": "npx prisma generate",
     "orm:migrate:dev": "npx prisma migrate dev",
+    "orm:migrate:create": "npx prisma migrate dev --create-only",
+    "orm:migrate:execute": "npx prisma db execute --file prisma/migrations/$(ls -t prisma/migrations | grep -v migration_lock | head -1)/migration.sql --schema prisma/schema.prisma",
     "orm:migrate:deploy": "npx prisma migrate deploy",
     "prepare": "node -e \"process.env.HUSKY === '0' && process.exit(0)\" || husky",
     "audit:check": "better-npm-audit audit --level high",
@@ -31,7 +33,8 @@
     "backend",
     "typescript",
     "express",
-    "prisma"
+    "prisma",
+    "mysql"
   ],
   "author": "Prospera Servicios Financieros",
   "license": "ISC",

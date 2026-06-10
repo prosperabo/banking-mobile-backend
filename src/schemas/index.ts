@@ -8,3 +8,6 @@ export * from './transfer.schemas';
 export * from './repository.schemas';
 export * from './biometric.schemas';
 export * from './notification.schemas';
+export * from './userWallet.schemas';
+export * from './rampOrder.schemas';
+export * from './investmentOperation.schemas';

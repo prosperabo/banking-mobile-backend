@@ -1,20 +1,14 @@
-import {
-  DefindexWallet_chainType,
-  DefindexWallet_status,
-} from '@prisma/client';
+import { WalletChain, WalletStatus } from '@prisma/client';
 
-export {
-  DefindexWallet_chainType as WalletChainType,
-  DefindexWallet_status as WalletStatus,
-};
+export { WalletChain as WalletChainType, WalletStatus };
 
 export interface WalletResponse {
   id: number;
   userId: number;
   crossmintWalletId: string;
   walletAddress: string;
-  chainType: DefindexWallet_chainType;
-  status: DefindexWallet_status;
+  chainType: WalletChain;
+  status: WalletStatus;
   createdAt: Date;
 }
 

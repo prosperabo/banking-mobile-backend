@@ -1,16 +1,16 @@
 import request from 'supertest';
 import {
-  DefindexWallet_chainType,
-  DefindexWallet_status,
+  WalletChain,
+  WalletStatus,
 } from '@prisma/client';
 
 jest.mock('@/config/firebase', () => ({ firebaseAdmin: {} }));
 
 import app from '@/app';
-import { DefindexWalletService } from '@/services/defindexWallet.service';
+import { UserWalletService } from '@/services/userWallet.service';
 import { NotFoundError } from '@/shared/errors';
 
-jest.mock('@/services/defindexWallet.service');
+jest.mock('@/services/userWallet.service');
 jest.mock('@/middlewares/authenticateToken', () => ({
   authenticateToken: (req: any, res: any, next: any) => {
     if (!req.headers['authorization']) {
@@ -27,16 +27,15 @@ const mockWallet = {
   userId: 42,
   crossmintWalletId: 'cm-wallet-123',
   walletAddress: 'GXYZ123ABC',
-  chainType: DefindexWallet_chainType.STELLAR,
-  status: DefindexWallet_status.ACTIVE,
+  chainType: WalletChain.STELLAR,
+  status: WalletStatus.ACTIVE,
   createdAt: new Date(),
-  updatedAt: new Date(),
 };
 
 describe('POST /api/v1/defindex/wallets', () => {
   it('returns 201 and wallet when created successfully', async () => {
     jest
-      .mocked(DefindexWalletService.createOrGetWallet)
+      .mocked(UserWalletService.createOrGetWallet)
       .mockResolvedValue(mockWallet);
 
     const res = await request(app)
@@ -49,7 +48,7 @@ describe('POST /api/v1/defindex/wallets', () => {
 
   it('returns 201 and existing wallet when user already has one', async () => {
     jest
-      .mocked(DefindexWalletService.createOrGetWallet)
+      .mocked(UserWalletService.createOrGetWallet)
       .mockResolvedValue(mockWallet);
 
     const res = await request(app)
@@ -70,7 +69,7 @@ describe('POST /api/v1/defindex/wallets', () => {
 describe('GET /api/v1/defindex/wallets/me', () => {
   it('returns 200 and wallet when it exists', async () => {
     jest
-      .mocked(DefindexWalletService.getWalletByUser)
+      .mocked(UserWalletService.getWalletByUser)
       .mockResolvedValue(mockWallet);
 
     const res = await request(app)
@@ -83,7 +82,7 @@ describe('GET /api/v1/defindex/wallets/me', () => {
 
   it('returns 404 when wallet does not exist', async () => {
     jest
-      .mocked(DefindexWalletService.getWalletByUser)
+      .mocked(UserWalletService.getWalletByUser)
       .mockRejectedValue(new NotFoundError('Wallet not found for this user.'));
 
     const res = await request(app)
