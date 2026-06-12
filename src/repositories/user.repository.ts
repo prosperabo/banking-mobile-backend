@@ -51,6 +51,18 @@ export class UserRepository {
   }
 
   /**
+   * Update the latest successful login timestamp.
+   */
+  static async updateLastLogin(id: number, lastLogin: Date): Promise<User> {
+    return await db.users.update({
+      where: { id },
+      data: {
+        lastLogin,
+      },
+    });
+  }
+
+  /**
    * Create new user with complete data
    */
   static async create(data: UserCreate): Promise<User> {
