@@ -60,7 +60,7 @@ export class AuthService {
       throw new UnauthorizedError('Invalid credentials');
     }
 
-    return this.buildJwtToken(user.email, user.id);
+    return this.buildSuccessfulLoginResponse(user.email, user.id);
   }
 
   static async loginByBiometric(
@@ -72,7 +72,18 @@ export class AuthService {
     const user = await UserRepository.findById(userId);
     if (!user) throw new NotFoundError('User not found');
 
-    return this.buildJwtToken(user.email, user.id);
+    return this.buildSuccessfulLoginResponse(user.email, user.id);
+  }
+
+  private static async buildSuccessfulLoginResponse(
+    userEmail: string,
+    userId: number
+  ): Promise<LoginResponse> {
+    const loginResponse = await this.buildJwtToken(userEmail, userId);
+
+    await UserRepository.updateLastLogin(userId, new Date());
+
+    return loginResponse;
   }
 
   private static async buildJwtToken(

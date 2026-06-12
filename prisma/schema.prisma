@@ -46,6 +46,7 @@ model Users {
   universityProfilePhotoLink String?
   rfc                        String?
   createdAt                  DateTime                   @default(now())
+  lastLogin                  DateTime?
   firstName                  String?                    @db.VarChar(255)
   lastName                   String?                    @db.VarChar(255)
   secondLastName             String?                    @db.VarChar(255)
